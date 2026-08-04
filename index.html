@@ -193,6 +193,28 @@ td.n,th.n{text-align:end; white-space:nowrap}
 tfoot td{padding:9px 10px; font-weight:800; background:var(--surface-2); border-top:1px solid var(--border-strong)}
 .t-name{font-weight:600}
 .t-sub{display:block; font-size:11.5px; color:var(--text-soft); font-weight:400}
+th.sortable{cursor:pointer; user-select:none; white-space:nowrap}
+th.sortable:hover{color:var(--primary)}
+th.sortable[aria-sort]{color:var(--primary)}
+.sort-ind{display:inline-block; width:0; margin-inline-start:4px; font-size:10px; opacity:.85}
+th.sortable[aria-sort="ascending"] .sort-ind::after{content:"▲"; width:auto}
+th.sortable[aria-sort="descending"] .sort-ind::after{content:"▼"; width:auto}
+.prod-row{cursor:pointer}
+.prod-row.is-open td{background:var(--primary-soft)}
+.prod-name{display:flex; align-items:baseline; gap:6px}
+.prod-caret{font-size:10px; color:var(--text-soft); flex:0 0 auto; transition:transform .15s}
+.prod-row.is-open .prod-caret{transform:rotate(180deg)}
+.prod-detail td{background:var(--surface-2); padding:12px 14px}
+.prod-detail-grid{display:flex; flex-wrap:wrap; gap:8px 18px; align-items:center; font-size:12.5px}
+.prod-detail-grid b{font-weight:800}
+.prod-detail-grid .lbl{margin-inline-end:2px}
+.prod-src{color:var(--primary); font-weight:700; text-decoration:underline; text-underline-offset:2px}
+.smart-grid{display:grid; grid-template-columns:1fr; gap:12px}
+@media (min-width:760px){ .smart-grid{grid-template-columns:repeat(2,minmax(0,1fr))} }
+.smart-card{border:1px solid var(--border); border-radius:var(--radius); background:var(--surface); padding:14px; display:flex; flex-direction:column; gap:8px; box-shadow:var(--shadow)}
+.smart-card h3{font-size:14px; color:var(--primary)}
+.smart-card ul{display:flex; flex-direction:column; gap:6px; font-size:12.5px; color:var(--text-muted)}
+.smart-card li strong{color:var(--text)}
 
 /* ---------- builder ---------- */
 .meal{padding:0; overflow:hidden}
@@ -281,6 +303,7 @@ tfoot td{padding:9px 10px; font-weight:800; background:var(--surface-2); border-
       <button class="tab-btn" role="tab" id="tabbtn-calc" aria-controls="tab-calc" aria-selected="true" data-tab="calc" type="button">מחשבון קלוריות</button>
       <button class="tab-btn" role="tab" id="tabbtn-builder" aria-controls="tab-builder" aria-selected="false" data-tab="builder" type="button">בונה תפריט</button>
       <button class="tab-btn" role="tab" id="tabbtn-foods" aria-controls="tab-foods" aria-selected="false" data-tab="foods" type="button">מאגר מזונות</button>
+      <button class="tab-btn" role="tab" id="tabbtn-products" aria-controls="tab-products" aria-selected="false" data-tab="products" type="button">מוצרים מהסופר</button>
       <button class="tab-btn" role="tab" id="tabbtn-cats" aria-controls="tab-cats" aria-selected="false" data-tab="cats" type="button">קטגוריות ויעדים</button>
       <button class="tab-btn" role="tab" id="tabbtn-examples" aria-controls="tab-examples" aria-selected="false" data-tab="examples" type="button">תפריטים לדוגמה</button>
     </nav>
@@ -433,6 +456,36 @@ tfoot td{padding:9px 10px; font-weight:800; background:var(--surface-2); border-
       </div>
       <p class="note-line">עיקרון בדיקה: קלוריות ≈ (חלבון × 4) + (פחמימה × 4) + (שומן × 9). בירקות ובפירות ייתכן פער של עד כ-10% בגלל סיבים תזונתיים — זה תקין.</p>
     </div>
+  </section>
+
+  <!-- ===== 4. מוצרים מהסופר ===== -->
+  <section class="tab-panel" id="tab-products" role="tabpanel" aria-labelledby="tabbtn-products">
+    <div class="card stack">
+      <div>
+        <h2 class="card-title">מוצרים מהסופר<span class="eyebrow" id="prodCount"></span></h2>
+        <p class="lede">הערכים נאספו מאתרי הרשתות והיצרנים — ליד כל מוצר יש קישור למקור. תמיד לאמת מול התווית שעל האריזה בפועל: יצרנים משנים מתכונים, גדלי אריזה ואחוזי שומן ללא הודעה.</p>
+      </div>
+      <div class="field"><label for="prodSearch">חיפוש לפי שם מוצר או מותג</label><input type="text" id="prodSearch" placeholder="קוטג', תנובה, טונה..."></div>
+      <div class="row-flex" id="prodChips"></div>
+      <p class="hint">עמודת "קלוריות (100 ג')" היא עמודת ההשוואה בין מוצרים. עמודת "קלוריות למנה" היא המספר שנכנס לתפריט. לחיצה על כותרת מספרית ממיינת.</p>
+      <div class="table-scroll">
+        <table id="prodTable">
+          <thead><tr>
+            <th>מוצר</th>
+            <th>מותג</th>
+            <th>מנה</th>
+            <th class="n sortable" data-sort="kcal100" tabindex="0" role="button" aria-label="מיון לפי קלוריות ל-100 גרם">קלוריות (100 ג')<span class="sort-ind"></span></th>
+            <th class="n sortable" data-sort="protein100" tabindex="0" role="button" aria-label="מיון לפי חלבון">חלבון<span class="sort-ind"></span></th>
+            <th class="n sortable" data-sort="carbs100" tabindex="0" role="button" aria-label="מיון לפי פחמימה">פחמימה<span class="sort-ind"></span></th>
+            <th class="n sortable" data-sort="fat100" tabindex="0" role="button" aria-label="מיון לפי שומן">שומן<span class="sort-ind"></span></th>
+            <th class="n sortable" data-sort="kcal_portion" tabindex="0" role="button" aria-label="מיון לפי קלוריות למנה">קלוריות למנה<span class="sort-ind"></span></th>
+          </tr></thead>
+          <tbody id="prodBody"></tbody>
+        </table>
+      </div>
+      <p class="note-line">מוצרים יבשים (אורז, פסטה, קטניות, קוסקוס, בורגול, קינואה) מוצגים במצב יבש, לפני בישול — אין להשוות יבש מול מבושל. המקרו בטבלה הוא ל-100 גרם; להמרה למנה: ערך × גרמים ÷ 100.</p>
+    </div>
+    <div class="stack" id="smartWrap"></div>
   </section>
 
   <!-- ===== 4. קטגוריות ויעדים ===== -->
@@ -625,6 +678,267 @@ var FOODS = [
 
 var FOOD_BY_ID = {};
 for (var fi=0; fi<FOODS.length; fi++){ FOOD_BY_ID[FOODS[fi].id] = FOODS[fi]; }
+
+/* ===== מוצרי סופר ממותגים (08 — רשימת המכולת) ===== */
+/* PRODUCTS_DATA_START */
+var PRODUCTS = [
+{"name":"קוטג' 5% שומן (מועשר בסידן)","brand":"תנובה","category":"מוצרי חלב, ביצים ותחליפי חלב","portion_desc":"חצי גביע","portion_grams":125,"kcal100":95,"protein100":11,"carbs100":1.5,"fat100":5,"kcal_portion":119,"protein_portion":13.8,"carbs_portion":1.9,"fat_portion":6.2,"source":"https://www.foodsdictionary.co.il/Products/5/קוטג` תנובה 5%"},
+{"name":"קוטג' 5% שומן","brand":"שטראוס","category":"מוצרי חלב, ביצים ותחליפי חלב","portion_desc":"חצי גביע","portion_grams":125,"kcal100":97,"protein100":10.2,"carbs100":2.4,"fat100":5,"kcal_portion":121,"protein_portion":12.8,"carbs_portion":3,"fat_portion":6.2,"source":"https://www.foodsdictionary.co.il/Products/6/קוטג` 5%"},
+{"name":"קוטג' 3% שומן","brand":"תנובה","category":"מוצרי חלב, ביצים ותחליפי חלב","portion_desc":"חצי גביע","portion_grams":125,"kcal100":77,"protein100":11,"carbs100":1.5,"fat100":3,"kcal_portion":96,"protein_portion":13.8,"carbs_portion":1.9,"fat_portion":3.8,"source":"https://www.tnuva.co.il/products/קוטג-3-שומן-250-גרם/"},
+{"name":"גבינה לבנה 5% שומן","brand":"תנובה","category":"מוצרי חלב, ביצים ותחליפי חלב","portion_desc":"3 כפות גדושות","portion_grams":60,"kcal100":98,"protein100":9,"carbs100":4.3,"fat100":5,"kcal_portion":59,"protein_portion":5.4,"carbs_portion":2.6,"fat_portion":3,"source":"https://www.foodsdictionary.co.il/Products/5/גבינה לבנה 5%"},
+{"name":"גבינה לבנה 5% שומן","brand":"טרה","category":"מוצרי חלב, ביצים ותחליפי חלב","portion_desc":"3 כפות גדושות","portion_grams":60,"kcal100":97,"protein100":8.1,"carbs100":4.9,"fat100":5,"kcal_portion":58,"protein_portion":4.9,"carbs_portion":2.9,"fat_portion":3,"source":"https://medplus.co.il/nutrition/גבינה-לבנה-5-שומן-טרה/"},
+{"name":"גבינה לבנה 9% שומן","brand":"תנובה","category":"מוצרי חלב, ביצים ותחליפי חלב","portion_desc":"3 כפות גדושות","portion_grams":60,"kcal100":127,"protein100":8.5,"carbs100":3,"fat100":9,"kcal_portion":76,"protein_portion":5.1,"carbs_portion":1.8,"fat_portion":5.4,"source":"https://foodiepedia.co.il/product/גבינה-לבנה-9-שומן/"},
+{"name":"יוגורט ביו טבעי 3% שומן","brand":"דנונה (שטראוס)","category":"מוצרי חלב, ביצים ותחליפי חלב","portion_desc":"גביע","portion_grams":150,"kcal100":70,"protein100":5.3,"carbs100":4.5,"fat100":3,"kcal_portion":105,"protein_portion":8,"carbs_portion":6.8,"fat_portion":4.5,"source":"https://www.foodsdictionary.co.il/Products/6/דנונה - ביו bio טבעי 3% שומן"},
+{"name":"יוגורט ביו טבעי 3% שומן","brand":"תנובה","category":"מוצרי חלב, ביצים ותחליפי חלב","portion_desc":"גביע","portion_grams":200,"kcal100":64,"protein100":5.3,"carbs100":4,"fat100":3,"kcal_portion":128,"protein_portion":10.6,"carbs_portion":8,"fat_portion":6,"source":"https://medplus.co.il/nutrition/יוגורט-ביו-3-שומן-תנובה/"},
+{"name":"SKYR יוגורט קרמי 2.9% שומן","brand":"דנונה (שטראוס)","category":"מוצרי חלב, ביצים ותחליפי חלב","portion_desc":"גביע","portion_grams":150,"kcal100":75,"protein100":8.2,"carbs100":3.5,"fat100":2.9,"kcal_portion":112,"protein_portion":12.3,"carbs_portion":5.2,"fat_portion":4.3,"source":"https://www.fuder.co.il/foods/skyr-יוגורט-קרמי-2-9-שומן-דנונה/"},
+{"name":"גבינה צהובה עמק 9% שומן","brand":"תנובה (עמק)","category":"מוצרי חלב, ביצים ותחליפי חלב","portion_desc":"פרוסה","portion_grams":20,"kcal100":202,"protein100":30,"carbs100":0.2,"fat100":9,"kcal_portion":40,"protein_portion":6,"carbs_portion":0,"fat_portion":1.8,"source":"https://www.foodsdictionary.co.il/Products/5/עמק 9% שומן"},
+{"name":"מוצרלה אצבעות עמק 20% שומן","brand":"תנובה (עמק)","category":"מוצרי חלב, ביצים ותחליפי חלב","portion_desc":"אצבע / פרוסה","portion_grams":30,"kcal100":277,"protein100":24,"carbs100":0.2,"fat100":20,"kcal_portion":83,"protein_portion":7.2,"carbs_portion":0.1,"fat_portion":6,"source":"https://medplus.co.il/nutrition/גבינת-מוצרלה-20-שומן/"},
+{"name":"גבינה בולגרית פיראוס 5% שומן","brand":"תנובה (פיראוס)","category":"מוצרי חלב, ביצים ותחליפי חלב","portion_desc":"2 קוביות","portion_grams":30,"kcal100":131,"protein100":20.4,"carbs100":1,"fat100":5,"kcal_portion":39,"protein_portion":6.1,"carbs_portion":0.3,"fat_portion":1.5,"source":"https://medplus.co.il/nutrition/גבינה-בולגרית-5-שומן/"},
+{"name":"גבינה בולגרית פיראוס 16% שומן","brand":"תנובה (פיראוס)","category":"מוצרי חלב, ביצים ותחליפי חלב","portion_desc":"2 קוביות","portion_grams":30,"kcal100":213,"protein100":17,"carbs100":0.2,"fat100":16,"kcal_portion":64,"protein_portion":5.1,"carbs_portion":0.1,"fat_portion":4.8,"source":"https://www.foodsdictionary.co.il/Products/5/פיראוס - בולגרית 16% שומן"},
+{"name":"גבינה בולגרית 5% שומן","brand":"מחלבות גד","category":"מוצרי חלב, ביצים ותחליפי חלב","portion_desc":"2 קוביות","portion_grams":30,"kcal100":93,"protein100":10,"carbs100":2,"fat100":5,"kcal_portion":28,"protein_portion":3,"carbs_portion":0.6,"fat_portion":1.5,"source":"https://www.foodsdictionary.co.il/Products/26/בולגרית 5% שומן"},
+{"name":"לאבנה טבעי 5% שומן","brand":"מחלבות גד","category":"מוצרי חלב, ביצים ותחליפי חלב","portion_desc":"כף גדושה","portion_grams":30,"kcal100":87,"protein100":8.5,"carbs100":2,"fat100":5,"kcal_portion":26,"protein_portion":2.5,"carbs_portion":0.6,"fat_portion":1.5,"source":"https://www.gad-dairy.co.il/cheeses/לאבנה-טבעי/"},
+{"name":"גבינת שמנת פילדלפיה מקורית 25% שומן","brand":"פילדלפיה (Philadelphia)","category":"מוצרי חלב, ביצים ותחליפי חלב","portion_desc":"כף","portion_grams":15,"kcal100":249,"protein100":3.7,"carbs100":2.9,"fat100":25,"kcal_portion":37,"protein_portion":0.6,"carbs_portion":0.4,"fat_portion":3.8,"source":"https://www.foodsdictionary.co.il/Products/233/ORIGINAL PHILADELPHIA - גבינת שמנת 25% שומן"},
+{"name":"שמנת מתוקה להקצפה 38% שומן","brand":"טרה","category":"מוצרי חלב, ביצים ותחליפי חלב","portion_desc":"כף","portion_grams":15,"kcal100":360,"protein100":2.2,"carbs100":2.4,"fat100":38,"kcal_portion":54,"protein_portion":0.3,"carbs_portion":0.4,"fat_portion":5.7,"source":"https://www.foodsdictionary.co.il/Products/72/שמנת מתוקה עמידה לקצפת 38%"},
+{"name":"שמנת חמוצה 15% שומן","brand":"תנובה","category":"מוצרי חלב, ביצים ותחליפי חלב","portion_desc":"כף גדושה","portion_grams":20,"kcal100":159,"protein100":2.7,"carbs100":3.3,"fat100":15,"kcal_portion":32,"protein_portion":0.5,"carbs_portion":0.7,"fat_portion":3,"source":"https://www.foodsdictionary.co.il/Products/5/שמנת אורגינל תנובה 15% שומן"},
+{"name":"חמאה","brand":"תנובה","category":"מוצרי חלב, ביצים ותחליפי חלב","portion_desc":"כפית","portion_grams":5,"kcal100":734,"protein100":0.5,"carbs100":0.8,"fat100":81,"kcal_portion":37,"protein_portion":0,"carbs_portion":0,"fat_portion":4,"source":"https://www.kaloria.co.il/product/חמאה תנובה"},
+{"name":"חלב 3% שומן מועשר בוויטמינים","brand":"תנובה","category":"מוצרי חלב, ביצים ותחליפי חלב","portion_desc":"כוס","portion_grams":200,"kcal100":57,"protein100":2.9,"carbs100":4.7,"fat100":3,"kcal_portion":114,"protein_portion":5.8,"carbs_portion":9.4,"fat_portion":6,"source":"https://www.foodsdictionary.co.il/Products/5/חלב 3% מועשר בויטמינים"},
+{"name":"חלב 1% שומן","brand":"תנובה","category":"מוצרי חלב, ביצים ותחליפי חלב","portion_desc":"כוס","portion_grams":200,"kcal100":43,"protein100":3.35,"carbs100":5.1,"fat100":1,"kcal_portion":86,"protein_portion":6.7,"carbs_portion":10.2,"fat_portion":2,"source":"https://foodiepedia.co.il/product/חלב-1-שומן/"},
+{"name":"משקה סויה טבעי","brand":"אלפרו (Alpro)","category":"מוצרי חלב, ביצים ותחליפי חלב","portion_desc":"כוס","portion_grams":200,"kcal100":39,"protein100":3,"carbs100":2.5,"fat100":1.8,"kcal_portion":78,"protein_portion":6,"carbs_portion":5,"fat_portion":3.6,"source":"https://www.kaloria.co.il/product/אלפרו משקה סויה"},
+{"name":"משקה שיבולת שועל","brand":"אלפרו (Alpro)","category":"מוצרי חלב, ביצים ותחליפי חלב","portion_desc":"כוס","portion_grams":200,"kcal100":46,"protein100":0,"carbs100":7.2,"fat100":1.5,"kcal_portion":92,"protein_portion":0,"carbs_portion":14.4,"fat_portion":3,"source":"https://foodiepedia.co.il/product/משקה-שיבולת-שועל/"},
+{"name":"משקה שקדים","brand":"אלפרו (Alpro)","category":"מוצרי חלב, ביצים ותחליפי חלב","portion_desc":"כוס","portion_grams":200,"kcal100":24,"protein100":0.5,"carbs100":3,"fat100":1.1,"kcal_portion":48,"protein_portion":1,"carbs_portion":6,"fat_portion":2.2,"source":"https://foodiepedia.co.il/product/משקה-שקדים/"},
+{"name":"שוקו קלאסי","brand":"תנובה","category":"מוצרי חלב, ביצים ותחליפי חלב","portion_desc":"בקבוק","portion_grams":200,"kcal100":52,"protein100":3.1,"carbs100":5,"fat100":1.9,"kcal_portion":104,"protein_portion":6.2,"carbs_portion":10,"fat_portion":3.8,"source":"https://foodiepedia.co.il/product/שוקו-תנובה-קלאסי/"},
+{"name":"שוקו","brand":"יטבתה","category":"מוצרי חלב, ביצים ותחליפי חלב","portion_desc":"קרטון","portion_grams":200,"kcal100":49,"protein100":3.2,"carbs100":5.3,"fat100":1.5,"kcal_portion":98,"protein_portion":6.4,"carbs_portion":10.6,"fat_portion":3,"source":"https://www.foodsdictionary.co.il/Products/32/שוקו"},
+{"name":"שוקו מועשר","brand":"טרה","category":"מוצרי חלב, ביצים ותחליפי חלב","portion_desc":"קרטון","portion_grams":200,"kcal100":46,"protein100":3.3,"carbs100":4.7,"fat100":1.5,"kcal_portion":92,"protein_portion":6.6,"carbs_portion":9.4,"fat_portion":3,"source":"https://foodiepedia.co.il/product/שוקו-מועשר/"},
+{"name":"ביצת תרנגולת שלמה טרייה, גודל L (כולל מועשרת אומגה 3 — ערכים זהים)","brand":"ביצי מאכל טריות (מועצת הלול)","category":"מוצרי חלב, ביצים ותחליפי חלב","portion_desc":"ביצה אחת (נטו, ללא קליפה)","portion_grams":55,"kcal100":143,"protein100":12.56,"carbs100":0.72,"fat100":9.51,"kcal_portion":79,"protein_portion":6.9,"carbs_portion":0.4,"fat_portion":5.2,"source":"https://www.foodsdictionary.co.il/Products/1/ביצה שלמה - טריה"},
+{"name":"נקניקיות עוף","brand":"זוגלובק (Soglowek)","category":"בשר, עוף, דגים ותחליפי בשר","portion_desc":"נקניקייה אחת","portion_grams":50,"kcal100":200,"protein100":11,"carbs100":5,"fat100":15,"kcal_portion":100,"protein_portion":5.5,"carbs_portion":2.5,"fat_portion":7.5,"source":"https://www.foodsdictionary.co.il/Products/27/נקניקיות עוף"},
+{"name":"נקניקיות חריפות","brand":"זוגלובק (Soglowek)","category":"בשר, עוף, דגים ותחליפי בשר","portion_desc":"נקניקייה אחת","portion_grams":50,"kcal100":226,"protein100":10,"carbs100":6,"fat100":18,"kcal_portion":113,"protein_portion":5,"carbs_portion":3,"fat_portion":9,"source":"https://www.foodsdictionary.co.il/Products/27/נקניקיות חריפות"},
+{"name":"סטייק עוף (100% חזה עוף)","brand":"זוגלובק (Soglowek)","category":"בשר, עוף, דגים ותחליפי בשר","portion_desc":"נתח / סטייק","portion_grams":100,"kcal100":185,"protein100":16,"carbs100":0,"fat100":13,"kcal_portion":185,"protein_portion":16,"carbs_portion":0,"fat_portion":13,"source":"https://www.foodsdictionary.co.il/Products/27/סטייק עוף"},
+{"name":"המבורגר פרגיות","brand":"זוגלובק (Soglowek)","category":"בשר, עוף, דגים ותחליפי בשר","portion_desc":"קציצה אחת","portion_grams":90,"kcal100":211,"protein100":14,"carbs100":0.5,"fat100":17,"kcal_portion":190,"protein_portion":12.6,"carbs_portion":0.5,"fat_portion":15.3,"source":"https://www.foodsdictionary.co.il/Products/27/המבורגר פרגיות"},
+{"name":"המבורגר זהב (בקר טחון)","brand":"זוגלובק (Soglowek)","category":"בשר, עוף, דגים ותחליפי בשר","portion_desc":"קציצה אחת","portion_grams":90,"kcal100":246,"protein100":15,"carbs100":1.5,"fat100":20,"kcal_portion":221,"protein_portion":13.5,"carbs_portion":1.4,"fat_portion":18,"source":"https://foodiepedia.co.il/product/המבורגר-זהב-מבקר-טחון/"},
+{"name":"קבב זהב (בקר)","brand":"זוגלובק (Soglowek)","category":"בשר, עוף, דגים ותחליפי בשר","portion_desc":"שיפוד אחד","portion_grams":80,"kcal100":244,"protein100":14,"carbs100":2,"fat100":20,"kcal_portion":195,"protein_portion":11.2,"carbs_portion":1.6,"fat_portion":16,"source":"https://www.foodsdictionary.co.il/Products/27/קבב זהב"},
+{"name":"קבב יווני","brand":"זוגלובק (Soglowek)","category":"בשר, עוף, דגים ותחליפי בשר","portion_desc":"שיפוד אחד","portion_grams":80,"kcal100":261,"protein100":14,"carbs100":4,"fat100":21,"kcal_portion":209,"protein_portion":11.2,"carbs_portion":3.2,"fat_portion":16.8,"source":"https://www.foodsdictionary.co.il/Products/27/קבב יווני"},
+{"name":"סלמי בסגנון איטלקי","brand":"זוגלובק (Soglowek)","category":"בשר, עוף, דגים ותחליפי בשר","portion_desc":"3 פרוסות","portion_grams":30,"kcal100":249,"protein100":14,"carbs100":3,"fat100":20,"kcal_portion":75,"protein_portion":4.2,"carbs_portion":0.9,"fat_portion":6,"source":"https://www.foodsdictionary.co.il/Products/27/סלמי בסגנון איטלקי"},
+{"name":"קבנוס","brand":"זוגלובק (Soglowek)","category":"בשר, עוף, דגים ותחליפי בשר","portion_desc":"יחידה","portion_grams":40,"kcal100":358,"protein100":20,"carbs100":6.5,"fat100":28,"kcal_portion":143,"protein_portion":8,"carbs_portion":2.6,"fat_portion":11.2,"source":"https://www.foodsdictionary.co.il/Products/27/קבנוס"},
+{"name":"פסטרמה חזה הודו Bar.B.Q","brand":"זוגלובק (Soglowek)","category":"בשר, עוף, דגים ותחליפי בשר","portion_desc":"2 פרוסות","portion_grams":40,"kcal100":113,"protein100":17.5,"carbs100":6,"fat100":2,"kcal_portion":45,"protein_portion":7,"carbs_portion":2.4,"fat_portion":0.8,"source":"https://www.foodsdictionary.co.il/Products/27/פסטרמה חזה הודו Bar.B.Q"},
+{"name":"פסטרמה הודו 1% שומן","brand":"זוגלובק (Soglowek)","category":"בשר, עוף, דגים ותחליפי בשר","portion_desc":"2 פרוסות","portion_grams":40,"kcal100":85,"protein100":14,"carbs100":5,"fat100":1,"kcal_portion":34,"protein_portion":5.6,"carbs_portion":2,"fat_portion":0.4,"source":"https://www.foodsdictionary.co.il/Products/27/פסטרמה הודו 1% שומן"},
+{"name":"בשר הודו טחון","brand":"טיבון ויל","category":"בשר, עוף, דגים ותחליפי בשר","portion_desc":"מנת טחון","portion_grams":100,"kcal100":148,"protein100":17,"carbs100":2,"fat100":8,"kcal_portion":148,"protein_portion":17,"carbs_portion":2,"fat_portion":8,"source":"https://foodiepedia.co.il/product/בשר-הודו-טחון/"},
+{"name":"בקר טחון לקציצות וקבב","brand":"טיבון ויל","category":"בשר, עוף, דגים ותחליפי בשר","portion_desc":"מנת טחון","portion_grams":100,"kcal100":184,"protein100":17,"carbs100":2,"fat100":12,"kcal_portion":184,"protein_portion":17,"carbs_portion":2,"fat_portion":12,"source":"https://foodiepedia.co.il/product/בקר-טחון-לקציצות-וקבב/"},
+{"name":"נתחי טונה בהירה בשמן זית","brand":"ויליגר (Wiliger)","category":"בשר, עוף, דגים ותחליפי בשר","portion_desc":"קופסה מסוננת","portion_grams":80,"kcal100":184,"protein100":28,"carbs100":0,"fat100":8,"kcal_portion":147,"protein_portion":22.4,"carbs_portion":0,"fat_portion":6.4,"source":"https://www.foodsdictionary.co.il/Products/241/נתחי טונה בהירה בשמן זית"},
+{"name":"נתחי טונה בהירה במים","brand":"ויליגר (Wiliger)","category":"בשר, עוף, דגים ותחליפי בשר","portion_desc":"קופסה מסוננת","portion_grams":80,"kcal100":94,"protein100":22,"carbs100":0,"fat100":0.6,"kcal_portion":75,"protein_portion":17.6,"carbs_portion":0,"fat_portion":0.5,"source":"https://www.foodsdictionary.co.il/Products/241/נתחי טונה בהירה במים"},
+{"name":"נתחי טונה בהירה בשמן זית","brand":"סטארקיסט (StarKist)","category":"בשר, עוף, דגים ותחליפי בשר","portion_desc":"קופסה מסוננת","portion_grams":80,"kcal100":213,"protein100":24,"carbs100":0,"fat100":13,"kcal_portion":170,"protein_portion":19.2,"carbs_portion":0,"fat_portion":10.4,"source":"https://www.foodsdictionary.co.il/Products/43/נתחי טונה בהירה בשמן זית"},
+{"name":"נתחי טונה בהירה בשמן קנולה","brand":"סטארקיסט (StarKist)","category":"בשר, עוף, דגים ותחליפי בשר","portion_desc":"קופסה מסוננת","portion_grams":80,"kcal100":194,"protein100":26,"carbs100":0,"fat100":10,"kcal_portion":155,"protein_portion":20.8,"carbs_portion":0,"fat_portion":8,"source":"https://www.foodsdictionary.co.il/Products/43/נתחי טונה בהירה בשמן קנולה"},
+{"name":"נתחי טונה בהירה במים","brand":"סטארקיסט (StarKist)","category":"בשר, עוף, דגים ותחליפי בשר","portion_desc":"קופסה מסוננת","portion_grams":80,"kcal100":103,"protein100":25,"carbs100":0,"fat100":0.6,"kcal_portion":82,"protein_portion":20,"carbs_portion":0,"fat_portion":0.5,"source":"https://www.foodsdictionary.co.il/Products/43/נתחי טונה בהירה במים"},
+{"name":"פילה סלמון פרמיום קפוא","brand":"תנובה","category":"בשר, עוף, דגים ותחליפי בשר","portion_desc":"פילה","portion_grams":120,"kcal100":212,"protein100":18.8,"carbs100":0,"fat100":15.2,"kcal_portion":254,"protein_portion":22.6,"carbs_portion":0,"fat_portion":18.2,"source":"https://www.foodsdictionary.co.il/Products/5/פילה סלמון פרמיום קפוא"},
+{"name":"סלמון נורווגי מעושן","brand":"דלידג'","category":"בשר, עוף, דגים ותחליפי בשר","portion_desc":"2-3 פרוסות","portion_grams":50,"kcal100":205,"protein100":21,"carbs100":1,"fat100":13,"kcal_portion":102,"protein_portion":10.5,"carbs_portion":0.5,"fat_portion":6.5,"source":"https://www.foodsdictionary.co.il/Products/162/סלמון נורווגי מעושן"},
+{"name":"פילה אמנון קפוא","brand":"שופרסל","category":"בשר, עוף, דגים ותחליפי בשר","portion_desc":"פילה","portion_grams":120,"kcal100":103,"protein100":20,"carbs100":0,"fat100":2.5,"kcal_portion":124,"protein_portion":24,"carbs_portion":0,"fat_portion":3,"source":"https://foodiepedia.co.il/product/פילה-אמנון-קפוא/"},
+{"name":"טופו קשה בטעם טבעי","brand":"משק ויילר (Wyler)","category":"בשר, עוף, דגים ותחליפי בשר","portion_desc":"קוביות (כרבע חבילה)","portion_grams":100,"kcal100":140,"protein100":16,"carbs100":1,"fat100":8,"kcal_portion":140,"protein_portion":16,"carbs_portion":1,"fat_portion":8,"source":"https://www.foodsdictionary.co.il/Products/667/טופו הבית במרקם קשה"},
+{"name":"לחם אחיד פרוס","brand":"מאפיית אנג'ל","category":"לחמים, דגנים ומאפים","portion_desc":"פרוסה","portion_grams":25,"kcal100":240,"protein100":9.2,"carbs100":45.1,"fat100":1.7,"kcal_portion":60,"protein_portion":2.3,"carbs_portion":11.3,"fat_portion":0.4,"source":"https://www.foodsdictionary.co.il/Products/90/לחם אחיד פרוס - אנג'ל"},
+{"name":"לחם אחיד פרוס","brand":"מאפיית ברמן","category":"לחמים, דגנים ומאפים","portion_desc":"פרוסה","portion_grams":25,"kcal100":248,"protein100":9.8,"carbs100":43,"fat100":3,"kcal_portion":62,"protein_portion":2.5,"carbs_portion":10.8,"fat_portion":0.8,"source":"https://www.foodsdictionary.co.il/Products/89/לחם כהה פרוס"},
+{"name":"לחם פשוט מלא (חיטה מלאה)","brand":"מאפיית אנג'ל","category":"לחמים, דגנים ומאפים","portion_desc":"פרוסה","portion_grams":30,"kcal100":227,"protein100":11.2,"carbs100":36.6,"fat100":2.4,"kcal_portion":68,"protein_portion":3.4,"carbs_portion":11,"fat_portion":0.7,"source":"https://www.foodsdictionary.co.il/Products/90/פשוט מלא - לחם מלא פרוס"},
+{"name":"לחם עינן","brand":"מאפיית אנג'ל","category":"לחמים, דגנים ומאפים","portion_desc":"פרוסה","portion_grams":35,"kcal100":247,"protein100":11.5,"carbs100":39.8,"fat100":4.6,"kcal_portion":86,"protein_portion":4,"carbs_portion":13.9,"fat_portion":1.6,"source":"https://www.foodsdictionary.co.il/Products/90/לחם עינן"},
+{"name":"לחם 100 קל בתוספת שיפון","brand":"מאפיית אנג'ל","category":"לחמים, דגנים ומאפים","portion_desc":"פרוסה","portion_grams":20,"kcal100":216,"protein100":10.8,"carbs100":33.2,"fat100":2.8,"kcal_portion":43,"protein_portion":2.2,"carbs_portion":6.6,"fat_portion":0.6,"source":"https://www.angel.co.il/document/62,126,5.aspx"},
+{"name":"פיתה","brand":"מאפיית אנג'ל","category":"לחמים, דגנים ומאפים","portion_desc":"פיתה אחת","portion_grams":65,"kcal100":235,"protein100":7.4,"carbs100":47.2,"fat100":1.2,"kcal_portion":153,"protein_portion":4.8,"carbs_portion":30.7,"fat_portion":0.8,"source":"https://foodiepedia.co.il/product/פיתה-פיתה/"},
+{"name":"לחמנייה","brand":"מאפיית אנג'ל","category":"לחמים, דגנים ומאפים","portion_desc":"לחמנייה אחת","portion_grams":60,"kcal100":262,"protein100":10.6,"carbs100":49,"fat100":1.7,"kcal_portion":157,"protein_portion":6.4,"carbs_portion":29.4,"fat_portion":1,"source":"https://www.foodsdictionary.co.il/Products/90/הלחמניה"},
+{"name":"לחמניות המבורגר","brand":"מאפיית אנג'ל","category":"לחמים, דגנים ומאפים","portion_desc":"לחמנייה אחת","portion_grams":70,"kcal100":276,"protein100":9.3,"carbs100":49.2,"fat100":3.9,"kcal_portion":193,"protein_portion":6.5,"carbs_portion":34.4,"fat_portion":2.7,"source":"https://www.foodsdictionary.co.il/Products/90/לחמניות המבורגר"},
+{"name":"טורטייה חיטה מלאה","brand":"מאסטר שף","category":"לחמים, דגנים ומאפים","portion_desc":"טורטייה אחת","portion_grams":50,"kcal100":309,"protein100":7.8,"carbs100":47,"fat100":8.3,"kcal_portion":154,"protein_portion":3.9,"carbs_portion":23.5,"fat_portion":4.2,"source":"https://foodiepedia.co.il/product/טורטיה-חיטה-מלאה/"},
+{"name":"קוואקר שיבולת שועל","brand":"קוואקר (Quaker)","category":"לחמים, דגנים ומאפים","portion_desc":"חצי כוס יבש","portion_grams":40,"kcal100":374,"protein100":11,"carbs100":69,"fat100":8,"kcal_portion":150,"protein_portion":4.4,"carbs_portion":27.6,"fat_portion":3.2,"source":"https://www.foodsdictionary.co.il/Products/349/QUAKER - שיבולת שועל"},
+{"name":"גרנולה תפוח עץ וקינמון","brand":"תלמה","category":"לחמים, דגנים ומאפים","portion_desc":"חצי כוס","portion_grams":45,"kcal100":408,"protein100":10,"carbs100":65,"fat100":12,"kcal_portion":184,"protein_portion":4.5,"carbs_portion":29.2,"fat_portion":5.4,"source":"https://medplus.co.il/nutrition/דגני-בוקר-גרנולה/"},
+{"name":"קורנפלקס וניל","brand":"תלמה","category":"לחמים, דגנים ומאפים","portion_desc":"כוס","portion_grams":30,"kcal100":379,"protein100":5.8,"carbs100":86.8,"fat100":0.9,"kcal_portion":114,"protein_portion":1.7,"carbs_portion":26,"fat_portion":0.3,"source":"https://www.foodsdictionary.co.il/Products/35/קורנפלקס וניל"},
+{"name":"פיטנס בטעם שקדים ודבש","brand":"תלמה","category":"לחמים, דגנים ומאפים","portion_desc":"כוס","portion_grams":30,"kcal100":386,"protein100":10,"carbs100":70.1,"fat100":5.6,"kcal_portion":116,"protein_portion":3,"carbs_portion":21,"fat_portion":1.7,"source":"https://foodiepedia.co.il/product/פיטנס-בטעם-שקדים-ודבש-דגני-בוקר/"},
+{"name":"ברנפלקס","brand":"תלמה","category":"לחמים, דגנים ומאפים","portion_desc":"כוס","portion_grams":40,"kcal100":341,"protein100":11.9,"carbs100":56.2,"fat100":2.7,"kcal_portion":136,"protein_portion":4.8,"carbs_portion":22.5,"fat_portion":1.1,"source":"https://www.fuder.co.il/foods/דגני-בוקר-ברנפלקס-תלמה/"},
+{"name":"אורז בסמטי קלאסי (יבש)","brand":"סוגת","category":"לחמים, דגנים ומאפים","portion_desc":"כוס יבשה","portion_grams":75,"kcal100":351,"protein100":8.7,"carbs100":77.4,"fat100":0.7,"kcal_portion":263,"protein_portion":6.5,"carbs_portion":58,"fat_portion":0.5,"source":"https://www.foodsdictionary.co.il/Products/63/אורז בסמטי קלאסי"},
+{"name":"אורז בסמטי מלא (יבש)","brand":"סוגת","category":"לחמים, דגנים ומאפים","portion_desc":"כוס יבשה","portion_grams":75,"kcal100":359,"protein100":8.4,"carbs100":74.6,"fat100":3,"kcal_portion":269,"protein_portion":6.3,"carbs_portion":56,"fat_portion":2.2,"source":"https://www.foodsdictionary.co.il/Products/63/אורז בסמטי מלא"},
+{"name":"אורז יסמין קלאסי (יבש)","brand":"סוגת","category":"לחמים, דגנים ומאפים","portion_desc":"כוס יבשה","portion_grams":75,"kcal100":350,"protein100":7.3,"carbs100":78.5,"fat100":0.7,"kcal_portion":262,"protein_portion":5.5,"carbs_portion":58.9,"fat_portion":0.5,"source":"https://www.foodsdictionary.co.il/Products/63/אורז יסמין קלאסי"},
+{"name":"פסטה ספגטי 8 (יבש)","brand":"אסם","category":"לחמים, דגנים ומאפים","portion_desc":"מנה יבשה","portion_grams":85,"kcal100":351,"protein100":11,"carbs100":71,"fat100":1.8,"kcal_portion":298,"protein_portion":9.3,"carbs_portion":60.4,"fat_portion":1.5,"source":"https://www.foodsdictionary.co.il/Products/4/פסטה - ספגטי 8"},
+{"name":"פסטה ספגטי (יבש)","brand":"ברילה","category":"לחמים, דגנים ומאפים","portion_desc":"מנה יבשה","portion_grams":85,"kcal100":357,"protein100":12.5,"carbs100":75,"fat100":1.8,"kcal_portion":303,"protein_portion":10.6,"carbs_portion":63.8,"fat_portion":1.5,"source":"https://www.recipal.com/ingredients/8777-nutrition-facts-barilla-pasta-dry-enriched"},
+{"name":"פתיתים אפויים כוכבים (יבש)","brand":"אסם","category":"לחמים, דגנים ומאפים","portion_desc":"כף גדושה (יבש)","portion_grams":50,"kcal100":360,"protein100":11,"carbs100":74,"fat100":1.4,"kcal_portion":180,"protein_portion":5.5,"carbs_portion":37,"fat_portion":0.7,"source":"https://www.foodsdictionary.co.il/Products/4/פתיתים אפויים - כוכבים"},
+{"name":"קוסקוס בינוני (יבש)","brand":"אסם","category":"לחמים, דגנים ומאפים","portion_desc":"כוס יבשה","portion_grams":75,"kcal100":353,"protein100":9.5,"carbs100":75,"fat100":1,"kcal_portion":265,"protein_portion":7.1,"carbs_portion":56.2,"fat_portion":0.8,"source":"https://www.foodsdictionary.co.il/Products/4/קוסקוס בינוני"},
+{"name":"בורגול גס (יבש)","brand":"כללי (ללא מותג)","category":"לחמים, דגנים ומאפים","portion_desc":"כוס יבשה","portion_grams":75,"kcal100":342,"protein100":12.29,"carbs100":75.87,"fat100":1.33,"kcal_portion":256,"protein_portion":9.2,"carbs_portion":56.9,"fat_portion":1,"source":"https://www.foodsdictionary.co.il/Products/1/בורגול יבש"},
+{"name":"קינואה (יבשה)","brand":"כללי (ללא מותג)","category":"לחמים, דגנים ומאפים","portion_desc":"כוס יבשה","portion_grams":75,"kcal100":368,"protein100":14.12,"carbs100":64.16,"fat100":6.07,"kcal_portion":276,"protein_portion":10.6,"carbs_portion":48.1,"fat_portion":4.6,"source":"https://www.foodsdictionary.co.il/Products/1/קינואה"},
+{"name":"עדשים אדומות יבשות","brand":"מיה (Maya)","category":"קטניות, שימורים, ממרחים ורטבים","portion_desc":"רבע כוס (יבשות, לפני בישול)","portion_grams":50,"kcal100":350,"protein100":25.3,"carbs100":58.4,"fat100":1.7,"kcal_portion":175,"protein_portion":12.7,"carbs_portion":29.2,"fat_portion":0.8,"source":"https://www.fitlife.co.il/עדשים-אדומות/"},
+{"name":"עדשים ירוקות יבשות","brand":"מיה (Maya)","category":"קטניות, שימורים, ממרחים ורטבים","portion_desc":"רבע כוס (יבשות, לפני בישול)","portion_grams":50,"kcal100":353,"protein100":25,"carbs100":60,"fat100":1,"kcal_portion":176,"protein_portion":12.5,"carbs_portion":30,"fat_portion":0.5,"source":"https://www.foodsdictionary.co.il/Products/18/עדשים ירוקים"},
+{"name":"גרגירי חומוס בשימורים","brand":"יכין","category":"קטניות, שימורים, ממרחים ורטבים","portion_desc":"חצי קופסה מסוננת","portion_grams":130,"kcal100":145,"protein100":8,"carbs100":21,"fat100":2.4,"kcal_portion":188,"protein_portion":10.4,"carbs_portion":27.3,"fat_portion":3.1,"source":"https://www.yachin.co.il/product/גרעיני-חומוס-יכין-550גר/"},
+{"name":"גרגירי חומוס בשימורים","brand":"סוגת","category":"קטניות, שימורים, ממרחים ורטבים","portion_desc":"חצי קופסה מסוננת","portion_grams":130,"kcal100":120,"protein100":6.6,"carbs100":16.2,"fat100":2,"kcal_portion":156,"protein_portion":8.6,"carbs_portion":21.1,"fat_portion":2.6,"source":"https://www.sugat.com/products/canned-chickpeas/"},
+{"name":"שעועית לבנה ברוטב עגבניות (שימורים)","brand":"יכין","category":"קטניות, שימורים, ממרחים ורטבים","portion_desc":"כוס","portion_grams":150,"kcal100":107,"protein100":6.3,"carbs100":18,"fat100":0.6,"kcal_portion":160,"protein_portion":9.4,"carbs_portion":27,"fat_portion":0.9,"source":"https://www.foodsdictionary.co.il/Products/53/שעועית לבנה ברוטב עגבניות"},
+{"name":"שעועית אדומה ברוטב עגבניות צ'ילי (שימורים)","brand":"יכין","category":"קטניות, שימורים, ממרחים ורטבים","portion_desc":"כוס","portion_grams":150,"kcal100":83,"protein100":5,"carbs100":14,"fat100":0.4,"kcal_portion":124,"protein_portion":7.5,"carbs_portion":21,"fat_portion":0.6,"source":"https://www.kaloria.co.il/product/שעועית אדומה ברוטב עגבניות צ'ילי"},
+{"name":"תירס מתוק לייט (שימורים)","brand":"יכין","category":"קטניות, שימורים, ממרחים ורטבים","portion_desc":"חצי כוס מסוננת","portion_grams":75,"kcal100":45,"protein100":1.9,"carbs100":8,"fat100":0.9,"kcal_portion":34,"protein_portion":1.4,"carbs_portion":6,"fat_portion":0.7,"source":"https://www.foodsdictionary.co.il/Products/53/תירס לייט"},
+{"name":"אפונת גינה וגזר (שימורים)","brand":"יכין","category":"קטניות, שימורים, ממרחים ורטבים","portion_desc":"חצי כוס מסוננת","portion_grams":75,"kcal100":49,"protein100":2.5,"carbs100":8,"fat100":0,"kcal_portion":37,"protein_portion":1.9,"carbs_portion":6,"fat_portion":0,"source":"https://www.foodsdictionary.co.il/Products/53/אפונת גינה וגזר"},
+{"name":"חומוס מוכן","brand":"אחלה (שטראוס)","category":"קטניות, שימורים, ממרחים ורטבים","portion_desc":"3 כפות","portion_grams":60,"kcal100":186,"protein100":7.9,"carbs100":10.5,"fat100":11,"kcal_portion":112,"protein_portion":4.7,"carbs_portion":6.3,"fat_portion":6.6,"source":"https://www.foodsdictionary.co.il/Products/6/חומוס אחלה"},
+{"name":"חומוס מוכן","brand":"צבר","category":"קטניות, שימורים, ממרחים ורטבים","portion_desc":"3 כפות","portion_grams":60,"kcal100":218,"protein100":8.2,"carbs100":15,"fat100":14,"kcal_portion":131,"protein_portion":4.9,"carbs_portion":9,"fat_portion":8.4,"source":"https://www.b144.co.il/Magazine/ערכים-תזונתיים-בחומוס/"},
+{"name":"טחינה גולמית","brand":"אחווה","category":"קטניות, שימורים, ממרחים ורטבים","portion_desc":"כף","portion_grams":15,"kcal100":667,"protein100":24,"carbs100":2,"fat100":60,"kcal_portion":100,"protein_portion":3.6,"carbs_portion":0.3,"fat_portion":9,"source":"https://www.foodsdictionary.co.il/Products/25/טחינה אחוה"},
+{"name":"טחינה גולמית","brand":"הר ברכה","category":"קטניות, שימורים, ממרחים ורטבים","portion_desc":"כף","portion_grams":15,"kcal100":699,"protein100":20.5,"carbs100":13.3,"fat100":62.8,"kcal_portion":105,"protein_portion":3.1,"carbs_portion":2,"fat_portion":9.4,"source":"https://foodiepedia.co.il/product/טחינה-הר-ברכה/"},
+{"name":"חמאת בוטנים טבעית עם שברי בוטנים","brand":"שופרסל גרין","category":"קטניות, שימורים, ממרחים ורטבים","portion_desc":"כף","portion_grams":16,"kcal100":676,"protein100":27,"carbs100":16.6,"fat100":53.4,"kcal_portion":108,"protein_portion":4.3,"carbs_portion":2.7,"fat_portion":8.5,"source":"https://foodiepedia.co.il/product/חמאת-בוטנים-טבעית-עם-שברי-בוטנים/"},
+{"name":"קטשופ","brand":"אסם","category":"קטניות, שימורים, ממרחים ורטבים","portion_desc":"כף","portion_grams":17,"kcal100":109,"protein100":1.8,"carbs100":25.5,"fat100":0,"kcal_portion":19,"protein_portion":0.3,"carbs_portion":4.3,"fat_portion":0,"source":"https://medplus.co.il/nutrition/קטשופ-אוסם/"},
+{"name":"קטשופ","brand":"היינץ","category":"קטניות, שימורים, ממרחים ורטבים","portion_desc":"כף","portion_grams":17,"kcal100":102,"protein100":1.2,"carbs100":23.2,"fat100":0.1,"kcal_portion":17,"protein_portion":0.2,"carbs_portion":3.9,"fat_portion":0,"source":"https://www.foodsdictionary.co.il/Products/8/קטשופ (היינץ)"},
+{"name":"מיונז אמיתי","brand":"תלמה","category":"קטניות, שימורים, ממרחים ורטבים","portion_desc":"כף","portion_grams":15,"kcal100":600,"protein100":0.7,"carbs100":3,"fat100":65,"kcal_portion":90,"protein_portion":0.1,"carbs_portion":0.5,"fat_portion":9.8,"source":"https://www.foodsdictionary.co.il/Products/35/מיונז אמיתי (תלמה)"},
+{"name":"מיונז אמיתי","brand":"היינץ","category":"קטניות, שימורים, ממרחים ורטבים","portion_desc":"כף","portion_grams":15,"kcal100":664,"protein100":0.8,"carbs100":3,"fat100":70,"kcal_portion":100,"protein_portion":0.1,"carbs_portion":0.5,"fat_portion":10.5,"source":"https://www.foodsdictionary.co.il/Products/8/מיונז אמיתי (היינץ)"},
+{"name":"רסק עגבניות 100%","brand":"יכין","category":"קטניות, שימורים, ממרחים ורטבים","portion_desc":"כף","portion_grams":18,"kcal100":79,"protein100":3.5,"carbs100":14,"fat100":0,"kcal_portion":14,"protein_portion":0.6,"carbs_portion":2.5,"fat_portion":0,"source":"https://foodiepedia.co.il/product/רסק-100-עגבניות/"},
+{"name":"זיתים ירוקים טבעות","brand":"בית השיטה","category":"קטניות, שימורים, ממרחים ורטבים","portion_desc":"5 זיתים","portion_grams":25,"kcal100":141,"protein100":1.2,"carbs100":2.5,"fat100":14,"kcal_portion":35,"protein_portion":0.3,"carbs_portion":0.6,"fat_portion":3.5,"source":"https://www.foodsdictionary.co.il/Products/10/זיתים ירוקים טבעות"},
+{"name":"שמן זית כתית מעולה","brand":"יד מרדכי","category":"קטניות, שימורים, ממרחים ורטבים","portion_desc":"כף","portion_grams":14,"kcal100":828,"protein100":0,"carbs100":0,"fat100":92,"kcal_portion":116,"protein_portion":0,"carbs_portion":0,"fat_portion":12.9,"source":"https://foodiepedia.co.il/product/שמן-זית-1-עדין/"},
+{"name":"רוטב סויה","brand":"קיקומן","category":"קטניות, שימורים, ממרחים ורטבים","portion_desc":"כף","portion_grams":16,"kcal100":70,"protein100":10.3,"carbs100":7.3,"fat100":0,"kcal_portion":11,"protein_portion":1.6,"carbs_portion":1.2,"fat_portion":0,"source":"https://www.foodsdictionary.co.il/Products/386/רוטב סויה קיקומן"},
+{"name":"במבה קלאסית","brand":"אסם","category":"חטיפים, ממתקים וקינוחים","portion_desc":"חופן / שקית קטנה","portion_grams":25,"kcal100":534,"protein100":17.5,"carbs100":39.5,"fat100":34,"kcal_portion":134,"protein_portion":4.4,"carbs_portion":9.9,"fat_portion":8.5,"source":"https://medplus.co.il/nutrition/חטיף-בוטנים-במבה/"},
+{"name":"ביסלי בטעם גריל","brand":"אסם","category":"חטיפים, ממתקים וקינוחים","portion_desc":"שקית חטיף בודדת","portion_grams":25,"kcal100":507,"protein100":10,"carbs100":65,"fat100":23,"kcal_portion":127,"protein_portion":2.5,"carbs_portion":16.2,"fat_portion":5.8,"source":"https://www.foodsdictionary.co.il/Products/4/ביסלי בטעם גריל"},
+{"name":"אפרופו קלאסי","brand":"אסם","category":"חטיפים, ממתקים וקינוחים","portion_desc":"חופן","portion_grams":25,"kcal100":538,"protein100":4.5,"carbs100":62.5,"fat100":30,"kcal_portion":134,"protein_portion":1.1,"carbs_portion":15.6,"fat_portion":7.5,"source":"https://www.foodsdictionary.co.il/Products/4/אפרופו"},
+{"name":"תפוצ'יפס בטעם טבעי","brand":"אסם","category":"חטיפים, ממתקים וקינוחים","portion_desc":"חופן","portion_grams":25,"kcal100":549,"protein100":5.9,"carbs100":53,"fat100":35,"kcal_portion":137,"protein_portion":1.5,"carbs_portion":13.2,"fat_portion":8.8,"source":"https://www.foodsdictionary.co.il/Products/19/תפוצ'יפס בטעם טבעי"},
+{"name":"פופקו — פופקורן בטעם במבה","brand":"אסם","category":"חטיפים, ממתקים וקינוחים","portion_desc":"שקית / קערה קטנה","portion_grams":30,"kcal100":519,"protein100":11,"carbs100":58,"fat100":27,"kcal_portion":156,"protein_portion":3.3,"carbs_portion":17.4,"fat_portion":8.1,"source":"https://www.foodsdictionary.co.il/Products/4/פופקו - פופקורן במבה"},
+{"name":"בייגלה עיגולים קלאסי","brand":"אסם","category":"חטיפים, ממתקים וקינוחים","portion_desc":"חופן","portion_grams":30,"kcal100":400,"protein100":10.5,"carbs100":74,"fat100":6,"kcal_portion":120,"protein_portion":3.1,"carbs_portion":22.2,"fat_portion":1.8,"source":"https://www.foodsdictionary.co.il/Products/4/בייגלה עיגולים - קלאסי"},
+{"name":"שוקולד פרה חלב","brand":"עלית (שטראוס)","category":"חטיפים, ממתקים וקינוחים","portion_desc":"רבע חפיסה (כ-4 קוביות)","portion_grams":25,"kcal100":538,"protein100":8.8,"carbs100":54,"fat100":32,"kcal_portion":134,"protein_portion":2.2,"carbs_portion":13.5,"fat_portion":8,"source":"https://foodiepedia.co.il/product/שוקולד-פרה-חלב-עלית/"},
+{"name":"קליק נוגט","brand":"עלית (שטראוס)","category":"חטיפים, ממתקים וקינוחים","portion_desc":"חטיף בודד","portion_grams":35,"kcal100":544,"protein100":8,"carbs100":57,"fat100":31.5,"kcal_portion":190,"protein_portion":2.8,"carbs_portion":19.9,"fat_portion":11,"source":"https://www.foodsdictionary.co.il/Products/47/קליק נוגט"},
+{"name":"פסק זמן קלאסי","brand":"עלית (שטראוס)","category":"חטיפים, ממתקים וקינוחים","portion_desc":"חטיף בודד","portion_grams":30,"kcal100":552,"protein100":8.2,"carbs100":52,"fat100":34,"kcal_portion":166,"protein_portion":2.5,"carbs_portion":15.6,"fat_portion":10.2,"source":"https://foodiepedia.co.il/product/פסק-זמן-קלאסי/"},
+{"name":"ממרח פסק זמן","brand":"עלית (שטראוס)","category":"חטיפים, ממתקים וקינוחים","portion_desc":"כף מריחה","portion_grams":20,"kcal100":552,"protein100":7.4,"carbs100":54,"fat100":33,"kcal_portion":110,"protein_portion":1.5,"carbs_portion":10.8,"fat_portion":6.6,"source":"https://foodiepedia.co.il/product/ממרח-פסק-זמן/"},
+{"name":"עוגיות חיוכים","brand":"עלית (שטראוס)","category":"חטיפים, ממתקים וקינוחים","portion_desc":"5 יחידות","portion_grams":30,"kcal100":484,"protein100":5,"carbs100":71,"fat100":20,"kcal_portion":145,"protein_portion":1.5,"carbs_portion":21.3,"fat_portion":6,"source":"https://www.foodsdictionary.co.il/Products/19/חיוכים עוגיות"},
+{"name":"עוגיות עד חצות דאבל","brand":"עלית (שטראוס)","category":"חטיפים, ממתקים וקינוחים","portion_desc":"2 עוגיות","portion_grams":26,"kcal100":499,"protein100":6.2,"carbs100":66,"fat100":23,"kcal_portion":130,"protein_portion":1.6,"carbs_portion":17.2,"fat_portion":6,"source":"https://foodiepedia.co.il/product/עוגיות-עד-חצות-דאבל/"},
+{"name":"עוגיות עד חצות אצבעות","brand":"עלית (שטראוס)","category":"חטיפים, ממתקים וקינוחים","portion_desc":"3 יחידות","portion_grams":30,"kcal100":515,"protein100":6.5,"carbs100":63,"fat100":26,"kcal_portion":154,"protein_portion":1.9,"carbs_portion":18.9,"fat_portion":7.8,"source":"https://foodiepedia.co.il/product/עוגיות-עד-חצות-אצבעות/"},
+{"name":"טורטית וופל מצופה שוקולד","brand":"עלית (שטראוס)","category":"חטיפים, ממתקים וקינוחים","portion_desc":"חטיף בודד","portion_grams":30,"kcal100":582,"protein100":7.5,"carbs100":60,"fat100":34,"kcal_portion":175,"protein_portion":2.2,"carbs_portion":18,"fat_portion":10.2,"source":"https://www.foodsdictionary.co.il/Products/19/טורטית"},
+{"name":"קרמיסימו וניל","brand":"עלית (שטראוס)","category":"חטיפים, ממתקים וקינוחים","portion_desc":"כדור גלידה אחד","portion_grams":60,"kcal100":187,"protein100":3.6,"carbs100":23.6,"fat100":8.7,"kcal_portion":112,"protein_portion":2.2,"carbs_portion":14.2,"fat_portion":5.2,"source":"https://www.foodsdictionary.co.il/Products/6/קרמיסימו וניל"},
+{"name":"מגנום קלאסיק וניל","brand":"מגנום (שטראוס)","category":"חטיפים, ממתקים וקינוחים","portion_desc":"מקל גלידה אחד","portion_grams":80,"kcal100":328,"protein100":3.3,"carbs100":33.3,"fat100":20.2,"kcal_portion":262,"protein_portion":2.6,"carbs_portion":26.6,"fat_portion":16.2,"source":"https://foodiepedia.co.il/product/גלידה-מגנום-וניל-קלאסיק/"},
+{"name":"YOLO עם שוקולד חלב","brand":"תנובה","category":"חטיפים, ממתקים וקינוחים","portion_desc":"גביע","portion_grams":140,"kcal100":178,"protein100":5.1,"carbs100":21.4,"fat100":7.8,"kcal_portion":249,"protein_portion":7.1,"carbs_portion":30,"fat_portion":10.9,"source":"https://www.foodsdictionary.co.il/Products/5/YOLO עם שוקולד חלב"},
+{"name":"דבש טהור מפרחי בר","brand":"יד מרדכי","category":"חטיפים, ממתקים וקינוחים","portion_desc":"כף","portion_grams":21,"kcal100":320,"protein100":0,"carbs100":80,"fat100":0,"kcal_portion":67,"protein_portion":0,"carbs_portion":16.8,"fat_portion":0,"source":"https://www.foodsdictionary.co.il/Products/23/דבש טהור מפרחי בר"},
+{"name":"סילאן טבעי 100% תמרים","brand":"מיה (Maya)","category":"חטיפים, ממתקים וקינוחים","portion_desc":"כף","portion_grams":20,"kcal100":279,"protein100":3,"carbs100":63,"fat100":0,"kcal_portion":56,"protein_portion":0.6,"carbs_portion":12.6,"fat_portion":0,"source":"https://www.foodsdictionary.co.il/Products/18/סילאן טבעי 100% תמרים"},
+{"name":"ריבת משמש","brand":"ויטה","category":"חטיפים, ממתקים וקינוחים","portion_desc":"כף","portion_grams":20,"kcal100":252,"protein100":0,"carbs100":63,"fat100":0,"kcal_portion":50,"protein_portion":0,"carbs_portion":12.6,"fat_portion":0,"source":"https://www.foodsdictionary.co.il/Products/11/ריבת משמש"},
+{"name":"ממרח שוקולד קלאסי","brand":"השחר העולה","category":"חטיפים, ממתקים וקינוחים","portion_desc":"כף מריחה","portion_grams":20,"kcal100":504,"protein100":3.57,"carbs100":65,"fat100":25.5,"kcal_portion":101,"protein_portion":0.7,"carbs_portion":13,"fat_portion":5.1,"source":"https://foodiepedia.co.il/product/ממרח-שוקולד-השחר-קלאסי/"},
+{"name":"שניצל תירס קלאסי","brand":"טבעול","category":"קפואים ומוכנים","portion_desc":"יחידה (שניצל אחד)","portion_grams":83,"kcal100":206,"protein100":7.5,"carbs100":22.7,"fat100":8.8,"kcal_portion":171,"protein_portion":6.2,"carbs_portion":18.8,"fat_portion":7.3,"source":"https://www.tivall.co.il/products/corn-schnitzel-classic-750gr"},
+{"name":"שניצל תירס דק (קראנץ')","brand":"טבעול","category":"קפואים ומוכנים","portion_desc":"יחידה","portion_grams":45,"kcal100":231,"protein100":7.9,"carbs100":17.4,"fat100":13.6,"kcal_portion":104,"protein_portion":3.6,"carbs_portion":7.8,"fat_portion":6.1,"source":"https://www.tivall.co.il/product/qrnz-snyzl-tyrs-dq-490-grm"},
+{"name":"נאגטס מן הצומח ללא גלוטן","brand":"טבעול","category":"קפואים ומוכנים","portion_desc":"כ-6 יחידות","portion_grams":90,"kcal100":225,"protein100":13,"carbs100":12.2,"fat100":12.5,"kcal_portion":202,"protein_portion":11.7,"carbs_portion":11,"fat_portion":11.2,"source":"https://www.tivall.co.il/product/Nuggets-gluten-free"},
+{"name":"נקניקיות וינר צמחוניות","brand":"טבעול","category":"קפואים ומוכנים","portion_desc":"2 יחידות","portion_grams":68,"kcal100":215,"protein100":19,"carbs100":1.7,"fat100":13.8,"kcal_portion":146,"protein_portion":12.9,"carbs_portion":1.2,"fat_portion":9.4,"source":"https://www.tivall.co.il/product/vegetarian-sausages"},
+{"name":"כדורי בשר (קציצות) צמחוניים","brand":"טבעול","category":"קפואים ומוכנים","portion_desc":"6 יחידות","portion_grams":84,"kcal100":204,"protein100":20.7,"carbs100":5.7,"fat100":9.3,"kcal_portion":171,"protein_portion":17.4,"carbs_portion":4.8,"fat_portion":7.8,"source":"https://www.tivall.co.il/product/meatballs"},
+{"name":"קציצות עדשים כתומות","brand":"טבעול","category":"קפואים ומוכנים","portion_desc":"2 יחידות","portion_grams":70,"kcal100":191,"protein100":6.8,"carbs100":20.8,"fat100":8,"kcal_portion":134,"protein_portion":4.8,"carbs_portion":14.6,"fat_portion":5.6,"source":"https://www.tivall.co.il/product/vegan-lentils-meatballs"},
+{"name":"שניצל צמחוני 99 קלוריות","brand":"טבעול","category":"קפואים ומוכנים","portion_desc":"יחידה אחת","portion_grams":60,"kcal100":165,"protein100":12.3,"carbs100":6.8,"fat100":8,"kcal_portion":99,"protein_portion":7.4,"carbs_portion":4.1,"fat_portion":4.8,"source":"https://www.tivall.co.il/product/99-cal-vegeterian-schnitzel"},
+{"name":"המבורגר צמחוני 99 קלוריות","brand":"טבעול","category":"קפואים ומוכנים","portion_desc":"יחידה אחת","portion_grams":68,"kcal100":146,"protein100":19,"carbs100":4.7,"fat100":4.2,"kcal_portion":99,"protein_portion":12.9,"carbs_portion":3.2,"fat_portion":2.9,"source":"https://www.tivall.co.il/product/99-cal-vegeterian-burger"},
+{"name":"שניצל עוף אמיתי (ציפוי מעודן)","brand":"עוף טוב","category":"קפואים ומוכנים","portion_desc":"יחידה (שניצל אחד)","portion_grams":90,"kcal100":205,"protein100":16,"carbs100":17,"fat100":8,"kcal_portion":184,"protein_portion":14.4,"carbs_portion":15.3,"fat_portion":7.2,"source":"https://www.foodsdictionary.co.il/Products/164/שניצל עוף אמיתי - ציפוי מעודן"},
+{"name":"שניצלונים (עוף פריך)","brand":"עוף טוב","category":"קפואים ומוכנים","portion_desc":"כ-4 יחידות","portion_grams":80,"kcal100":241,"protein100":11,"carbs100":22,"fat100":12,"kcal_portion":193,"protein_portion":8.8,"carbs_portion":17.6,"fat_portion":9.6,"source":"https://foodiepedia.co.il/product/שניצלונים/"},
+{"name":"פיצה מרגריטה קפואה","brand":"מאמאמיה","category":"קפואים ומוכנים","portion_desc":"רבע פיצה משפחתית","portion_grams":118,"kcal100":236,"protein100":10,"carbs100":34.4,"fat100":6.5,"kcal_portion":278,"protein_portion":11.8,"carbs_portion":40.6,"fat_portion":7.7,"source":"https://foodiepedia.co.il/product/מאמאמיה-פיצה-מרגריטה/"},
+{"name":"בצק עלים מרודד","brand":"זוגלובק (Soglowek)","category":"קפואים ומוכנים","portion_desc":"גיליון בצק (למאפה קטן)","portion_grams":50,"kcal100":364,"protein100":5.5,"carbs100":36,"fat100":22,"kcal_portion":182,"protein_portion":2.8,"carbs_portion":18,"fat_portion":11,"source":"https://www.foodsdictionary.co.il/Products/27/בצק עלים"},
+{"name":"בורקס תפוחי אדמה","brand":"שלושת האופים","category":"קפואים ומוכנים","portion_desc":"יחידה (בורקס אחד)","portion_grams":80,"kcal100":313,"protein100":5.4,"carbs100":30,"fat100":19,"kcal_portion":250,"protein_portion":4.3,"carbs_portion":24,"fat_portion":15.2,"source":"https://www.foodsdictionary.co.il/Products/242/בורקס תפוחי אדמה"},
+{"name":"ג'חנון תימני","brand":"שופרסל","category":"קפואים ומוכנים","portion_desc":"מנה (חלק מגליל)","portion_grams":150,"kcal100":349,"protein100":5.6,"carbs100":43.5,"fat100":17,"kcal_portion":524,"protein_portion":8.4,"carbs_portion":65.2,"fat_portion":25.5,"source":"https://foodiepedia.co.il/product/גחנון-קפוא-שופרסל/"},
+{"name":"מלאווח תימני","brand":"בלדי","category":"קפואים ומוכנים","portion_desc":"יחידה אחת","portion_grams":100,"kcal100":343,"protein100":5,"carbs100":39,"fat100":21,"kcal_portion":343,"protein_portion":5,"carbs_portion":39,"fat_portion":21,"source":"https://www.kaloria.co.il/product/מלאווח"},
+{"name":"גרעיני תירס קפואים","brand":"סנפרוסט","category":"קפואים ומוכנים","portion_desc":"כוס","portion_grams":125,"kcal100":104,"protein100":3.1,"carbs100":20.3,"fat100":0.5,"kcal_portion":130,"protein_portion":3.9,"carbs_portion":25.4,"fat_portion":0.6,"source":"https://foodiepedia.co.il/product/תירס-גרעינים-מוקפא/"},
+{"name":"תפרחות ברוקולי קפואות","brand":"סנפרוסט","category":"קפואים ומוכנים","portion_desc":"כוס תפרחות","portion_grams":90,"kcal100":31,"protein100":3.3,"carbs100":5.2,"fat100":0.2,"kcal_portion":28,"protein_portion":3,"carbs_portion":4.7,"fat_portion":0.2,"source":"https://foodiepedia.co.il/product/תפרחות-ברוקולי-מוקפא/"},
+{"name":"שעועית ירוקה שלמה קפואה","brand":"סנפרוסט","category":"קפואים ומוכנים","portion_desc":"כוס","portion_grams":100,"kcal100":34,"protein100":2.1,"carbs100":4.7,"fat100":0,"kcal_portion":34,"protein_portion":2.1,"carbs_portion":4.7,"fat_portion":0,"source":"https://www.foodsdictionary.co.il/Products/141/שעועית ירוקה שלמה"},
+{"name":"מדליוני תרד קפואים","brand":"סנפרוסט","category":"קפואים ומוכנים","portion_desc":"3 מדליונים","portion_grams":90,"kcal100":27,"protein100":3.1,"carbs100":3.8,"fat100":0.3,"kcal_portion":24,"protein_portion":2.8,"carbs_portion":3.4,"fat_portion":0.3,"source":"https://www.foodsdictionary.co.il/Products/141/מדליוני תרד"},
+{"name":"צ'יפס לתנור 4% שומן","brand":"תפוגן","category":"קפואים ומוכנים","portion_desc":"מנה (צלחת)","portion_grams":150,"kcal100":138,"protein100":2.4,"carbs100":22,"fat100":4,"kcal_portion":207,"protein_portion":3.6,"carbs_portion":33,"fat_portion":6,"source":"https://www.foodsdictionary.co.il/Products/65/צ'יפס לתנור"},
+{"name":"פירה תפוחי אדמה אינסטנט (אבקה)","brand":"קנור","category":"קפואים ומוכנים","portion_desc":"מנת אבקה (כ-2.5 כפות)","portion_grams":25,"kcal100":393,"protein100":6.3,"carbs100":68.8,"fat100":10.2,"kcal_portion":98,"protein_portion":1.6,"carbs_portion":17.2,"fat_portion":2.5,"source":"https://www.foodsdictionary.co.il/Products/39/פירה בטעם ביתי מוכן ברגע"},
+{"name":"קוקה קולה קלאסי","brand":"קוקה קולה","category":"משקאות","portion_desc":"פחית","portion_grams":330,"kcal100":42,"protein100":0,"carbs100":10.6,"fat100":0,"kcal_portion":139,"protein_portion":0,"carbs_portion":35,"fat_portion":0,"source":"https://www.foodsdictionary.co.il/Products/31/קוקה-קולה"},
+{"name":"קוקה קולה זירו","brand":"קוקה קולה","category":"משקאות","portion_desc":"פחית","portion_grams":330,"kcal100":0.3,"protein100":0,"carbs100":0,"fat100":0,"kcal_portion":1,"protein_portion":0,"carbs_portion":0,"fat_portion":0,"source":"https://cocacola.co.il/about/nutritional_notation.html"},
+{"name":"ספרייט","brand":"קוקה קולה (ספרייט)","category":"משקאות","portion_desc":"פחית","portion_grams":330,"kcal100":39,"protein100":0,"carbs100":9.6,"fat100":0,"kcal_portion":129,"protein_portion":0,"carbs_portion":31.7,"fat_portion":0,"source":"https://www.foodsdictionary.co.il/Products/31/Sprite - ספרייט"},
+{"name":"100% מיץ תפוזים עשוי מרכז","brand":"פריגת","category":"משקאות","portion_desc":"כוס","portion_grams":200,"kcal100":39,"protein100":0.8,"carbs100":8.7,"fat100":0.1,"kcal_portion":78,"protein_portion":1.6,"carbs_portion":17.4,"fat_portion":0.2,"source":"https://www.foodsdictionary.co.il/Products/29/100% מיץ תפוזים עשוי מרכז"},
+{"name":"מיץ תפוזים סחוט 100%","brand":"פרימור","category":"משקאות","portion_desc":"כוס","portion_grams":200,"kcal100":46,"protein100":0.8,"carbs100":10.2,"fat100":0,"kcal_portion":92,"protein_portion":1.6,"carbs_portion":20.4,"fat_portion":0,"source":"https://www.foodsdictionary.co.il/Products/144/סחוט - תפוזים"},
+{"name":"מיץ אשכולית אדומה 100%","brand":"פריניב","category":"משקאות","portion_desc":"כוס","portion_grams":200,"kcal100":39,"protein100":0.6,"carbs100":8.2,"fat100":0,"kcal_portion":78,"protein_portion":1.2,"carbs_portion":16.4,"fat_portion":0,"source":"https://foodiepedia.co.il/product/מיץ-אשכולית-אדומה-100/"},
+{"name":"תירוש — מיץ ענבים טבעי אדום","brand":"יקבי כרם מהדרין","category":"משקאות","portion_desc":"כוס","portion_grams":150,"kcal100":66,"protein100":0,"carbs100":16,"fat100":0,"kcal_portion":99,"protein_portion":0,"carbs_portion":24,"fat_portion":0,"source":"https://www.foodsdictionary.co.il/Products/842/תירוש ענבים - מיץ ענבים אדום"},
+{"name":"לימונדה — משקה קל לימונים","brand":"פריגת","category":"משקאות","portion_desc":"כוס","portion_grams":200,"kcal100":44,"protein100":0,"carbs100":11,"fat100":0,"kcal_portion":88,"protein_portion":0,"carbs_portion":22,"fat_portion":0,"source":"https://www.foodsdictionary.co.il/Products/29/לימונדה - משקה קל לימונים"},
+{"name":"Fuze Tea תה קר ירוק לימון-נענע","brand":"קוקה קולה (Fuze Tea)","category":"משקאות","portion_desc":"בקבוק","portion_grams":400,"kcal100":24,"protein100":0,"carbs100":5.7,"fat100":0,"kcal_portion":96,"protein_portion":0,"carbs_portion":22.8,"fat_portion":0,"source":"https://foodiepedia.co.il/product/פיוז-טי-גרין-תה-קר-לימון-נענע/"},
+{"name":"מים בטעמים — ענבים עדין","brand":"נביעות","category":"משקאות","portion_desc":"בקבוק","portion_grams":500,"kcal100":15,"protein100":0,"carbs100":3.75,"fat100":0,"kcal_portion":75,"protein_portion":0,"carbs_portion":18.8,"fat_portion":0,"source":"https://foodiepedia.co.il/product/מים-בטעמים-טעם-ענבים-עדין/"},
+{"name":"מי סודה","brand":"שוופס","category":"משקאות","portion_desc":"כוס","portion_grams":200,"kcal100":0,"protein100":0,"carbs100":0,"fat100":0,"kcal_portion":0,"protein_portion":0,"carbs_portion":0,"fat_portion":0,"source":"https://www.foodsdictionary.co.il/Products/66/מי סודה"},
+{"name":"XL משקה אנרגיה","brand":"XL Energy","category":"משקאות","portion_desc":"פחית","portion_grams":250,"kcal100":47,"protein100":0.3,"carbs100":11,"fat100":0.3,"kcal_portion":118,"protein_portion":0.8,"carbs_portion":27.5,"fat_portion":0.8,"source":"https://sklep.xl-energy.com/en/product-information/"},
+{"name":"משקה איזוטוני מוכן","brand":"איזוסטאר (Isostar)","category":"משקאות","portion_desc":"בקבוק","portion_grams":500,"kcal100":30,"protein100":0,"carbs100":6.9,"fat100":0,"kcal_portion":150,"protein_portion":0,"carbs_portion":34.5,"fat_portion":0,"source":"https://medplus.co.il/nutrition/משקה-איזוטוני/"},
+{"name":"בירה גולדסטאר","brand":"טמפו (גולדסטאר)","category":"משקאות","portion_desc":"פחית","portion_grams":330,"kcal100":42,"protein100":0,"carbs100":0,"fat100":0,"kcal_portion":139,"protein_portion":0,"carbs_portion":0,"fat_portion":0,"source":"https://foodiepedia.co.il/product/בירה-גולדסטאר/"},
+{"name":"בירה מכבי","brand":"טמפו (מכבי)","category":"משקאות","portion_desc":"פחית","portion_grams":330,"kcal100":44,"protein100":0,"carbs100":0,"fat100":0,"kcal_portion":145,"protein_portion":0,"carbs_portion":0,"fat_portion":0,"source":"https://www.foodsdictionary.co.il/Products/59/בירה מכבי"},
+{"name":"נמס — 100% קפה טהור (אבקה)","brand":"עלית (שטראוס)","category":"משקאות","portion_desc":"כפית (אבקה)","portion_grams":2,"kcal100":236,"protein100":12.2,"carbs100":41.1,"fat100":0.5,"kcal_portion":5,"protein_portion":0.2,"carbs_portion":0.8,"fat_portion":0,"source":"https://www.foodsdictionary.co.il/Products/19/נמס - 100% קפה טהור"},
+{"name":"דנונה PRO יוגורט 20 ג' חלבון בגביע, 1.5% שומן","brand":"דנונה (שטראוס)","category":"מוצרי חלבון מועשרים (PRO / PROTEIN)","portion_desc":"גביע","portion_grams":200,"kcal100":70,"protein100":10,"carbs100":3.4,"fat100":1.5,"kcal_portion":140,"protein_portion":20,"carbs_portion":6.8,"fat_portion":3,"source":"https://danone.strauss-group.com/products/יוגורט-פרו-דנונה/"},
+{"name":"דנונה PRO יוגורט 21 ג' חלבון בגביע, 0% שומן","brand":"דנונה (שטראוס)","category":"מוצרי חלבון מועשרים (PRO / PROTEIN)","portion_desc":"גביע","portion_grams":200,"kcal100":58,"protein100":10.5,"carbs100":3.3,"fat100":0,"kcal_portion":116,"protein_portion":21,"carbs_portion":6.6,"fat_portion":0,"source":"https://danone.strauss-group.com/products/יוגורט-pro-דנונה-21-גרם-חלבון-0-שומן/"},
+{"name":"דנונה PRO יוגורט וניל 20 ג' חלבון בגביע, 0% שומן","brand":"דנונה (שטראוס)","category":"מוצרי חלבון מועשרים (PRO / PROTEIN)","portion_desc":"גביע","portion_grams":150,"kcal100":65,"protein100":10,"carbs100":5.6,"fat100":0,"kcal_portion":98,"protein_portion":15,"carbs_portion":8.4,"fat_portion":0,"source":"https://www.foodsdictionary.co.il/Products/6/דנונה PRO - יוגורט וניל 0% שומן"},
+{"name":"דנונה PRO משקה יוגורט תות 20 ג' חלבון, 1% שומן","brand":"דנונה (שטראוס)","category":"מוצרי חלבון מועשרים (PRO / PROTEIN)","portion_desc":"בקבוק","portion_grams":250,"kcal100":59,"protein100":7.9,"carbs100":3.9,"fat100":1,"kcal_portion":148,"protein_portion":19.8,"carbs_portion":9.8,"fat_portion":2.5,"source":"https://www.foodsdictionary.co.il/Products/6/דנונה PRO - משקה יוגורט תות"},
+{"name":"יופלה GO יוגורט טבעי מועשר בחלבון, 20 ג' חלבון בגביע","brand":"יופלה (תנובה)","category":"מוצרי חלבון מועשרים (PRO / PROTEIN)","portion_desc":"גביע","portion_grams":200,"kcal100":72,"protein100":10,"carbs100":3.5,"fat100":2,"kcal_portion":144,"protein_portion":20,"carbs_portion":7,"fat_portion":4,"source":"https://www.tnuva.co.il/products/יופלה-גו-יוגורט-מועשר-בחלבון-טבעי/"},
+{"name":"GO by Yoplait משקה חלבון בננה קרמל, 42 ג' חלבון לקרטון, 0.5% שומן","brand":"יופלה (תנובה)","category":"מוצרי חלבון מועשרים (PRO / PROTEIN)","portion_desc":"קרטון (500 מ\"ל)","portion_grams":500,"kcal100":53,"protein100":8.4,"carbs100":3.4,"fat100":0.5,"kcal_portion":265,"protein_portion":42,"carbs_portion":17,"fat_portion":2.5,"source":"https://www.foodsdictionary.co.il/Products/5/GO By Yoplait - 42 גרם חלבון לקרטון"},
+{"name":"GO by TNUVA מעדן חלב שוקולד, 12 ג' חלבון בגביע","brand":"תנובה","category":"מוצרי חלבון מועשרים (PRO / PROTEIN)","portion_desc":"גביע","portion_grams":120,"kcal100":107,"protein100":10,"carbs100":12,"fat100":2,"kcal_portion":128,"protein_portion":12,"carbs_portion":14.4,"fat_portion":2.4,"source":"https://www.foodsdictionary.co.il/Products/5/GO by TNUVA - מעדן חלב שוקולד"},
+{"name":"מעדן PRO שוקולד, 13 ג' חלבון בגביע","brand":"שטראוס","category":"מוצרי חלבון מועשרים (PRO / PROTEIN)","portion_desc":"גביע","portion_grams":150,"kcal100":99,"protein100":8.7,"carbs100":11.4,"fat100":1.8,"kcal_portion":148,"protein_portion":13.1,"carbs_portion":17.1,"fat_portion":2.7,"source":"https://www.foodsdictionary.co.il/Products/6/מעדן PRO בטעם שוקולד"},
+{"name":"מעדן PRO ZERO שוקולד ללא תוספת סוכר לבן, 13 ג' חלבון בגביע","brand":"שטראוס","category":"מוצרי חלבון מועשרים (PRO / PROTEIN)","portion_desc":"גביע","portion_grams":150,"kcal100":82,"protein100":8.7,"carbs100":7.8,"fat100":1.5,"kcal_portion":123,"protein_portion":13.1,"carbs_portion":11.7,"fat_portion":2.2,"source":"https://www.foodsdictionary.co.il/Products/6/מעדן PRO ZERO בטעם שוקולד"},
+{"name":"מעדן PRO חלב עם שוקולד 2% שומן, 10 ג' חלבון בגביע","brand":"שטראוס","category":"מוצרי חלבון מועשרים (PRO / PROTEIN)","portion_desc":"גביע","portion_grams":130,"kcal100":100,"protein100":7.7,"carbs100":12.1,"fat100":2,"kcal_portion":130,"protein_portion":10,"carbs_portion":15.7,"fat_portion":2.6,"source":"https://www.foodsdictionary.co.il/Products/6/מעדן PRO - חלב עם שוקולד 2% שומן"},
+{"name":"מולר PROTEIN יוגורט קרמי לבן 2% שומן, 25 ג' חלבון בגביע","brand":"מולר (Müller)","category":"מוצרי חלבון מועשרים (PRO / PROTEIN)","portion_desc":"גביע","portion_grams":200,"kcal100":82,"protein100":12.5,"carbs100":2.2,"fat100":2,"kcal_portion":164,"protein_portion":25,"carbs_portion":4.4,"fat_portion":4,"source":"https://www.foodsdictionary.co.il/Products/49/muller active - יוגורט 25 גרם חלבון"},
+{"name":"מולר PROTEIN יוגורט טבעי 0% שומן, 25 ג' חלבון בגביע","brand":"מולר (Müller)","category":"מוצרי חלבון מועשרים (PRO / PROTEIN)","portion_desc":"גביע","portion_grams":200,"kcal100":65,"protein100":12.5,"carbs100":2.5,"fat100":0,"kcal_portion":130,"protein_portion":25,"carbs_portion":5,"fat_portion":0,"source":"https://www.foodsdictionary.co.il/Products/49/muller active - יוגורט טבעי 0% שומן"},
+{"name":"מולר PROTEIN יוגורט תות 1.6% שומן, 20 ג' חלבון בגביע","brand":"מולר (Müller)","category":"מוצרי חלבון מועשרים (PRO / PROTEIN)","portion_desc":"גביע","portion_grams":200,"kcal100":101,"protein100":10,"carbs100":10.6,"fat100":1.6,"kcal_portion":202,"protein_portion":20,"carbs_portion":21.2,"fat_portion":3.2,"source":"https://www.muller-israel.co.il/PROTEIN/פרוטאין-תות-1.6-שומן.html"},
+{"name":"מולר PROTEIN משקה חלבון קפה 0% שומן, 25 ג' חלבון לבקבוק","brand":"מולר (Müller)","category":"מוצרי חלבון מועשרים (PRO / PROTEIN)","portion_desc":"בקבוק (350 מ\"ל)","portion_grams":350,"kcal100":45,"protein100":7.15,"carbs100":4.2,"fat100":0,"kcal_portion":158,"protein_portion":25,"carbs_portion":14.7,"fat_portion":0,"source":"https://www.muller-israel.co.il/Protein-Drinks/פרוטאין-משקה-קפה.html"},
+{"name":"לחם אנג'ל PRO — לחם חלבון דל פחמימות","brand":"מאפיית אנג'ל","category":"מוצרי חלבון מועשרים (PRO / PROTEIN)","portion_desc":"פרוסה","portion_grams":30,"kcal100":220,"protein100":28.2,"carbs100":12.9,"fat100":3.4,"kcal_portion":66,"protein_portion":8.5,"carbs_portion":3.9,"fat_portion":1,"source":"https://www.angel.co.il/document/62,172,1078.aspx"},
+{"name":"חטיף חלבון Barebells קרמל קשיו, 20 ג' חלבון","brand":"Barebells","category":"מוצרי חלבון מועשרים (PRO / PROTEIN)","portion_desc":"חטיף","portion_grams":55,"kcal100":362,"protein100":36.4,"carbs100":25.5,"fat100":14.4,"kcal_portion":199,"protein_portion":20,"carbs_portion":14,"fat_portion":7.9,"source":"https://vitamins-ninja.com/barebells-protein-1bar/"},
+{"name":"חטיף חלבון פרוטאין מקס","brand":"Protein Maxx","category":"מוצרי חלבון מועשרים (PRO / PROTEIN)","portion_desc":"חטיף בודד","portion_grams":60,"kcal100":356,"protein100":33,"carbs100":32,"fat100":12,"kcal_portion":214,"protein_portion":19.8,"carbs_portion":19.2,"fat_portion":7.2,"source":"https://adiraroasti.co.il/product/חטיף-חלבון-פרוטאין-מקס/"},
+{"name":"אבקת חלבון מי גבינה GO by TNUVA Whey (25 ג' חלבון למנה)","brand":"תנובה","category":"מוצרי חלבון מועשרים (PRO / PROTEIN)","portion_desc":"מנה — סקופ","portion_grams":34,"kcal100":365,"protein100":70.6,"carbs100":10,"fat100":3.5,"kcal_portion":124,"protein_portion":24,"carbs_portion":3.4,"fat_portion":1.2,"source":"https://www.israelbody.org/products/tnuva-go-whey"}
+];
+/* PRODUCTS_DATA_END */
+
+var PRODUCT_CATEGORIES = [
+  "מוצרי חלב, ביצים ותחליפי חלב",
+  "בשר, עוף, דגים ותחליפי בשר",
+  "לחמים, דגנים ומאפים",
+  "קטניות, שימורים, ממרחים ורטבים",
+  "חטיפים, ממתקים וקינוחים",
+  "קפואים ומוכנים",
+  "משקאות",
+  "מוצרי חלבון מועשרים (PRO / PROTEIN)"
+];
+
+var SMART_CHOICES = {
+  "מוצרי חלב, ביצים ותחליפי חלב": [
+    {t:"קוטג' 3% תנובה", d:"הכי הרבה חלבון לקלוריה בקטגוריה (11 ג' חלבון ב-77 קק\"ל). בסיס מצוין לארוחת בוקר או לנשנוש ערב."},
+    {t:"SKYR דנונה 2.9%", d:"8.2 ג' חלבון ורק 3.5 ג' פחמימה ל-100 ג'. מחליף יוגורט ממותק בלי הסוכר, ומשביע לאורך זמן."},
+    {t:"גבינה בולגרית 5% מחלבות גד", d:"93 קק\"ל ל-100 ג' מול 131 של פיראוס 5%, עם טעם מלוח דומה. חיסכון של כ-40 קק\"ל על אותה כמות."}
+  ],
+  "בשר, עוף, דגים ותחליפי בשר": [
+    {t:"טונה במים (ויליגר או סטארקיסט)", d:"22-25 ג' חלבון על פחות מ-1 ג' שומן. קופסה מסוננת = כ-20 ג' חלבון ב-80 קק\"ל בלבד."},
+    {t:"פסטרמה הודו 1% זוגלובק", d:"הפרוסה הרזה ביותר במעדנייה (85 קק\"ל ל-100 ג'), מול 249 קק\"ל בסלמי ו-358 בקבנוס."},
+    {t:"פילה אמנון קפוא שופרסל", d:"20 ג' חלבון ב-103 קק\"ל, זמין ובמחיר נמוך. אלטרנטיבה יומיומית לסלמון (שהוא מצוין באומגה 3 אך כפול בקלוריות)."}
+  ],
+  "לחמים, דגנים ומאפים": [
+    {t:"לחם פשוט מלא אנג'ל", d:"קמח מלא, 11.2 ג' חלבון ל-100 ג' ורק 227 קק\"ל. הפרוסה הבסיסית המומלצת לתפריט יומיומי."},
+    {t:"קוואקר שיבולת שועל", d:"דגן מלא ללא סוכר מוסף. חצי כוס יבשה = 150 קק\"ל, לעומת גרנולה שמגיעה ל-408 קק\"ל ל-100 ג'."},
+    {t:"קינואה", d:"14.1 ג' חלבון ל-100 ג' יבש וחלבון מלא. התחליף המשתלם ביותר לאורז לבן בצלחת."}
+  ],
+  "קטניות, שימורים, ממרחים ורטבים": [
+    {t:"עדשים (אדומות או ירוקות) יבשות", d:"25 ג' חלבון ל-100 ג' עם כמעט אפס שומן. עמוד השדרה של תפריט צמחי או חסכוני."},
+    {t:"חומוס בשימורים סוגת", d:"120 קק\"ל ל-100 ג' מול 145 של יכין, ופחות מחצי מהקלוריות של חומוס מוכן (186-218) בזכות היעדר טחינה ושמן."},
+    {t:"טחינה גולמית אחווה", d:"שומן איכותי, סידן וחלבון. כף אחת (100 קק\"ל) מספיקה; זו קטגוריה שבה הכמות חשובה יותר מהבחירה."}
+  ],
+  "חטיפים, ממתקים וקינוחים": [
+    {t:"קרמיסימו וניל", d:"187 קק\"ל ל-100 ג', כדור = כ-112 קק\"ל. הקינוח הקל ביותר בקטגוריה, פחות משליש ממגנום."},
+    {t:"YOLO תנובה", d:"178 קק\"ל ל-100 ג' עם 5.1 ג' חלבון. פינוק מנוהל בגביע סגור, בלי החלטות על גודל מנה."},
+    {t:"במבה", d:"לא \"בריאה\", אבל 17.5 ג' חלבון ל-100 ג' והשקית הקטנה (25 ג' = 134 קק\"ל) עוצרת את הכמות מעצמה. עדיפה על חטיף בשקית משפחתית."}
+  ],
+  "קפואים ומוכנים": [
+    {t:"ירקות קפואים סנפרוסט (ברוקולי, שעועית ירוקה, תרד)", d:"27-34 קק\"ל ל-100 ג'. ממלאים חצי צלחת כמעט בחינם קלורית וזמינים תמיד."},
+    {t:"המבורגר צמחוני 99 קלוריות טבעול", d:"19 ג' חלבון ל-100 ג' על 4.2 ג' שומן בלבד. יחס החלבון-קלוריות הטוב בקטגוריה."},
+    {t:"צ'יפס לתנור 4% תפוגן", d:"138 קק\"ל ל-100 ג' לעומת 313-364 בבורקס ובצק עלים. הפתרון המשפחתי הפחות יקר קלורית."}
+  ],
+  "משקאות": [
+    {t:"מים, סודה או קוקה קולה זירו", d:"אפס עד 1 קק\"ל למנה. ההחלפה היחידה שחוסכת כ-140 קק\"ל ביום למי ששותה פחית אחת."},
+    {t:"Fuze Tea תה קר", d:"24 קק\"ל ל-100 מ\"ל, כשליש מקולה רגילה. פשרה טובה למי שצריך טעם במשקה."},
+    {t:"מיץ טבעי מוגבל לכוס אחת", d:"פרימור ופריגת ~39-46 קק\"ל ל-100 מ\"ל, קרוב לקולה. מיץ אינו \"חינם\" קלורית, ועדיף פרי שלם."}
+  ],
+  "מוצרי חלבון מועשרים (PRO / PROTEIN)": [
+    {t:"מולר PROTEIN טבעי 0%", d:"12.5 ג' חלבון ל-100 ג' ב-65 קק\"ל בלבד. גביע = 25 ג' חלבון ב-130 קק\"ל, הצפיפות התזונתית הטובה בקטגוריה."},
+    {t:"דנונה PRO 21 ג' חלבון 0%", d:"116 קק\"ל לגביע שלם עם 21 ג' חלבון. אידיאלי כארוחת ביניים אחרי אימון."},
+    {t:"לחם אנג'ל PRO", d:"28.2 ג' חלבון ל-100 ג' מול 9-11 בלחם רגיל, עם שליש מהפחמימות. שדרוג משמעותי לכריך היומי."}
+  ]
+};
+
+/* סינון ומיון של מוצרי הסופר */
+function filterProducts(list, query, category){
+  var q = (query || "").trim();
+  var out = [];
+  for (var i=0;i<list.length;i++){
+    var p = list[i];
+    if (category && category !== "all" && p.category !== category) continue;
+    if (q && p.name.indexOf(q) === -1 && p.brand.indexOf(q) === -1) continue;
+    out.push(p);
+  }
+  return out;
+}
+var PRODUCT_SORT_KEYS = ["kcal100","protein100","carbs100","fat100","kcal_portion"];
+function sortProducts(list, key, dir){
+  var copy = list.slice();
+  if (!key || PRODUCT_SORT_KEYS.indexOf(key) === -1) return copy;
+  var sign = dir === "desc" ? -1 : 1;
+  copy.sort(function(a,b){
+    var av = a[key], bv = b[key];
+    if (typeof av !== "number") av = 0;
+    if (typeof bv !== "number") bv = 0;
+    if (av === bv) return a.name < b.name ? -1 : (a.name > b.name ? 1 : 0);
+    return (av - bv) * sign;
+  });
+  return copy;
+}
+function nextSortDir(currentKey, currentDir, clickedKey){
+  if (currentKey !== clickedKey) return "asc";
+  return currentDir === "asc" ? "desc" : "asc";
+}
 
 var CAT_LABEL = {carb:"פחמימה", protein:"חלבון", veg:"ירק", fat:"שומן", snack:"ביניים"};
 
@@ -1420,6 +1734,168 @@ function renderFoods(){
   $("foodsCount").textContent = count + " מזונות";
 }
 
+/* ---------- products tab ---------- */
+var prodFilter = "all";
+var prodSortKey = "";
+var prodSortDir = "asc";
+var prodOpen = {};
+
+(function initProdChips(){
+  var wrap = $("prodChips");
+  var defs = [{key:"all", label:"הכול"}];
+  for (var i=0;i<PRODUCT_CATEGORIES.length;i++) defs.push({key:PRODUCT_CATEGORIES[i], label:PRODUCT_CATEGORIES[i]});
+  for (var d=0;d<defs.length;d++){
+    (function(def){
+      var b = el("button","filter-chip", def.label);
+      b.type = "button";
+      b.setAttribute("aria-pressed", def.key === "all" ? "true" : "false");
+      b.addEventListener("click", function(){
+        prodFilter = def.key;
+        var all = wrap.querySelectorAll(".filter-chip");
+        for (var q=0;q<all.length;q++) all[q].setAttribute("aria-pressed", all[q] === b ? "true" : "false");
+        renderProducts();
+      });
+      wrap.appendChild(b);
+    })(defs[d]);
+  }
+})();
+$("prodSearch").addEventListener("input", function(){ renderProducts(); });
+
+(function initProdSort(){
+  var heads = $("prodTable").querySelectorAll("th.sortable");
+  for (var i=0;i<heads.length;i++){
+    (function(th){
+      function doSort(){
+        var key = th.getAttribute("data-sort");
+        prodSortDir = nextSortDir(prodSortKey, prodSortDir, key);
+        prodSortKey = key;
+        renderProducts();
+      }
+      th.addEventListener("click", doSort);
+      th.addEventListener("keydown", function(e){
+        if (e.key === "Enter" || e.key === " "){ e.preventDefault(); doSort(); }
+      });
+    })(heads[i]);
+  }
+})();
+
+function renderProducts(){
+  var rows = filterProducts(PRODUCTS, $("prodSearch").value, prodFilter);
+  rows = sortProducts(rows, prodSortKey, prodSortDir);
+
+  var heads = $("prodTable").querySelectorAll("th.sortable");
+  for (var h=0;h<heads.length;h++){
+    if (heads[h].getAttribute("data-sort") === prodSortKey) heads[h].setAttribute("aria-sort", prodSortDir === "asc" ? "ascending" : "descending");
+    else heads[h].removeAttribute("aria-sort");
+  }
+
+  var body = $("prodBody");
+  body.innerHTML = "";
+  for (var i=0;i<rows.length;i++){
+    (function(p, idx){
+      var key = p.name + "|" + p.brand;
+      var tr = document.createElement("tr");
+      tr.className = "prod-row" + (prodOpen[key] ? " is-open" : "");
+      tr.setAttribute("tabindex","0");
+      tr.setAttribute("role","button");
+      tr.setAttribute("aria-expanded", prodOpen[key] ? "true" : "false");
+      tr.setAttribute("aria-label", "פירוט עבור " + p.name);
+
+      var tdName = document.createElement("td");
+      var nameWrap = el("div","prod-name");
+      nameWrap.appendChild(el("span","prod-caret","▼"));
+      nameWrap.appendChild(el("span","t-name", p.name));
+      tdName.appendChild(nameWrap);
+      tr.appendChild(tdName);
+
+      tr.appendChild(el("td", null, p.brand));
+      var tdPortion = el("td");
+      tdPortion.appendChild(el("span", null, p.portion_desc));
+      tdPortion.appendChild(el("span","t-sub", p.portion_grams + " ג'"));
+      tr.appendChild(tdPortion);
+      tr.appendChild(el("td","n", String(p.kcal100)));
+      tr.appendChild(el("td","n", p.protein100 + " ג'"));
+      tr.appendChild(el("td","n", p.carbs100 + " ג'"));
+      tr.appendChild(el("td","n", p.fat100 + " ג'"));
+      tr.appendChild(el("td","n", String(p.kcal_portion)));
+
+      var detail = document.createElement("tr");
+      detail.className = "prod-detail";
+      if (!prodOpen[key]) detail.classList.add("hidden");
+      var dtd = document.createElement("td");
+      dtd.setAttribute("colspan","8");
+      var grid = el("div","prod-detail-grid");
+      function pair(label, value){
+        var s = el("span");
+        s.appendChild(el("span","lbl", label + ":"));
+        s.appendChild(el("b","num", " " + value));
+        grid.appendChild(s);
+      }
+      pair("מנה", p.portion_desc + " (" + p.portion_grams + " ג')");
+      pair("קלוריות למנה", p.kcal_portion + " קק\"ל");
+      pair("חלבון למנה", p.protein_portion + " ג'");
+      pair("פחמימה למנה", p.carbs_portion + " ג'");
+      pair("שומן למנה", p.fat_portion + " ג'");
+      if (p.source){
+        var a = document.createElement("a");
+        a.className = "prod-src";
+        a.textContent = "מקור";
+        a.href = p.source;
+        a.target = "_blank";
+        a.rel = "noopener noreferrer";
+        grid.appendChild(a);
+      }
+      dtd.appendChild(grid);
+      detail.appendChild(dtd);
+
+      function toggle(){
+        prodOpen[key] = !prodOpen[key];
+        tr.classList.toggle("is-open", !!prodOpen[key]);
+        tr.setAttribute("aria-expanded", prodOpen[key] ? "true" : "false");
+        detail.classList.toggle("hidden", !prodOpen[key]);
+      }
+      tr.addEventListener("click", toggle);
+      tr.addEventListener("keydown", function(e){
+        if (e.key === "Enter" || e.key === " "){ e.preventDefault(); toggle(); }
+      });
+
+      body.appendChild(tr);
+      body.appendChild(detail);
+    })(rows[i], i);
+  }
+  $("prodCount").textContent = rows.length + " מוצרים";
+  renderSmart();
+}
+
+function renderSmart(){
+  var wrap = $("smartWrap");
+  wrap.innerHTML = "";
+  var cats = prodFilter === "all" ? PRODUCT_CATEGORIES : [prodFilter];
+  var card = el("div","card stack");
+  card.appendChild(el("h2","card-title","בחירות חכמות"));
+  card.appendChild(el("p","lede", prodFilter === "all"
+    ? "ההמלצות של סיוון לכל קטגוריה — מה לשים בעגלה כשעומדים מול המדף."
+    : "ההמלצות של סיוון בקטגוריה: " + prodFilter));
+  var grid = el("div","smart-grid");
+  for (var i=0;i<cats.length;i++){
+    var list = SMART_CHOICES[cats[i]];
+    if (!list) continue;
+    var sc = el("div","smart-card");
+    sc.appendChild(el("h3", null, cats[i]));
+    var ul = document.createElement("ul");
+    for (var j=0;j<list.length;j++){
+      var li = document.createElement("li");
+      li.appendChild(el("strong", null, list[j].t + " — "));
+      li.appendChild(el("span", null, list[j].d));
+      ul.appendChild(li);
+    }
+    sc.appendChild(ul);
+    grid.appendChild(sc);
+  }
+  card.appendChild(grid);
+  wrap.appendChild(card);
+}
+
 /* ---------- categories tab ---------- */
 var CAT_CARDS = [
   {name:"ירידה במשקל", delta:"גירעון 15-25% (ברירת מחדל 15-20%) · 350-700 קק\"ל", rate:"0.5-1% ממשקל הגוף לשבוע",
@@ -1605,6 +2081,7 @@ renderPreset("presetMen", PRESETS.men);
 state = emptyState();
 rebuild();
 renderFoods();
+renderProducts();
 refreshSaved();
 runCalc();
 
