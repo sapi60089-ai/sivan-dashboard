@@ -1,0 +1,1493 @@
+<!doctype html>
+<html dir="rtl" lang="he">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>הדשבורד של סיוון — מערכת תפריטים</title>
+<style>*{margin:0;padding:0}html,body{height:100%}img,svg{display:block;max-width:100%}button,input,select,textarea{font:inherit;color:inherit}</style>
+<style>
+:root{
+  --bg:#F6F8F4; --surface:#FFFFFF; --surface-2:#F0F4EE; --surface-3:#E7EEE4;
+  --text:#1C2B22; --text-muted:#5A6B60; --text-soft:#7C8C82;
+  --primary:#1F5C3D; --primary-soft:#E4EFE7; --on-primary:#FFFFFF;
+  --border:#DBE5D9; --border-strong:#C2D2BE;
+  --accent:#C4652F; --accent-soft:#F6E6DB;
+  --ok:#2E7D4F; --ok-bg:#E3F1E8;
+  --warn:#B7791F; --warn-bg:#F8EEDA;
+  --bad:#B3402E; --bad-bg:#F8E3DE;
+  --shadow:0 1px 2px rgba(28,43,34,.06), 0 8px 22px rgba(28,43,34,.055);
+  --radius:14px; --radius-sm:9px;
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --bg:#101815; --surface:#18231D; --surface-2:#1E2B24; --surface-3:#25342B;
+    --text:#E8EFE9; --text-muted:#A8BBAF; --text-soft:#8CA295;
+    --primary:#6FB98F; --primary-soft:#1D3128; --on-primary:#0D1512;
+    --border:#2C3B33; --border-strong:#3D5145;
+    --accent:#E08A54; --accent-soft:#38241A;
+    --ok:#5FBF88; --ok-bg:#17301F;
+    --warn:#E0A94A; --warn-bg:#32280F;
+    --bad:#E48370; --bad-bg:#361E19;
+    --shadow:0 1px 2px rgba(0,0,0,.35), 0 8px 22px rgba(0,0,0,.3);
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#101815; --surface:#18231D; --surface-2:#1E2B24; --surface-3:#25342B;
+  --text:#E8EFE9; --text-muted:#A8BBAF; --text-soft:#8CA295;
+  --primary:#6FB98F; --primary-soft:#1D3128; --on-primary:#0D1512;
+  --border:#2C3B33; --border-strong:#3D5145;
+  --accent:#E08A54; --accent-soft:#38241A;
+  --ok:#5FBF88; --ok-bg:#17301F;
+  --warn:#E0A94A; --warn-bg:#32280F;
+  --bad:#E48370; --bad-bg:#361E19;
+  --shadow:0 1px 2px rgba(0,0,0,.35), 0 8px 22px rgba(0,0,0,.3);
+}
+:root[data-theme="light"]{
+  --bg:#F6F8F4; --surface:#FFFFFF; --surface-2:#F0F4EE; --surface-3:#E7EEE4;
+  --text:#1C2B22; --text-muted:#5A6B60; --text-soft:#7C8C82;
+  --primary:#1F5C3D; --primary-soft:#E4EFE7; --on-primary:#FFFFFF;
+  --border:#DBE5D9; --border-strong:#C2D2BE;
+  --accent:#C4652F; --accent-soft:#F6E6DB;
+  --ok:#2E7D4F; --ok-bg:#E3F1E8;
+  --warn:#B7791F; --warn-bg:#F8EEDA;
+  --bad:#B3402E; --bad-bg:#F8E3DE;
+  --shadow:0 1px 2px rgba(28,43,34,.06), 0 8px 22px rgba(28,43,34,.055);
+}
+
+*,*::before,*::after{box-sizing:border-box}
+.app{
+  font-family:"Segoe UI",-apple-system,BlinkMacSystemFont,Arial,sans-serif;
+  background:var(--bg); color:var(--text);
+  min-height:100%; line-height:1.55; font-size:15px;
+  -webkit-font-smoothing:antialiased;
+}
+.app h1,.app h2,.app h3,.app h4{margin:0; font-weight:800; text-wrap:balance; line-height:1.25}
+.app p{margin:0}
+.app ul{margin:0; padding-inline-start:1.15em}
+.num,.app table td,.app table th,.app input,.app select{font-variant-numeric:tabular-nums}
+.app :focus-visible{outline:2px solid var(--primary); outline-offset:2px; border-radius:6px}
+
+/* ---------- topbar ---------- */
+.topbar{position:sticky; top:0; z-index:40; background:var(--surface); border-bottom:1px solid var(--border); box-shadow:0 1px 0 rgba(0,0,0,.02)}
+.topbar-inner{max-width:1100px; margin:0 auto; padding:10px 16px; display:flex; flex-wrap:wrap; align-items:center; gap:10px 16px}
+.brand{display:flex; align-items:center; gap:10px; min-width:0}
+.brand-mark{width:26px; height:26px; border-radius:8px; background:var(--primary); flex:0 0 auto; position:relative}
+.brand-mark::after{content:""; position:absolute; inset:7px; border-radius:3px; background:var(--surface); opacity:.85}
+.brand strong{display:block; font-size:15px; letter-spacing:.01em}
+.brand-sub{display:block; font-size:11px; color:var(--text-soft); letter-spacing:.06em}
+.tabs{display:flex; gap:4px; overflow-x:auto; flex:1 1 auto; scrollbar-width:thin; padding-bottom:2px}
+.tab-btn{
+  appearance:none; border:1px solid transparent; background:transparent; color:var(--text-muted);
+  font:inherit; font-size:14px; font-weight:600; padding:7px 12px; border-radius:999px; cursor:pointer;
+  white-space:nowrap; transition:background .15s, color .15s, border-color .15s;
+}
+.tab-btn:hover{background:var(--surface-2); color:var(--text)}
+.tab-btn[aria-selected="true"]{background:var(--primary); color:var(--on-primary); border-color:var(--primary)}
+
+/* ---------- layout ---------- */
+.wrap{max-width:1100px; margin:0 auto; padding:18px 16px 28px; display:flex; flex-direction:column; gap:18px}
+.tab-panel{display:none; flex-direction:column; gap:16px}
+.tab-panel.is-active{display:flex}
+.card{background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); box-shadow:var(--shadow); padding:16px}
+.card-title{font-size:15px; display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap}
+.eyebrow{font-size:11px; letter-spacing:.12em; color:var(--text-soft); font-weight:700; text-transform:none}
+.lede{color:var(--text-muted); font-size:13.5px}
+.grid-2{display:grid; grid-template-columns:1fr; gap:16px}
+@media (min-width:860px){ .grid-2{grid-template-columns:minmax(0,1fr) minmax(0,1.1fr)} }
+.stack{display:flex; flex-direction:column; gap:12px}
+.stack-sm{display:flex; flex-direction:column; gap:8px}
+.row-flex{display:flex; flex-wrap:wrap; gap:8px; align-items:center}
+
+/* ---------- controls ---------- */
+.field{display:flex; flex-direction:column; gap:5px}
+.field > label,.lbl{font-size:11.5px; font-weight:700; letter-spacing:.07em; color:var(--text-soft)}
+input[type="text"],input[type="number"],select{
+  font:inherit; font-size:14.5px; color:var(--text); background:var(--surface);
+  border:1px solid var(--border-strong); border-radius:var(--radius-sm); padding:8px 10px; width:100%;
+  transition:border-color .15s, box-shadow .15s;
+}
+input[type="text"]:hover,input[type="number"]:hover,select:hover{border-color:var(--primary)}
+input[type="text"]:focus,input[type="number"]:focus,select:focus{border-color:var(--primary); box-shadow:0 0 0 3px var(--primary-soft); outline:none}
+select{cursor:pointer}
+.fields-grid{display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px}
+@media (min-width:520px){ .fields-grid{grid-template-columns:repeat(3,minmax(0,1fr))} }
+.seg{display:flex; gap:0; border:1px solid var(--border-strong); border-radius:var(--radius-sm); overflow:hidden}
+.seg button{
+  flex:1; appearance:none; border:0; background:var(--surface); color:var(--text-muted);
+  font:inherit; font-weight:700; font-size:14px; padding:8px 6px; cursor:pointer; transition:background .15s,color .15s;
+}
+.seg button + button{border-inline-start:1px solid var(--border-strong)}
+.seg button[aria-pressed="true"]{background:var(--primary); color:var(--on-primary)}
+.btn{
+  appearance:none; font:inherit; font-size:14px; font-weight:700; cursor:pointer;
+  border-radius:var(--radius-sm); padding:9px 14px; border:1px solid var(--primary);
+  background:var(--primary); color:var(--on-primary); transition:filter .15s, background .15s, color .15s;
+}
+.btn:hover{filter:brightness(1.08)}
+.btn-ghost{background:transparent; color:var(--primary)}
+.btn-ghost:hover{background:var(--primary-soft)}
+.btn-quiet{background:var(--surface-2); color:var(--text-muted); border-color:var(--border)}
+.btn-quiet:hover{background:var(--surface-3); color:var(--text)}
+.btn-sm{font-size:12.5px; padding:6px 10px; border-radius:8px}
+
+/* ---------- chips / stats ---------- */
+.chip{display:inline-flex; align-items:center; gap:6px; font-size:12.5px; font-weight:700; padding:4px 10px; border-radius:999px; border:1px solid transparent; white-space:nowrap}
+.chip-ok{background:var(--ok-bg); color:var(--ok); border-color:var(--ok)}
+.chip-warn{background:var(--warn-bg); color:var(--warn); border-color:var(--warn)}
+.chip-bad{background:var(--bad-bg); color:var(--bad); border-color:var(--bad)}
+.chip-neutral{background:var(--surface-2); color:var(--text-muted); border-color:var(--border)}
+.chip-dot{width:7px; height:7px; border-radius:50%; background:currentColor; flex:0 0 auto}
+.filter-chip{
+  appearance:none; font:inherit; font-size:13px; font-weight:600; cursor:pointer;
+  padding:6px 12px; border-radius:999px; border:1px solid var(--border-strong);
+  background:var(--surface); color:var(--text-muted); transition:background .15s,color .15s,border-color .15s;
+}
+.filter-chip:hover{border-color:var(--primary); color:var(--text)}
+.filter-chip[aria-pressed="true"]{background:var(--primary); border-color:var(--primary); color:var(--on-primary)}
+.stat-grid{display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px}
+@media (min-width:560px){ .stat-grid-3{grid-template-columns:repeat(3,minmax(0,1fr))} }
+.stat{background:var(--surface-2); border:1px solid var(--border); border-radius:var(--radius-sm); padding:10px 12px; display:flex; flex-direction:column; gap:2px}
+.stat-label{font-size:11px; font-weight:700; letter-spacing:.08em; color:var(--text-soft)}
+.stat-value{font-size:24px; font-weight:800; line-height:1.15}
+.stat-note{font-size:12px; color:var(--text-muted)}
+.stat-hero{background:var(--primary-soft); border-color:var(--primary)}
+.stat-hero .stat-value{color:var(--primary)}
+
+/* ---------- bars ---------- */
+.bar{height:9px; border-radius:999px; background:var(--surface-3); overflow:hidden; display:flex}
+.bar-fill{height:100%; background:var(--primary); border-radius:999px}
+.bar-accent{height:14px}
+.bar-accent .bar-fill{background:var(--accent)}
+.bar-accent .bar-over{height:100%; background:var(--bad)}
+.mini-bar{height:6px}
+
+/* ---------- tables ---------- */
+.table-scroll{overflow-x:auto; border:1px solid var(--border); border-radius:var(--radius-sm); background:var(--surface)}
+table{border-collapse:collapse; width:100%; min-width:520px; font-size:13.5px}
+thead th{
+  text-align:start; font-size:11px; letter-spacing:.07em; font-weight:800; color:var(--text-soft);
+  background:var(--surface-2); padding:9px 10px; border-bottom:1px solid var(--border); white-space:nowrap; position:sticky; top:0;
+}
+tbody td{padding:8px 10px; border-bottom:1px solid var(--border); vertical-align:top}
+tbody tr:last-child td{border-bottom:0}
+tbody tr:hover td{background:var(--surface-2)}
+td.n,th.n{text-align:end; white-space:nowrap}
+tfoot td{padding:9px 10px; font-weight:800; background:var(--surface-2); border-top:1px solid var(--border-strong)}
+.t-name{font-weight:600}
+.t-sub{display:block; font-size:11.5px; color:var(--text-soft); font-weight:400}
+
+/* ---------- builder ---------- */
+.meal{padding:0; overflow:hidden}
+.meal-head{display:flex; align-items:baseline; justify-content:space-between; gap:10px; padding:12px 14px; background:var(--surface-2); border-bottom:1px solid var(--border); flex-wrap:wrap}
+.meal-head h3{font-size:14.5px}
+.meal-total{font-size:13px; color:var(--text-muted); font-weight:700; display:flex; gap:8px; align-items:baseline}
+.meal-total b{font-size:17px; color:var(--text)}
+.meal-rows{display:flex; flex-direction:column}
+.mrow{display:grid; grid-template-columns:1fr; gap:6px 10px; padding:10px 14px; border-bottom:1px solid var(--border); align-items:center}
+.mrow:last-child{border-bottom:0}
+@media (min-width:720px){
+  .mrow{grid-template-columns:78px minmax(0,1fr) 132px 104px 32px}
+}
+.mrow-label{font-size:11.5px; font-weight:800; letter-spacing:.06em; color:var(--text-soft)}
+.mrow-qty{display:flex; align-items:center; gap:6px}
+.mrow-qty input{width:74px}
+.mrow-qty span{font-size:12px; color:var(--text-soft); white-space:nowrap}
+.mrow-kcal{display:flex; flex-direction:column; gap:1px; text-align:start}
+.mrow-kcal-top{display:flex; align-items:baseline; gap:4px}
+.mrow-kcal b{font-size:16px; font-weight:800}
+.mrow-kcal span{font-size:11.5px; color:var(--text-soft)}
+.mrow-del{appearance:none; border:1px solid var(--border); background:var(--surface); color:var(--text-soft); border-radius:8px; width:30px; height:30px; font-size:16px; line-height:1; cursor:pointer; justify-self:start}
+.mrow-del:hover{border-color:var(--bad); color:var(--bad); background:var(--bad-bg)}
+.meal-actions{display:flex; flex-wrap:wrap; gap:6px; padding:10px 14px; background:var(--surface-2); border-top:1px solid var(--border)}
+.sum-head{display:flex; flex-wrap:wrap; align-items:center; gap:10px 14px; justify-content:space-between}
+.sum-total{display:flex; align-items:baseline; gap:8px}
+.sum-total b{font-size:34px; font-weight:800; letter-spacing:-.01em}
+.sum-total span{font-size:13px; color:var(--text-muted)}
+.break-list{display:flex; flex-direction:column; gap:7px}
+.break-item{display:grid; grid-template-columns:104px 1fr 74px; gap:8px; align-items:center; font-size:12.5px}
+.break-item .bl{color:var(--text-muted); font-weight:600}
+.break-item .bn{text-align:end; color:var(--text-muted)}
+.note-line{font-size:12px; color:var(--text-soft); border-top:1px dashed var(--border-strong); padding-top:8px}
+.saved-row{display:flex; gap:8px; flex-wrap:wrap; align-items:end}
+.saved-row .field{flex:1 1 190px}
+.toast{position:fixed; inset-block-end:76px; inset-inline-start:50%; transform:translateX(50%); background:var(--primary); color:var(--on-primary); padding:9px 18px; border-radius:999px; font-size:13.5px; font-weight:700; z-index:60; box-shadow:var(--shadow); opacity:0; pointer-events:none; transition:opacity .2s}
+.toast.is-on{opacity:1}
+.mobile-bar{display:none}
+@media (max-width:719px){
+  .app.builder-active .mobile-bar{
+    display:flex; position:fixed; inset-inline:0; inset-block-end:0; z-index:50;
+    background:var(--surface); border-top:1px solid var(--border-strong); padding:8px 14px;
+    align-items:center; gap:10px; justify-content:space-between; box-shadow:0 -3px 14px rgba(0,0,0,.08);
+  }
+  .app.builder-active .wrap{padding-bottom:82px}
+  .mobile-bar .mb-num{font-size:19px; font-weight:800}
+  .mobile-bar .mb-sub{font-size:11.5px; color:var(--text-soft)}
+  .mobile-bar .mb-bar{flex:1 1 auto; max-width:150px}
+}
+
+/* ---------- content cards ---------- */
+.cat-grid{display:grid; grid-template-columns:1fr; gap:12px}
+@media (min-width:700px){ .cat-grid{grid-template-columns:repeat(2,minmax(0,1fr))} }
+.cat-card{border:1px solid var(--border); border-radius:var(--radius); background:var(--surface); padding:14px; display:flex; flex-direction:column; gap:10px; box-shadow:var(--shadow)}
+.cat-card h3{font-size:15px; color:var(--primary)}
+.kv{display:grid; grid-template-columns:auto 1fr; gap:4px 10px; font-size:13px}
+.kv dt{color:var(--text-soft); font-weight:700; font-size:11.5px; letter-spacing:.05em; align-self:center}
+.kv dd{margin:0; font-weight:600}
+.cat-card ul{font-size:12.5px; color:var(--text-muted); display:flex; flex-direction:column; gap:4px}
+.ex-card{border:1px solid var(--border); border-radius:var(--radius); background:var(--surface); box-shadow:var(--shadow); overflow:hidden}
+.ex-head{padding:14px; background:var(--surface-2); border-bottom:1px solid var(--border); display:flex; flex-wrap:wrap; gap:10px; align-items:center; justify-content:space-between}
+.ex-head h3{font-size:15.5px}
+.ex-body{padding:14px; display:flex; flex-direction:column; gap:14px}
+.calc-box{background:var(--surface-2); border:1px solid var(--border); border-radius:var(--radius-sm); padding:10px 12px; font-size:12.5px; color:var(--text-muted); display:flex; flex-direction:column; gap:3px}
+.foot{border-top:1px solid var(--border); background:var(--surface); margin-top:8px}
+.foot-inner{max-width:1100px; margin:0 auto; padding:18px 16px 26px; display:flex; flex-direction:column; gap:8px; font-size:12.5px; color:var(--text-muted)}
+.foot strong{color:var(--text)}
+.foot .sig{font-size:11.5px; letter-spacing:.1em; color:var(--text-soft)}
+.alert{border:1px solid var(--warn); background:var(--warn-bg); color:var(--warn); border-radius:var(--radius-sm); padding:9px 12px; font-size:13px; font-weight:600}
+.alert-bad{border-color:var(--bad); background:var(--bad-bg); color:var(--bad)}
+.hidden{display:none !important}
+@media (prefers-reduced-motion: reduce){
+  *,*::before,*::after{transition-duration:.001ms !important; animation-duration:.001ms !important}
+}
+</style>
+</head>
+<body>
+<div class="app" dir="rtl" lang="he" id="app">
+<header class="topbar">
+  <div class="topbar-inner">
+    <div class="brand">
+      <span class="brand-mark" aria-hidden="true"></span>
+      <div><strong>הדשבורד של סיוון</strong><span class="brand-sub">מערכת בניית תפריטים</span></div>
+    </div>
+    <nav class="tabs" role="tablist" aria-label="ניווט ראשי">
+      <button class="tab-btn" role="tab" id="tabbtn-calc" aria-controls="tab-calc" aria-selected="true" data-tab="calc" type="button">מחשבון קלוריות</button>
+      <button class="tab-btn" role="tab" id="tabbtn-builder" aria-controls="tab-builder" aria-selected="false" data-tab="builder" type="button">בונה תפריט</button>
+      <button class="tab-btn" role="tab" id="tabbtn-foods" aria-controls="tab-foods" aria-selected="false" data-tab="foods" type="button">מאגר מזונות</button>
+      <button class="tab-btn" role="tab" id="tabbtn-cats" aria-controls="tab-cats" aria-selected="false" data-tab="cats" type="button">קטגוריות ויעדים</button>
+      <button class="tab-btn" role="tab" id="tabbtn-examples" aria-controls="tab-examples" aria-selected="false" data-tab="examples" type="button">תפריטים לדוגמה</button>
+    </nav>
+    <button class="btn btn-ghost btn-sm" id="themeToggle" type="button">מצב כהה</button>
+  </div>
+</header>
+
+<main class="wrap">
+
+  <!-- ===== 1. מחשבון ===== -->
+  <section class="tab-panel is-active" id="tab-calc" role="tabpanel" aria-labelledby="tabbtn-calc">
+    <div class="grid-2">
+      <div class="card stack">
+        <div>
+          <span class="eyebrow">שלב 1</span>
+          <h2 class="card-title">נתוני הלקוח/ה</h2>
+        </div>
+        <div class="field">
+          <span class="lbl">מין</span>
+          <div class="seg" id="sexSeg">
+            <button type="button" data-sex="female" aria-pressed="true">אישה</button>
+            <button type="button" data-sex="male" aria-pressed="false">גבר</button>
+          </div>
+        </div>
+        <div class="fields-grid">
+          <div class="field"><label for="cAge">גיל</label><input type="number" id="cAge" value="34" min="16" max="99" step="1"></div>
+          <div class="field"><label for="cWeight">משקל (ק"ג)</label><input type="number" id="cWeight" value="64" min="35" max="200" step="0.5"></div>
+          <div class="field"><label for="cHeight">גובה (ס"מ)</label><input type="number" id="cHeight" value="165" min="130" max="220" step="1"></div>
+        </div>
+        <div class="field">
+          <label for="cActivity">רמת פעילות</label>
+          <select id="cActivity"></select>
+        </div>
+        <div class="field">
+          <label for="cGoal">מטרה / קטגוריה</label>
+          <select id="cGoal"></select>
+        </div>
+        <p class="lede">כל המספרים כאן הם נקודת פתיחה, לא אמת מוחלטת. הנוסחה מדויקת ב-±10% אצל כ-70% מהאנשים — המספר האמיתי מתגלה אחרי 2-3 שבועות מעקב.</p>
+      </div>
+
+      <div class="card stack">
+        <div>
+          <span class="eyebrow">שלב 2</span>
+          <h2 class="card-title">התוצאה</h2>
+        </div>
+        <div id="calcAlerts" class="stack-sm"></div>
+        <div class="stat-grid stat-grid-3">
+          <div class="stat"><span class="stat-label">BMR</span><span class="stat-value num" id="outBmr">—</span><span class="stat-note">Mifflin-St Jeor</span></div>
+          <div class="stat"><span class="stat-label">TDEE</span><span class="stat-value num" id="outTdee">—</span><span class="stat-note" id="outFactor">מקדם פעילות</span></div>
+          <div class="stat stat-hero"><span class="stat-label">יעד קלורי</span><span class="stat-value num" id="outTarget">—</span><span class="stat-note" id="outGoalNote">—</span></div>
+        </div>
+        <div class="stat-grid">
+          <div class="stat"><span class="stat-label">חלבון מומלץ</span><span class="stat-value num" id="outProtein">—</span><span class="stat-note" id="outProteinNote">—</span></div>
+          <div class="stat"><span class="stat-label">קצב שינוי צפוי</span><span class="stat-value num" id="outRate">—</span><span class="stat-note" id="outRateNote">—</span></div>
+        </div>
+        <div class="stack-sm">
+          <span class="lbl">בדיקות בטיחות</span>
+          <div class="row-flex" id="safetyChips"></div>
+        </div>
+        <button class="btn" id="btnSendTarget" type="button">קבע כיעד בבונה התפריט</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== 2. בונה תפריט ===== -->
+  <section class="tab-panel" id="tab-builder" role="tabpanel" aria-labelledby="tabbtn-builder">
+
+    <div class="card stack">
+      <div class="saved-row">
+        <div class="field"><label for="clientName">שם הלקוח/ה</label><input type="text" id="clientName" placeholder="לדוגמה: נועה"></div>
+        <div class="field" style="flex:0 1 170px"><label for="targetKcal">יעד קלורי יומי</label><input type="number" id="targetKcal" value="1500" min="800" max="5000" step="10"></div>
+      </div>
+      <div class="row-flex">
+        <button class="btn btn-sm" id="btnSave" type="button">שמירת תפריט</button>
+        <button class="btn btn-quiet btn-sm" id="btnCopy" type="button">העתקת תפריט כטקסט</button>
+        <button class="btn btn-quiet btn-sm" id="btnReset" type="button">איפוס</button>
+      </div>
+      <div class="saved-row">
+        <div class="field"><label for="savedList">תפריטים שמורים</label><select id="savedList"><option value="">— אין תפריטים שמורים —</option></select></div>
+        <button class="btn btn-quiet btn-sm" id="btnLoad" type="button">טעינה</button>
+        <button class="btn btn-quiet btn-sm" id="btnDelete" type="button">מחיקה</button>
+      </div>
+      <div class="row-flex">
+        <span class="lbl">טעינת דוגמה:</span>
+        <button class="btn btn-ghost btn-sm" data-example="0" type="button">גירעון 1,500</button>
+        <button class="btn btn-ghost btn-sm" data-example="1" type="button">חיטוב 1,799</button>
+        <button class="btn btn-ghost btn-sm" data-example="2" type="button">מסה 2,700</button>
+      </div>
+    </div>
+
+    <div class="card stack" id="daySummary">
+      <div class="sum-head">
+        <div>
+          <span class="eyebrow">סיכום יומי</span>
+          <div class="sum-total"><b class="num" id="sumTotal">0</b><span>קק"ל מתוך <span class="num" id="sumTarget">1,500</span></span></div>
+        </div>
+        <span class="chip chip-neutral" id="sumChip"><span class="chip-dot"></span><span id="sumChipText">—</span></span>
+      </div>
+      <div class="bar bar-accent" role="img" aria-label="סה\"כ קלוריות מול היעד">
+        <div class="bar-fill" id="sumBarFill" style="width:0%"></div>
+        <div class="bar-over" id="sumBarOver" style="width:0%"></div>
+      </div>
+      <div class="stat-grid stat-grid-3">
+        <div class="stat"><span class="stat-label">חלבון</span><span class="stat-value num" id="sumP">0 ג'</span><span class="stat-note" id="sumPn">—</span></div>
+        <div class="stat"><span class="stat-label">פחמימה</span><span class="stat-value num" id="sumC">0 ג'</span><span class="stat-note" id="sumCn">—</span></div>
+        <div class="stat"><span class="stat-label">שומן</span><span class="stat-value num" id="sumF">0 ג'</span><span class="stat-note" id="sumFn">—</span></div>
+      </div>
+      <div class="break-list" id="sumBreak"></div>
+      <p class="note-line" id="sumMacroCheck">—</p>
+    </div>
+
+    <div class="stack" id="mealsWrap"></div>
+  </section>
+
+  <!-- ===== 3. מאגר מזונות ===== -->
+  <section class="tab-panel" id="tab-foods" role="tabpanel" aria-labelledby="tabbtn-foods">
+    <div class="card stack">
+      <div>
+        <h2 class="card-title">מאגר מזונות<span class="eyebrow" id="foodsCount"></span></h2>
+        <p class="lede">ערכים ממוצעים לפי מאגרי מזון (USDA ומאגרים ישראליים). במזון מעובד — תמיד לבדוק את תווית המוצר הספציפי.</p>
+      </div>
+      <div class="field"><label for="foodSearch">חיפוש חופשי</label><input type="text" id="foodSearch" placeholder="שם מזון..."></div>
+      <div class="row-flex" id="foodChips"></div>
+      <div class="table-scroll">
+        <table>
+          <thead><tr>
+            <th>מזון</th><th>קטגוריה</th><th>מנה ביתית</th><th class="n">גרמים</th><th class="n">קלוריות</th><th class="n">חלבון</th><th class="n">פחמימה</th><th class="n">שומן</th>
+          </tr></thead>
+          <tbody id="foodsBody"></tbody>
+        </table>
+      </div>
+      <p class="note-line">עיקרון בדיקה: קלוריות ≈ (חלבון × 4) + (פחמימה × 4) + (שומן × 9). בירקות ובפירות ייתכן פער של עד כ-10% בגלל סיבים תזונתיים — זה תקין.</p>
+    </div>
+  </section>
+
+  <!-- ===== 4. קטגוריות ויעדים ===== -->
+  <section class="tab-panel" id="tab-cats" role="tabpanel" aria-labelledby="tabbtn-cats">
+    <div class="cat-grid" id="catGrid"></div>
+    <div class="card stack">
+      <h2 class="card-title">פריסטים לפי משקל — נשים</h2>
+      <p class="lede">בכל תא: יעד קלורי, ומתחתיו חלבון / פחמימה / שומן בגרמים.</p>
+      <div class="table-scroll"><table id="presetWomen"></table></div>
+    </div>
+    <div class="card stack">
+      <h2 class="card-title">פריסטים לפי משקל — גברים</h2>
+      <div class="table-scroll"><table id="presetMen"></table></div>
+    </div>
+    <div class="card stack">
+      <h2 class="card-title">פיזור הקלוריות בתבנית</h2>
+      <div class="table-scroll"><table id="splitTable"></table></div>
+      <p class="note-line">הפריסט הוא נקודת פתיחה ובדיקת שפיות — לא תחליף לחישוב אישי. אצל לקוחה עם גובה, גיל או רמת פעילות חריגים — חובה לחשב לפי הנוסחה.</p>
+    </div>
+  </section>
+
+  <!-- ===== 5. תפריטים לדוגמה ===== -->
+  <section class="tab-panel" id="tab-examples" role="tabpanel" aria-labelledby="tabbtn-examples">
+    <div class="stack" id="examplesWrap"></div>
+    <div class="card">
+      <p class="lede"><strong>לפני מסירה ללקוחה:</strong> אף אחד משלושת התפריטים אינו מוכן כמו שהוא. חובה לעבור על העדפות ושנאות מזון, אלרגיות, תקציב, יכולת וזמן בישול, שגרת יום ומספר ארוחות — ולחשב BMR ו-TDEE אישיים.</p>
+    </div>
+  </section>
+
+</main>
+
+<footer class="foot">
+  <div class="foot-inner">
+    <strong>דגלים אדומים — מתי מפנים הלאה</strong>
+    <p>הריון או הנקה · חשד להפרעת אכילה (בהווה או בעבר) · גיל מתחת ל-18 · סוכרת · מחלת כליות, כבד או לב · בעיות בבלוטת התריס · מחלות מעי, צליאק · PCOS · אחרי ניתוח בריאטרי · BMI מתחת ל-18.5 או מעל 40 · תרופות קבועות · ירידה לא מוסברת במשקל · היעדר מחזור 3 חודשים ומעלה.</p>
+    <p>במצבים אלה עוצרים ומפנים ל<strong>דיאטנית קלינית או לרופא</strong> לפני שממשיכים. הפניה היא לא כישלון מקצועי — היא הסימן הברור ביותר למקצועיות.</p>
+    <span class="sig">המערכת של סיוון · אינה מהווה ייעוץ רפואי</span>
+  </div>
+</footer>
+
+<div class="mobile-bar" id="mobileBar">
+  <div><div class="mb-num num" id="mbTotal">0</div><div class="mb-sub">מתוך <span class="num" id="mbTarget">1,500</span> קק"ל</div></div>
+  <div class="mb-bar"><div class="bar bar-accent"><div class="bar-fill" id="mbFill" style="width:0%"></div><div class="bar-over" id="mbOver" style="width:0%"></div></div></div>
+  <span class="chip chip-neutral" id="mbChip"><span class="chip-dot"></span><span id="mbChipText">—</span></span>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+</div>
+
+<script>
+(function(){
+"use strict";
+
+/* ==== PURE-CALC-START ==== */
+
+var FOODS = [
+/* --- פחמימות (עמילניים) --- */
+{id:"c1",name:"לחם מלא",cat:"carb",portion:"פרוסה",grams:30,kcal:75,protein:3,carbs:13,fat:1},
+{id:"c2",name:"לחם לבן",cat:"carb",portion:"פרוסה",grams:30,kcal:77,protein:2.5,carbs:15,fat:0.8},
+{id:"c3",name:"פיתה מלאה",cat:"carb",portion:"יחידה",grams:60,kcal:146,protein:6,carbs:27,fat:1.5},
+{id:"c4",name:"פיתה לבנה",cat:"carb",portion:"יחידה",grams:60,kcal:161,protein:5,carbs:33,fat:1},
+{id:"c5",name:"לחמניה מלאה",cat:"carb",portion:"יחידה",grams:50,kcal:134,protein:5,carbs:24,fat:2},
+{id:"c6",name:"חלה",cat:"carb",portion:"פרוסה",grams:40,kcal:117,protein:3.5,carbs:20,fat:2.5},
+{id:"c7",name:"באגט לבן",cat:"carb",portion:"פרוסה (5 ס\"מ)",grams:40,kcal:105,protein:3,carbs:22,fat:0.5},
+{id:"c8",name:"טורטייה מלאה",cat:"carb",portion:"יחידה בינונית",grams:50,kcal:131,protein:4,carbs:22,fat:3},
+{id:"c9",name:"טורטייה לבנה",cat:"carb",portion:"יחידה בינונית",grams:50,kcal:146,protein:3.5,carbs:25,fat:3.5},
+{id:"c10",name:"אורז לבן מבושל",cat:"carb",portion:"כוס",grams:150,kcal:187,protein:3.5,carbs:42,fat:0.5},
+{id:"c11",name:"אורז מלא מבושל",cat:"carb",portion:"כוס",grams:150,kcal:162,protein:4,carbs:33,fat:1.5},
+{id:"c12",name:"אורז בסמטי מבושל",cat:"carb",portion:"כוס",grams:150,kcal:180,protein:4,carbs:38,fat:0.7},
+{id:"c13",name:"פסטה רגילה מבושלת",cat:"carb",portion:"כוס",grams:140,kcal:182,protein:7,carbs:35,fat:1.5},
+{id:"c14",name:"פסטה מלאה מבושלת",cat:"carb",portion:"כוס",grams:140,kcal:174,protein:8,carbs:32,fat:1.5},
+{id:"c15",name:"פתיתים מבושלים",cat:"carb",portion:"כוס",grams:150,kcal:169,protein:5,carbs:35,fat:1},
+{id:"c16",name:"קוסקוס מבושל",cat:"carb",portion:"כוס",grams:150,kcal:173,protein:6,carbs:36,fat:0.5},
+{id:"c17",name:"קינואה מבושלת",cat:"carb",portion:"כוס",grams:150,kcal:177,protein:6.5,carbs:31,fat:3},
+{id:"c18",name:"בטטה אפויה",cat:"carb",portion:"יחידה בינונית",grams:150,kcal:139,protein:3,carbs:31,fat:0.3},
+{id:"c19",name:"תפוח אדמה אפוי/מבושל",cat:"carb",portion:"יחידה בינונית",grams:150,kcal:136,protein:3.5,carbs:30,fat:0.2},
+{id:"c20",name:"שיבולת שועל יבשה (קוואקר)",cat:"carb",portion:"חצי כוס",grams:40,kcal:152,protein:5,carbs:27,fat:2.7},
+{id:"c21",name:"גרנולה",cat:"carb",portion:"חצי כוס",grams:50,kcal:212,protein:5,carbs:30,fat:8},
+{id:"c22",name:"קורנפלקס / דגני בוקר",cat:"carb",portion:"כוס",grams:30,kcal:111,protein:2,carbs:25,fat:0.3},
+{id:"c23",name:"פריכיות אורז מלא",cat:"carb",portion:"2 יח'",grams:18,kcal:67,protein:1.5,carbs:14,fat:0.5},
+{id:"c24",name:"פריכיות כוסמין/קינואה",cat:"carb",portion:"5 יח'",grams:20,kcal:82,protein:2,carbs:15,fat:1.5},
+{id:"c25",name:"בייגלה",cat:"carb",portion:"חופן קטן",grams:20,kcal:86,protein:2,carbs:15,fat:2},
+{id:"c26",name:"עדשים מבושלות",cat:"carb",portion:"כוס",grams:200,kcal:239,protein:18,carbs:40,fat:0.8},
+{id:"c27",name:"חומוס גרעינים מבושל/משומר",cat:"carb",portion:"כוס",grams:165,kcal:276,protein:15,carbs:45,fat:4},
+{id:"c28",name:"שעועית לבנה מבושלת",cat:"carb",portion:"כוס",grams:180,kcal:225,protein:15,carbs:40,fat:0.6},
+{id:"c29",name:"תירס גרעינים",cat:"carb",portion:"כוס",grams:165,kcal:162,protein:5,carbs:31,fat:2},
+{id:"c30",name:"בורגול מבושל",cat:"carb",portion:"כוס",grams:150,kcal:123,protein:5,carbs:25,fat:0.3},
+/* --- חלבונים --- */
+{id:"p1",name:"חזה עוף מבושל/צלוי (ללא עור)",cat:"protein",portion:"100 גרם",grams:100,kcal:156,protein:31,carbs:0,fat:3.5},
+{id:"p2",name:"שוק/ירך עוף מבושל (ללא עור)",cat:"protein",portion:"100 גרם",grams:100,kcal:194,protein:26,carbs:0,fat:10},
+{id:"p3",name:"הודו טחון רזה מבושל",cat:"protein",portion:"100 גרם",grams:100,kcal:180,protein:27,carbs:0,fat:8},
+{id:"p4",name:"חזה הודו פרוס (נקניק)",cat:"protein",portion:"2 פרוסות",grams:40,kcal:49,protein:9,carbs:1,fat:1},
+{id:"p5",name:"בקר רזה צלוי (פילה/סינטה)",cat:"protein",portion:"100 גרם",grams:100,kcal:188,protein:29,carbs:0,fat:8},
+{id:"p6",name:"בקר טחון רזה (5%) מבושל",cat:"protein",portion:"100 גרם",grams:100,kcal:194,protein:26,carbs:0,fat:10},
+{id:"p7",name:"כבש צלוי",cat:"protein",portion:"100 גרם",grams:100,kcal:262,protein:25,carbs:0,fat:18},
+{id:"p8",name:"סלמון אפוי",cat:"protein",portion:"100 גרם",grams:100,kcal:217,protein:25,carbs:0,fat:13},
+{id:"p9",name:"טונה משומרת במים (מסונן)",cat:"protein",portion:"קופסה",grams:100,kcal:109,protein:25,carbs:0,fat:1},
+{id:"p10",name:"דניס/לברק אפוי",cat:"protein",portion:"100 גרם",grams:100,kcal:123,protein:24,carbs:0,fat:3},
+{id:"p11",name:"אמנון/טילפיה אפוי",cat:"protein",portion:"100 גרם",grams:100,kcal:127,protein:26,carbs:0,fat:2.5},
+{id:"p12",name:"בקלה/דג לבן רזה מבושל",cat:"protein",portion:"100 גרם",grams:100,kcal:99,protein:23,carbs:0,fat:0.8},
+{id:"p13",name:"ביצה שלמה",cat:"protein",portion:"יחידה L",grams:50,kcal:73,protein:6.5,carbs:0.5,fat:5},
+{id:"p14",name:"חלבון ביצה בלבד",cat:"protein",portion:"יחידה",grams:33,kcal:15,protein:3.5,carbs:0.2,fat:0},
+{id:"p15",name:"קוטג' 5%",cat:"protein",portion:"חצי גביע",grams:125,kcal:126,protein:14,carbs:4,fat:6},
+{id:"p16",name:"קוטג' 3%",cat:"protein",portion:"100 גרם",grams:100,kcal:85,protein:11,carbs:3.5,fat:3},
+{id:"p17",name:"גבינה לבנה 5%",cat:"protein",portion:"100 גרם",grams:100,kcal:93,protein:8,carbs:4,fat:5},
+{id:"p18",name:"יוגורט פרו/פרוביוטי 3%",cat:"protein",portion:"גביע",grams:150,kcal:113,protein:6,carbs:12,fat:4.5},
+{id:"p19",name:"יוגורט יווני 5%",cat:"protein",portion:"150 גרם",grams:150,kcal:136,protein:9,carbs:8,fat:7.5},
+{id:"p20",name:"סקיר (Skyr)",cat:"protein",portion:"גביע",grams:170,kcal:103,protein:18,carbs:7,fat:0.3},
+{id:"p21",name:"גבינה צהובה 9%",cat:"protein",portion:"פרוסה",grams:25,kcal:51,protein:7,carbs:0.5,fat:2.3},
+{id:"p22",name:"גבינת עמק/עדה 28%",cat:"protein",portion:"פרוסה",grams:25,kcal:88,protein:6,carbs:0.3,fat:7},
+{id:"p23",name:"טופו",cat:"protein",portion:"100 גרם",grams:100,kcal:81,protein:8,carbs:2,fat:4.5},
+{id:"p24",name:"אבקת חלבון מי גבינה (Whey)",cat:"protein",portion:"מנה (כף גדושה)",grams:30,kcal:122,protein:24,carbs:3,fat:1.5},
+{id:"p25",name:"סייטן",cat:"protein",portion:"100 גרם",grams:100,kcal:134,protein:25,carbs:4,fat:2},
+{id:"p26",name:"חלב 3%",cat:"protein",portion:"כוס",grams:200,kcal:122,protein:7,carbs:10,fat:6},
+{id:"p27",name:"משקה סויה (לא ממותק)",cat:"protein",portion:"כוס",grams:200,kcal:80,protein:7,carbs:4,fat:4},
+{id:"p28",name:"אדממה מבושל",cat:"protein",portion:"כוס",grams:155,kcal:196,protein:17,carbs:14,fat:8},
+/* --- ירקות (ל-100 גרם) --- */
+{id:"v1",name:"מלפפון",cat:"veg",portion:"כ-1 יח' בינונית",grams:100,kcal:15,protein:0.7,carbs:3.6,fat:0.1},
+{id:"v2",name:"עגבנייה",cat:"veg",portion:"כ-1 יח' בינונית",grams:100,kcal:18,protein:0.9,carbs:3.9,fat:0.2},
+{id:"v3",name:"עגבניות שרי",cat:"veg",portion:"כ-8-10 יח'",grams:100,kcal:18,protein:0.9,carbs:3.9,fat:0.2},
+{id:"v4",name:"פלפל אדום",cat:"veg",portion:"כ-2/3 יח'",grams:100,kcal:31,protein:1,carbs:6,fat:0.3},
+{id:"v5",name:"פלפל צהוב",cat:"veg",portion:"כ-2/3 יח'",grams:100,kcal:27,protein:1,carbs:6,fat:0.2},
+{id:"v6",name:"פלפל ירוק",cat:"veg",portion:"כ-1 יח'",grams:100,kcal:20,protein:0.9,carbs:4.6,fat:0.2},
+{id:"v7",name:"חסה (רומן/אייסברג)",cat:"veg",portion:"כ-3 כוסות עלים",grams:100,kcal:15,protein:1.4,carbs:2.9,fat:0.2},
+{id:"v8",name:"גזר",cat:"veg",portion:"כ-1 יח' בינונית",grams:100,kcal:41,protein:0.9,carbs:10,fat:0.2},
+{id:"v9",name:"בצל",cat:"veg",portion:"כ-1 יח' קטנה-בינונית",grams:100,kcal:40,protein:1.1,carbs:9.3,fat:0.1},
+{id:"v10",name:"קישוא",cat:"veg",portion:"כ-1 יח' בינונית",grams:100,kcal:17,protein:1.2,carbs:3.1,fat:0.3},
+{id:"v11",name:"חציל אפוי",cat:"veg",portion:"כ-1/2 יח'",grams:100,kcal:25,protein:1,carbs:6,fat:0.2},
+{id:"v12",name:"ברוקולי מאודה",cat:"veg",portion:"כ-1 כוס",grams:100,kcal:35,protein:2.4,carbs:7,fat:0.4},
+{id:"v13",name:"כרובית מאודה",cat:"veg",portion:"כ-1 כוס",grams:100,kcal:25,protein:1.9,carbs:5,fat:0.3},
+{id:"v14",name:"כרוב לבן",cat:"veg",portion:"כ-1 כוס קצוץ",grams:100,kcal:25,protein:1.3,carbs:5.8,fat:0.1},
+{id:"v15",name:"כרוב סגול",cat:"veg",portion:"כ-1 כוס קצוץ",grams:100,kcal:31,protein:1.4,carbs:7.4,fat:0.2},
+{id:"v16",name:"תרד טרי",cat:"veg",portion:"כ-3 כוסות עלים",grams:100,kcal:23,protein:2.9,carbs:3.6,fat:0.4},
+{id:"v17",name:"פטריות",cat:"veg",portion:"כ-1 כוס פרוסות",grams:100,kcal:22,protein:3.1,carbs:3.3,fat:0.3},
+{id:"v18",name:"סלרי",cat:"veg",portion:"כ-2 קלחים",grams:100,kcal:16,protein:0.7,carbs:3,fat:0.2},
+{id:"v19",name:"צנונית",cat:"veg",portion:"כ-6-7 יח'",grams:100,kcal:16,protein:0.7,carbs:3.4,fat:0.1},
+{id:"v20",name:"סלק מבושל",cat:"veg",portion:"כ-1 יח' בינונית",grams:100,kcal:44,protein:1.7,carbs:10,fat:0.2},
+{id:"v21",name:"אספרגוס מאודה",cat:"veg",portion:"כ-6-7 קלחים",grams:100,kcal:22,protein:2.4,carbs:4,fat:0.2},
+{id:"v22",name:"שעועית ירוקה מאודה",cat:"veg",portion:"כ-1 כוס",grams:100,kcal:31,protein:1.8,carbs:7,fat:0.2},
+{id:"v23",name:"אפונה ירוקה",cat:"veg",portion:"כ-2/3 כוס",grams:100,kcal:81,protein:5.4,carbs:14,fat:0.4},
+{id:"v24",name:"קולורבי",cat:"veg",portion:"כ-2/3 יח'",grams:100,kcal:27,protein:1.7,carbs:6.2,fat:0.1},
+/* --- ירקות משולבים (מחושבים מהמאגר, 07 §4.3) --- */
+{id:"vc1",name:"סלט ישראלי (מלפפון + עגבנייה)",cat:"veg",portion:"מנה 200 ג'",grams:200,kcal:33,protein:1.6,carbs:7.5,fat:0.3},
+{id:"vc2",name:"סלט (חסה, עגבנייה, מלפפון, פלפל)",cat:"veg",portion:"מנה 250 ג'",grams:250,kcal:49,protein:2.5,carbs:10.2,fat:0.5},
+{id:"vc3",name:"סלט (חסה, עגבנייה, מלפפון)",cat:"veg",portion:"מנה 250 ג'",grams:250,kcal:41,protein:2.3,carbs:9,fat:0.4},
+{id:"vc4",name:"סלט גדול (חסה, עגבנייה, מלפפון, פלפל)",cat:"veg",portion:"מנה 300 ג'",grams:300,kcal:58,protein:2.9,carbs:12.1,fat:0.6},
+{id:"vc5",name:"ברוקולי מאודה + קישוא",cat:"veg",portion:"מנה 250 ג'",grams:250,kcal:70,protein:4.8,carbs:13.6,fat:0.9},
+{id:"vc6",name:"ירקות מוקפצים (קישוא, פלפל, פטריות)",cat:"veg",portion:"מנה 340 ג'",grams:340,kcal:77,protein:5.8,carbs:13.6,fat:1},
+/* --- שומנים --- */
+{id:"f1",name:"שמן זית",cat:"fat",portion:"כף",grams:14,kcal:126,protein:0,carbs:0,fat:14},
+{id:"f2",name:"שמן זית",cat:"fat",portion:"כפית (= מנת שומן אחת)",grams:5,kcal:45,protein:0,carbs:0,fat:5},
+{id:"f3",name:"שמן קנולה",cat:"fat",portion:"כף",grams:14,kcal:126,protein:0,carbs:0,fat:14},
+{id:"f4",name:"טחינה גולמית (100%)",cat:"fat",portion:"כף גדושה",grams:15,kcal:94,protein:2.5,carbs:3,fat:8},
+{id:"f5",name:"אבוקדו",cat:"fat",portion:"רבע יחידה",grams:50,kcal:88,protein:1,carbs:4,fat:7.5},
+{id:"f6",name:"זיתים (ירוקים/שחורים)",cat:"fat",portion:"8-10 יח'",grams:30,kcal:43,protein:0.3,carbs:1.5,fat:4},
+{id:"f7",name:"אגוזי מלך",cat:"fat",portion:"2 יח' שלמות (4 חצאים)",grams:10,kcal:70,protein:1.5,carbs:1.4,fat:6.5},
+{id:"f8",name:"שקדים",cat:"fat",portion:"10 יח'",grams:12,kcal:74,protein:2.5,carbs:2.6,fat:6},
+{id:"f9",name:"בוטנים (ללא מלח)",cat:"fat",portion:"חופן קטן",grams:15,kcal:90,protein:3.9,carbs:2.4,fat:7.4},
+{id:"f10",name:"חמאת בוטנים טבעית",cat:"fat",portion:"כף",grams:16,kcal:98,protein:4,carbs:3.2,fat:8},
+{id:"f11",name:"חמאת שקדים",cat:"fat",portion:"כף",grams:16,kcal:104,protein:3.3,carbs:3,fat:8.8},
+{id:"f12",name:"קשיו",cat:"fat",portion:"8-9 יח'",grams:15,kcal:85,protein:2.7,carbs:4.5,fat:6.6},
+{id:"f13",name:"פיסטוקים (קלופים)",cat:"fat",portion:"20 גרעינים",grams:15,kcal:85,protein:3,carbs:4.2,fat:6.75},
+{id:"f14",name:"חמאה",cat:"fat",portion:"כף",grams:14,kcal:100,protein:0.1,carbs:0,fat:11.4},
+{id:"f15",name:"מיונז",cat:"fat",portion:"כף",grams:15,kcal:101,protein:0.15,carbs:0.15,fat:11.25},
+{id:"f16",name:"שמנת מתוקה 38%",cat:"fat",portion:"2 כפות",grams:30,kcal:105,protein:0.6,carbs:0.9,fat:11.4},
+{id:"f17",name:"שבבי קוקוס טחון",cat:"fat",portion:"2 כפות",grams:15,kcal:100,protein:1,carbs:3.6,fat:9.75},
+{id:"f18",name:"שמן קוקוס",cat:"fat",portion:"כפית (= מנת שומן אחת)",grams:5,kcal:45,protein:0,carbs:0,fat:5},
+/* --- ארוחות ביניים --- */
+{id:"s1",name:"תפוח",cat:"snack",portion:"יחידה בינונית",grams:150,kcal:80,protein:0.4,carbs:21,fat:0.3},
+{id:"s2",name:"בננה",cat:"snack",portion:"יחידה בינונית",grams:120,kcal:107,protein:1.3,carbs:27,fat:0.4},
+{id:"s3",name:"תפוז",cat:"snack",portion:"יחידה בינונית",grams:150,kcal:70,protein:1.4,carbs:17,fat:0.2},
+{id:"s4",name:"תות שדה",cat:"snack",portion:"כוס",grams:150,kcal:48,protein:1,carbs:11,fat:0.5},
+{id:"s5",name:"ענבים",cat:"snack",portion:"כוס",grams:150,kcal:104,protein:1,carbs:27,fat:0.3},
+{id:"s6",name:"אגס",cat:"snack",portion:"יחידה בינונית",grams:170,kcal:100,protein:0.6,carbs:27,fat:0.2},
+{id:"s7",name:"אבטיח",cat:"snack",portion:"כוס קוביות",grams:150,kcal:45,protein:0.9,carbs:11,fat:0.2},
+{id:"s8",name:"מלון",cat:"snack",portion:"כוס קוביות",grams:160,kcal:55,protein:1.4,carbs:14,fat:0.3},
+{id:"s9",name:"קיווי",cat:"snack",portion:"יחידה",grams:70,kcal:42,protein:0.8,carbs:10,fat:0.4},
+{id:"s10",name:"אפרסק",cat:"snack",portion:"יחידה בינונית",grams:150,kcal:58,protein:1.4,carbs:14,fat:0.4},
+{id:"s11",name:"תמר מג'הול",cat:"snack",portion:"2 יח'",grams:40,kcal:109,protein:1,carbs:26,fat:0.1},
+{id:"s12",name:"יוגורט טבעי 3% + פרי חתוך",cat:"snack",portion:"כוס",grams:200,kcal:146,protein:8,carbs:15,fat:6},
+{id:"s13",name:"סקיר עם פרי יער",cat:"snack",portion:"גביע",grams:170,kcal:119,protein:17,carbs:12,fat:0.3},
+{id:"s14",name:"חטיף חלבון (ממוצע לדוגמה)",cat:"snack",portion:"יחידה",grams:50,kcal:232,protein:20,carbs:20,fat:8},
+{id:"s15",name:"שייק חלבון (אבקה + מים/חלב דל שומן)",cat:"snack",portion:"כוס",grams:300,kcal:150,protein:25,carbs:8,fat:2},
+{id:"s16",name:"שייק פירות עם יוגורט",cat:"snack",portion:"כוס",grams:300,kcal:179,protein:8,carbs:30,fat:3},
+{id:"s17",name:"ביצה קשה + מלפפון",cat:"snack",portion:"מנה",grams:130,kcal:85,protein:7,carbs:3,fat:5},
+{id:"s18",name:"מקלות גזר ומלפפון + חומוס",cat:"snack",portion:"מנה",grams:180,kcal:91,protein:4,carbs:12,fat:3},
+{id:"s19",name:"פופקורן טבעי (מוקפץ אוויר)",cat:"snack",portion:"2 כוסות",grams:16,kcal:60,protein:1.7,carbs:12,fat:0.6},
+{id:"s20",name:"שוקולד מריר 70%+",cat:"snack",portion:"2 קוביות",grams:15,kcal:77,protein:1,carbs:7,fat:5}
+];
+
+var FOOD_BY_ID = {};
+for (var fi=0; fi<FOODS.length; fi++){ FOOD_BY_ID[FOODS[fi].id] = FOODS[fi]; }
+
+var CAT_LABEL = {carb:"פחמימה", protein:"חלבון", veg:"ירק", fat:"שומן", snack:"ביניים"};
+
+var ACTIVITY = [
+  {v:1.2,   name:"יושבני — עבודה משרדית, אפס אימונים", steps:"פחות מ-5,000 צעדים"},
+  {v:1.375, name:"פעילות קלה — 1-3 אימונים קלים בשבוע", steps:"5,000-7,500 צעדים"},
+  {v:1.55,  name:"פעילות בינונית — 3-5 אימונים בשבוע", steps:"7,500-10,000 צעדים"},
+  {v:1.725, name:"פעילות גבוהה — 6-7 אימונים או עבודה פיזית", steps:"10,000-13,000 צעדים"},
+  {v:1.9,   name:"ספורטאי / עבודה פיזית קשה", steps:"13,000+ צעדים"}
+];
+
+var GOALS = {
+  loss:  {key:"loss",  name:"ירידה במשקל", factor:0.82, deltaLabel:"גירעון 18% מה-TDEE",
+          protein:{female:1.9, male:1.9}, proteinRange:"1.6-2.2 ג'/ק\"ג",
+          rate:[0.5,1], rateLabel:"0.5-1% ממשקל הגוף לשבוע"},
+  cut:   {key:"cut",   name:"חיטוב", factor:0.85, deltaLabel:"גירעון 15% מה-TDEE",
+          protein:{female:2.1, male:2.2}, proteinRange:"נשים 1.8-2.4 | גברים 2.0-2.6 ג'/ק\"ג",
+          rate:[0.4,0.7], rateLabel:"0.4-0.7% ממשקל הגוף לשבוע"},
+  gain:  {key:"gain",  name:"עליית מסה", factor:1.12, deltaLabel:"עודף 12% מה-TDEE",
+          protein:{female:2.0, male:2.0}, proteinRange:"1.6-2.2 ג'/ק\"ג",
+          rate:[0.25,0.5], rateLabel:"0.25-0.5% ממשקל הגוף לשבוע (עלייה)"},
+  maint: {key:"maint", name:"שימור / רקומפוזיציה", factor:1.0, deltaLabel:"סביב ה-TDEE (±5%)",
+          protein:{female:1.8, male:1.8}, proteinRange:"1.6-2.0 ג'/ק\"ג",
+          rate:[0,0], rateLabel:"אין קצב במאזניים — היקפים, תמונות ושיאים"}
+};
+
+var FLOOR = {female:1200, male:1500};
+
+function calcBMR(sex, weight, height, age){
+  var base = (10*weight) + (6.25*height) - (5*age);
+  return Math.round(sex === "male" ? base + 5 : base - 161);
+}
+function calcTDEE(bmr, factor){ return Math.round(bmr * factor); }
+function calcTarget(tdee, goalKey, sex){
+  var g = GOALS[goalKey];
+  var raw = Math.round(tdee * g.factor / 10) * 10;
+  var floor = FLOOR[sex];
+  var floored = raw < floor;
+  return {raw:raw, target: floored ? floor : raw, floor:floor, floored:floored};
+}
+function proteinTarget(goalKey, sex, weight){
+  var perKg = GOALS[goalKey].protein[sex];
+  return {grams: Math.round(weight * perKg), perKg: perKg};
+}
+function expectedRate(goalKey, weight){
+  var r = GOALS[goalKey].rate;
+  if (r[0] === 0 && r[1] === 0) return null;
+  return {lo: Math.round(weight*r[0]/100*100)/100, hi: Math.round(weight*r[1]/100*100)/100};
+}
+
+function rowKcal(foodId, qty){
+  var f = FOOD_BY_ID[foodId];
+  if (!f || !qty) return 0;
+  return Math.round(f.kcal * qty);
+}
+function rowMacros(foodId, qty){
+  var f = FOOD_BY_ID[foodId];
+  if (!f || !qty) return {kcal:0, protein:0, carbs:0, fat:0, grams:0};
+  return {
+    kcal: Math.round(f.kcal * qty),
+    protein: f.protein * qty,
+    carbs: f.carbs * qty,
+    fat: f.fat * qty,
+    grams: Math.round(f.grams * qty)
+  };
+}
+function sumRows(rows){
+  var t = {kcal:0, protein:0, carbs:0, fat:0};
+  for (var i=0;i<rows.length;i++){
+    var r = rows[i];
+    if (!r.foodId) continue;
+    var m = rowMacros(r.foodId, r.qty);
+    t.kcal += m.kcal; t.protein += m.protein; t.carbs += m.carbs; t.fat += m.fat;
+  }
+  return t;
+}
+var MEAL_KEYS = ["breakfast","lunch","fat","dinner","snack"];
+var MEAL_LABEL = {breakfast:"ארוחת בוקר", lunch:"ארוחת צהריים", fat:"שומן — מנה יומית", dinner:"ארוחת ערב", snack:"ארוחות ביניים"};
+function sumMenu(menu){
+  var out = {meals:{}, kcal:0, protein:0, carbs:0, fat:0};
+  for (var i=0;i<MEAL_KEYS.length;i++){
+    var k = MEAL_KEYS[i];
+    var t = sumRows(menu[k] || []);
+    out.meals[k] = t;
+    out.kcal += t.kcal; out.protein += t.protein; out.carbs += t.carbs; out.fat += t.fat;
+  }
+  out.protein = Math.round(out.protein);
+  out.carbs = Math.round(out.carbs);
+  out.fat = Math.round(out.fat);
+  return out;
+}
+function statusOf(total, target){
+  var diff = total - target;
+  if (Math.abs(diff) <= 30) return {level:"ok", diff:diff, text:"בטווח היעד (±30)"};
+  var pct = target ? Math.abs(diff)/target : 1;
+  var dir = diff > 0 ? "מעל היעד" : "מתחת ליעד";
+  return {level: pct > 0.10 ? "bad" : "warn", diff:diff, text: dir + " ב-" + Math.abs(diff).toLocaleString("he-IL") + " קק\"ל"};
+}
+
+var EXAMPLES = [
+  {
+    id:"ex1", title:"תפריט 1 — גירעון קלורי", target:1500, client:"נועה (דוגמה)",
+    meta:"אישה · גיל 34 · 64 ק\"ג · 165 ס\"מ · ירידה במשקל",
+    calc:["BMR = (10 × 64) + (6.25 × 165) − (5 × 34) − 161 = 1,340 קק\"ל",
+          "TDEE = 1,340 × 1.375 (3 אימונים + עבודה בישיבה) = 1,843 קק\"ל",
+          "יעד = 1,843 × 0.81 (גירעון 19%) ≈ 1,500 קק\"ל",
+          "קצב צפוי: ~0.3 ק\"ג לשבוע = 0.47% ממשקל הגוף"],
+    macroTarget:"חלבון 122 ג' | שומן 51 ג' | פחמימה 138 ג'",
+    menu:{
+      breakfast:[{type:"carb",foodId:"c1",qty:2},{type:"protein",foodId:"p15",qty:1},{type:"veg",foodId:"vc1",qty:1}],
+      lunch:[{type:"carb",foodId:"c11",qty:0.8},{type:"protein",foodId:"p1",qty:1.3},{type:"veg",foodId:"vc2",qty:1}],
+      fat:[{type:"fat",foodId:"f4",qty:1},{type:"fat",foodId:"f5",qty:2}],
+      dinner:[{type:"carb",foodId:"c1",qty:1},{type:"protein",foodId:"p9",qty:1},{type:"veg",foodId:"vc3",qty:1}],
+      snack:[{type:"snack",foodId:"s6",qty:1},{type:"snack",foodId:"p20",qty:1},{type:"snack",foodId:"f8",qty:1.5}]
+    }
+  },
+  {
+    id:"ex2", title:"תפריט 2 — חיטוב", target:1800, client:"מעיין (דוגמה)",
+    meta:"אישה · גיל 28 · 62 ק\"ג · 165 ס\"מ · חיטוב",
+    calc:["BMR = (10 × 62) + (6.25 × 165) − (5 × 28) − 161 = 1,350 קק\"ל",
+          "TDEE = 1,350 × 1.55 (4-5 אימונים + ~9,000 צעדים) = 2,093 קק\"ל",
+          "יעד = 2,093 × 0.85 (גירעון 15%) ≈ 1,800 קק\"ל",
+          "קצב צפוי: ~0.3 ק\"ג לשבוע = 0.48% ממשקל הגוף"],
+    macroTarget:"חלבון 136 ג' | שומן 56 ג' | פחמימה 183 ג'",
+    menu:{
+      breakfast:[{type:"carb",foodId:"c1",qty:2},{type:"protein",foodId:"p13",qty:1},{type:"protein",foodId:"p15",qty:1},{type:"veg",foodId:"vc1",qty:1}],
+      lunch:[{type:"carb",foodId:"c12",qty:1.3333},{type:"protein",foodId:"p1",qty:1.5},{type:"veg",foodId:"vc4",qty:1}],
+      fat:[{type:"fat",foodId:"f1",qty:1},{type:"fat",foodId:"f4",qty:1},{type:"fat",foodId:"f5",qty:1}],
+      dinner:[{type:"carb",foodId:"c18",qty:1},{type:"protein",foodId:"p10",qty:1.5},{type:"veg",foodId:"vc5",qty:1}],
+      snack:[{type:"snack",foodId:"p20",qty:1},{type:"snack",foodId:"s1",qty:1}]
+    }
+  },
+  {
+    id:"ex3", title:"תפריט 3 — עליית מסה", target:2700, client:"איתי (דוגמה)",
+    meta:"גבר · גיל 30 · 80 ק\"ג · 176 ס\"מ · עליית מסה",
+    calc:["BMR = (10 × 80) + (6.25 × 176) − (5 × 30) + 5 = 1,755 קק\"ל",
+          "TDEE = 1,755 × 1.375 (4 אימונים + עבודה בישיבה) = 2,413 קק\"ל",
+          "יעד = 2,413 × 1.12 (עודף 12%) ≈ 2,700 קק\"ל",
+          "קצב צפוי: ~0.3 ק\"ג לשבוע = 0.37% ממשקל הגוף"],
+    macroTarget:"חלבון 160 ג' | שומן 80 ג' | פחמימה 340 ג'",
+    menu:{
+      breakfast:[{type:"carb",foodId:"c1",qty:4},{type:"protein",foodId:"p13",qty:2},{type:"veg",foodId:"vc1",qty:1}],
+      lunch:[{type:"carb",foodId:"c10",qty:2.5},{type:"protein",foodId:"p1",qty:1.3},{type:"veg",foodId:"vc4",qty:1}],
+      fat:[{type:"fat",foodId:"f1",qty:1},{type:"fat",foodId:"f10",qty:1},{type:"fat",foodId:"f7",qty:1.5}],
+      dinner:[{type:"carb",foodId:"c14",qty:1.75},{type:"protein",foodId:"p6",qty:1.3},{type:"veg",foodId:"vc6",qty:1}],
+      snack:[{type:"snack",foodId:"p19",qty:1},{type:"snack",foodId:"s2",qty:1.25},{type:"snack",foodId:"s15",qty:1},{type:"snack",foodId:"s11",qty:1}]
+    }
+  }
+];
+
+/* ==== PURE-CALC-END ==== */
+
+/* ---------- helpers ---------- */
+var $ = function(id){ return document.getElementById(id); };
+function n(x){ return Number(x).toLocaleString("he-IL"); }
+function el(tag, cls, txt){
+  var e = document.createElement(tag);
+  if (cls) e.className = cls;
+  if (txt !== undefined && txt !== null) e.textContent = txt;
+  return e;
+}
+function qtyText(food, qty){
+  var g = Math.round(food.grams * qty);
+  var q = Math.round(qty*100)/100;
+  if (Math.abs(q - 1) < 0.001) return food.portion.indexOf(" ג'") > -1 ? food.portion : food.portion + " (" + g + " ג')";
+  return q + " × " + food.portion + " (" + g + " ג')";
+}
+var toastTimer = null;
+function toast(msg){
+  var t = $("toast");
+  t.textContent = msg; t.classList.add("is-on");
+  if (toastTimer) clearTimeout(toastTimer);
+  toastTimer = setTimeout(function(){ t.classList.remove("is-on"); }, 2200);
+}
+
+/* ---------- theme ---------- */
+function currentTheme(){
+  var a = document.documentElement.getAttribute("data-theme");
+  if (a) return a;
+  return (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light";
+}
+function syncThemeLabel(){
+  $("themeToggle").textContent = currentTheme() === "dark" ? "מצב בהיר" : "מצב כהה";
+}
+$("themeToggle").addEventListener("click", function(){
+  document.documentElement.setAttribute("data-theme", currentTheme() === "dark" ? "light" : "dark");
+  syncThemeLabel();
+});
+syncThemeLabel();
+
+/* ---------- tabs ---------- */
+var tabBtns = document.querySelectorAll(".tab-btn");
+function showTab(name){
+  for (var i=0;i<tabBtns.length;i++){
+    var b = tabBtns[i];
+    var on = b.getAttribute("data-tab") === name;
+    b.setAttribute("aria-selected", on ? "true" : "false");
+  }
+  var panels = document.querySelectorAll(".tab-panel");
+  for (var j=0;j<panels.length;j++){
+    panels[j].classList.toggle("is-active", panels[j].id === "tab-" + name);
+  }
+  $("app").classList.toggle("builder-active", name === "builder");
+  window.scrollTo({top:0, behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth"});
+}
+for (var ti=0; ti<tabBtns.length; ti++){
+  tabBtns[ti].addEventListener("click", function(){ showTab(this.getAttribute("data-tab")); });
+}
+
+/* ---------- calculator ---------- */
+var calcSex = "female";
+(function initCalcSelects(){
+  var act = $("cActivity");
+  for (var i=0;i<ACTIVITY.length;i++){
+    var o = el("option", null, ACTIVITY[i].v + " — " + ACTIVITY[i].name);
+    o.value = String(ACTIVITY[i].v);
+    if (ACTIVITY[i].v === 1.375) o.selected = true;
+    act.appendChild(o);
+  }
+  var goal = $("cGoal");
+  var keys = ["loss","cut","gain","maint"];
+  for (var k=0;k<keys.length;k++){
+    var g = GOALS[keys[k]];
+    var og = el("option", null, g.name + " — " + g.deltaLabel);
+    og.value = g.key;
+    goal.appendChild(og);
+  }
+})();
+
+var sexBtns = $("sexSeg").querySelectorAll("button");
+for (var si=0; si<sexBtns.length; si++){
+  sexBtns[si].addEventListener("click", function(){
+    calcSex = this.getAttribute("data-sex");
+    for (var q=0;q<sexBtns.length;q++) sexBtns[q].setAttribute("aria-pressed", sexBtns[q] === this ? "true" : "false");
+    runCalc();
+  });
+}
+var calcInputs = ["cAge","cWeight","cHeight","cActivity","cGoal"];
+for (var ci=0; ci<calcInputs.length; ci++){
+  $(calcInputs[ci]).addEventListener("input", runCalc);
+  $(calcInputs[ci]).addEventListener("change", runCalc);
+}
+
+var lastTarget = 1500;
+function runCalc(){
+  var age = parseFloat($("cAge").value) || 0;
+  var w = parseFloat($("cWeight").value) || 0;
+  var h = parseFloat($("cHeight").value) || 0;
+  var factor = parseFloat($("cActivity").value);
+  var goalKey = $("cGoal").value;
+  var alerts = $("calcAlerts");
+  alerts.innerHTML = "";
+  if (!age || !w || !h){
+    $("outBmr").textContent = "—"; $("outTdee").textContent = "—"; $("outTarget").textContent = "—";
+    $("outProtein").textContent = "—"; $("outRate").textContent = "—";
+    $("safetyChips").innerHTML = "";
+    return;
+  }
+  var bmr = calcBMR(calcSex, w, h, age);
+  var tdee = calcTDEE(bmr, factor);
+  var res = calcTarget(tdee, goalKey, calcSex);
+  var g = GOALS[goalKey];
+  var prot = proteinTarget(goalKey, calcSex, w);
+  lastTarget = res.target;
+
+  $("outBmr").textContent = n(bmr);
+  $("outTdee").textContent = n(tdee);
+  $("outFactor").textContent = "מקדם פעילות " + factor;
+  $("outTarget").textContent = n(res.target);
+  $("outGoalNote").textContent = g.name + " · " + g.deltaLabel;
+  $("outProtein").textContent = prot.grams + " ג'";
+  $("outProteinNote").textContent = prot.perKg + " ג'/ק\"ג · טווח הקטגוריה " + g.proteinRange;
+  var rate = expectedRate(goalKey, w);
+  if (rate){
+    $("outRate").textContent = rate.lo + "-" + rate.hi + " ק\"ג";
+    $("outRateNote").textContent = "לשבוע · " + g.rateLabel;
+  } else {
+    $("outRate").textContent = "—";
+    $("outRateNote").textContent = g.rateLabel;
+  }
+
+  if (res.floored){
+    var a = el("div","alert alert-bad","היעד המחושב היה " + n(res.raw) + " קק\"ל — מתחת לרצפת הבטיחות של " + n(res.floor) + " קק\"ל ל" + (calcSex==="female" ? "אישה" : "גבר") + ". היעד הועלה לרצפה. גירעון עמוק מזה — רק בפיקוח דיאטנית קלינית או רופא.");
+    alerts.appendChild(a);
+  }
+  if (res.target < bmr){
+    alerts.appendChild(el("div","alert","היעד (" + n(res.target) + ") נמוך מה-BMR המחושב (" + n(bmr) + "). לא בונים תפריט מתחת ל-BMR לאורך זמן — שקלי גירעון מתון יותר או הוספת צעדים."));
+  }
+
+  var chips = $("safetyChips");
+  chips.innerHTML = "";
+  function chip(ok, text){
+    var c = el("span", "chip " + (ok ? "chip-ok" : "chip-bad"));
+    c.appendChild(el("span","chip-dot"));
+    c.appendChild(el("span",null,text));
+    chips.appendChild(c);
+  }
+  chip(res.target >= bmr, "מעל ה-BMR (" + n(bmr) + ")");
+  chip(res.target >= res.floor, "מעל רצפת " + n(res.floor) + " קק\"ל");
+  chip(!res.floored, res.floored ? "היעד נחסם ברצפה" : "הגירעון/עודף בטווח הקטגוריה");
+}
+$("btnSendTarget").addEventListener("click", function(){
+  $("targetKcal").value = lastTarget;
+  showTab("builder");
+  recalc();
+  toast("היעד " + n(lastTarget) + " קק\"ל הועבר לבונה התפריט");
+});
+
+/* ---------- builder ---------- */
+var BASE_ROWS = {
+  breakfast:["carb","protein","veg"],
+  lunch:["carb","protein","veg"],
+  fat:["fat","fat"],
+  dinner:["carb","protein","veg"],
+  snack:["snack","snack","snack"]
+};
+var ADD_TYPES = {
+  breakfast:["carb","protein","veg"],
+  lunch:["carb","protein","veg"],
+  fat:["fat"],
+  dinner:["carb","protein","veg"],
+  snack:["snack"]
+};
+var state = null;
+
+function emptyState(){
+  var s = {};
+  for (var i=0;i<MEAL_KEYS.length;i++){
+    var k = MEAL_KEYS[i];
+    s[k] = BASE_ROWS[k].map(function(t){ return {type:t, foodId:"", qty:1}; });
+  }
+  return s;
+}
+function foodsForType(type){
+  if (type === "snack") return null; // grouped, all foods
+  var out = [];
+  for (var i=0;i<FOODS.length;i++) if (FOODS[i].cat === type) out.push(FOODS[i]);
+  return out;
+}
+function buildSelect(type, value){
+  var sel = el("select","mrow-food");
+  var ph = el("option", null, "— בחרי מזון —"); ph.value = "";
+  sel.appendChild(ph);
+  if (type === "snack"){
+    var order = ["snack","protein","fat","carb","veg"];
+    var titles = {snack:"ארוחות ביניים", protein:"חלבונים", fat:"שומנים", carb:"פחמימות", veg:"ירקות"};
+    for (var o=0;o<order.length;o++){
+      var grp = document.createElement("optgroup");
+      grp.label = titles[order[o]];
+      for (var i=0;i<FOODS.length;i++){
+        if (FOODS[i].cat !== order[o]) continue;
+        var op = el("option", null, FOODS[i].name + " — " + FOODS[i].portion);
+        op.value = FOODS[i].id;
+        grp.appendChild(op);
+      }
+      sel.appendChild(grp);
+    }
+  } else {
+    var list = foodsForType(type);
+    for (var j=0;j<list.length;j++){
+      var op2 = el("option", null, list[j].name + " — " + list[j].portion);
+      op2.value = list[j].id;
+      sel.appendChild(op2);
+    }
+  }
+  sel.value = value || "";
+  return sel;
+}
+function renderMeal(key){
+  var card = el("article","meal card");
+  card.setAttribute("data-meal", key);
+  var head = el("div","meal-head");
+  head.appendChild(el("h3", null, MEAL_LABEL[key]));
+  var tot = el("div","meal-total");
+  var b = el("b","num","0"); b.setAttribute("data-meal-kcal", key);
+  tot.appendChild(b);
+  tot.appendChild(el("span",null,"קק\"ל"));
+  var pct = el("span","num","0%"); pct.setAttribute("data-meal-pct", key);
+  tot.appendChild(pct);
+  head.appendChild(tot);
+  card.appendChild(head);
+
+  var rowsWrap = el("div","meal-rows");
+  var rows = state[key];
+  for (var i=0;i<rows.length;i++) rowsWrap.appendChild(renderRow(key, i, rows[i]));
+  card.appendChild(rowsWrap);
+
+  var actions = el("div","meal-actions");
+  var types = ADD_TYPES[key];
+  for (var t=0;t<types.length;t++){
+    (function(type){
+      var btn = el("button","btn btn-quiet btn-sm","+ " + CAT_LABEL[type]);
+      btn.type = "button";
+      btn.addEventListener("click", function(){
+        state[key].push({type:type, foodId:"", qty:1});
+        rebuild();
+      });
+      actions.appendChild(btn);
+    })(types[t]);
+  }
+  card.appendChild(actions);
+  return card;
+}
+function renderRow(key, idx, row){
+  var wrap = el("div","mrow");
+  wrap.appendChild(el("span","mrow-label", CAT_LABEL[row.type]));
+
+  var sel = buildSelect(row.type, row.foodId);
+  sel.addEventListener("change", function(){
+    state[key][idx].foodId = sel.value;
+    recalc();
+  });
+  wrap.appendChild(sel);
+
+  var qtyWrap = el("div","mrow-qty");
+  var inp = document.createElement("input");
+  inp.type = "number"; inp.step = "0.5"; inp.min = "0"; inp.value = String(Math.round(row.qty*100)/100);
+  inp.setAttribute("aria-label","כמות במנות");
+  inp.addEventListener("input", function(){
+    var v = parseFloat(inp.value);
+    state[key][idx].qty = isNaN(v) ? 0 : v;
+    recalc();
+  });
+  qtyWrap.appendChild(inp);
+  qtyWrap.appendChild(el("span",null,"מנות"));
+  wrap.appendChild(qtyWrap);
+
+  var kc = el("div","mrow-kcal");
+  var kcTop = el("div","mrow-kcal-top");
+  var kb = el("b","num","0"); kb.setAttribute("data-row-kcal", key + "-" + idx);
+  kcTop.appendChild(kb);
+  kcTop.appendChild(el("span",null,"קק\"ל"));
+  kc.appendChild(kcTop);
+  var ks = el("span",null,"—"); ks.setAttribute("data-row-amount", key + "-" + idx);
+  kc.appendChild(ks);
+  wrap.appendChild(kc);
+
+  var del = el("button","mrow-del","×");
+  del.type = "button";
+  del.setAttribute("aria-label","מחיקת השורה");
+  del.title = "מחיקת השורה";
+  del.addEventListener("click", function(){
+    state[key].splice(idx,1);
+    if (state[key].length === 0) state[key].push({type: BASE_ROWS[key][0], foodId:"", qty:1});
+    rebuild();
+  });
+  wrap.appendChild(del);
+  return wrap;
+}
+function rebuild(){
+  var wrap = $("mealsWrap");
+  wrap.innerHTML = "";
+  for (var i=0;i<MEAL_KEYS.length;i++) wrap.appendChild(renderMeal(MEAL_KEYS[i]));
+  recalc();
+}
+function recalc(){
+  var totals = sumMenu(state);
+  var target = parseFloat($("targetKcal").value) || 0;
+
+  for (var i=0;i<MEAL_KEYS.length;i++){
+    var key = MEAL_KEYS[i];
+    var mt = totals.meals[key];
+    var kEl = document.querySelector('[data-meal-kcal="' + key + '"]');
+    if (kEl) kEl.textContent = n(mt.kcal);
+    var pEl = document.querySelector('[data-meal-pct="' + key + '"]');
+    if (pEl) pEl.textContent = totals.kcal ? Math.round(mt.kcal/totals.kcal*100) + "% מהיום" : "0%";
+    var rows = state[key];
+    for (var r=0;r<rows.length;r++){
+      var m = rowMacros(rows[r].foodId, rows[r].qty);
+      var rk = document.querySelector('[data-row-kcal="' + key + "-" + r + '"]');
+      if (rk) rk.textContent = n(m.kcal);
+      var ra = document.querySelector('[data-row-amount="' + key + "-" + r + '"]');
+      if (ra) ra.textContent = rows[r].foodId ? (m.grams + " ג'") : "בחרי מזון";
+    }
+  }
+
+  $("sumTotal").textContent = n(totals.kcal);
+  $("sumTarget").textContent = n(target);
+  $("mbTotal").textContent = n(totals.kcal);
+  $("mbTarget").textContent = n(target);
+
+  var st = statusOf(totals.kcal, target);
+  var chipCls = "chip chip-" + (st.level === "ok" ? "ok" : st.level === "warn" ? "warn" : "bad");
+  $("sumChip").className = chipCls;
+  $("sumChipText").textContent = st.text;
+  $("mbChip").className = chipCls;
+  $("mbChipText").textContent = st.level === "ok" ? "בטווח" : (st.diff > 0 ? "+" + n(st.diff) : n(st.diff));
+
+  var pctFill = target ? Math.min(totals.kcal/target, 1) * 100 : 0;
+  var pctOver = target && totals.kcal > target ? Math.min((totals.kcal-target)/target, 0.35) * 100 : 0;
+  $("sumBarFill").style.width = pctFill + "%";
+  $("sumBarOver").style.width = pctOver + "%";
+  $("mbFill").style.width = pctFill + "%";
+  $("mbOver").style.width = pctOver + "%";
+
+  var kcal = totals.kcal || 1;
+  $("sumP").textContent = totals.protein + " ג'";
+  $("sumPn").textContent = Math.round(totals.protein*4/kcal*100) + "% מהקלוריות";
+  $("sumC").textContent = totals.carbs + " ג'";
+  $("sumCn").textContent = Math.round(totals.carbs*4/kcal*100) + "% מהקלוריות";
+  $("sumF").textContent = totals.fat + " ג'";
+  $("sumFn").textContent = Math.round(totals.fat*9/kcal*100) + "% מהקלוריות";
+
+  var brk = $("sumBreak");
+  brk.innerHTML = "";
+  for (var b=0;b<MEAL_KEYS.length;b++){
+    var mk = MEAL_KEYS[b];
+    var mv = totals.meals[mk].kcal;
+    var p = totals.kcal ? Math.round(mv/totals.kcal*100) : 0;
+    var item = el("div","break-item");
+    item.appendChild(el("span","bl", MEAL_LABEL[mk]));
+    var bar = el("div","bar mini-bar");
+    var fill = el("div","bar-fill"); fill.style.width = p + "%";
+    bar.appendChild(fill);
+    item.appendChild(bar);
+    item.appendChild(el("span","bn", n(mv) + " · " + p + "%"));
+    brk.appendChild(item);
+  }
+
+  var macroKcal = Math.round(totals.protein*4 + totals.carbs*4 + totals.fat*9);
+  var delta = macroKcal - totals.kcal;
+  var pctDelta = totals.kcal ? Math.abs(delta)/totals.kcal*100 : 0;
+  $("sumMacroCheck").textContent = "בדיקת מאקרו: (חלבון×4)+(פחמימה×4)+(שומן×9) = " + n(macroKcal) +
+    " קק\"ל · הפרש " + (delta >= 0 ? "+" : "") + n(delta) + " (" + pctDelta.toFixed(1) + "%). " +
+    (pctDelta <= 2 ? "הפרש של עד 2% צפוי ותקין — סיבים תזונתיים." : "הפרש מעל 2% — כדאי לבדוק את החישוב שוב.");
+}
+$("targetKcal").addEventListener("input", recalc);
+
+/* ---- examples into builder ---- */
+function loadExample(idx){
+  var ex = EXAMPLES[idx];
+  state = {};
+  for (var i=0;i<MEAL_KEYS.length;i++){
+    var k = MEAL_KEYS[i];
+    state[k] = (ex.menu[k] || []).map(function(r){ return {type:r.type, foodId:r.foodId, qty:r.qty}; });
+    if (state[k].length === 0) state[k] = [{type: BASE_ROWS[k][0], foodId:"", qty:1}];
+  }
+  $("clientName").value = ex.client;
+  $("targetKcal").value = ex.target;
+  rebuild();
+  showTab("builder");
+  toast("נטען: " + ex.title);
+}
+var exBtns = document.querySelectorAll("[data-example]");
+for (var eb=0; eb<exBtns.length; eb++){
+  exBtns[eb].addEventListener("click", function(){ loadExample(parseInt(this.getAttribute("data-example"),10)); });
+}
+
+/* ---- storage ---- */
+var STORE_KEY = "sivan-menus-v1";
+function readStore(){
+  try { return JSON.parse(localStorage.getItem(STORE_KEY) || "{}"); }
+  catch(e){ return {}; }
+}
+function writeStore(obj){
+  try { localStorage.setItem(STORE_KEY, JSON.stringify(obj)); return true; }
+  catch(e){ return false; }
+}
+function refreshSaved(){
+  var store = readStore();
+  var sel = $("savedList");
+  var keys = Object.keys(store);
+  sel.innerHTML = "";
+  if (keys.length === 0){
+    var o = el("option", null, "— אין תפריטים שמורים —"); o.value = "";
+    sel.appendChild(o);
+    return;
+  }
+  keys.sort();
+  for (var i=0;i<keys.length;i++){
+    var it = store[keys[i]];
+    var op = el("option", null, keys[i] + " — " + n(it.target) + " קק\"ל");
+    op.value = keys[i];
+    sel.appendChild(op);
+  }
+}
+$("btnSave").addEventListener("click", function(){
+  var name = ($("clientName").value || "").trim();
+  if (!name){ toast("צריך שם לקוח/ה כדי לשמור"); $("clientName").focus(); return; }
+  var store = readStore();
+  store[name] = {target: parseFloat($("targetKcal").value) || 0, menu: state, savedAt: new Date().toISOString()};
+  if (writeStore(store)){ refreshSaved(); $("savedList").value = name; toast("התפריט של " + name + " נשמר"); }
+  else toast("לא ניתן לשמור בדפדפן הזה");
+});
+$("btnLoad").addEventListener("click", function(){
+  var name = $("savedList").value;
+  if (!name){ toast("אין תפריט לטעינה"); return; }
+  var store = readStore();
+  var it = store[name];
+  if (!it){ toast("התפריט לא נמצא"); return; }
+  state = {};
+  for (var i=0;i<MEAL_KEYS.length;i++){
+    var k = MEAL_KEYS[i];
+    state[k] = (it.menu[k] || []).map(function(r){ return {type:r.type, foodId:r.foodId, qty:r.qty}; });
+    if (state[k].length === 0) state[k] = [{type: BASE_ROWS[k][0], foodId:"", qty:1}];
+  }
+  $("clientName").value = name;
+  $("targetKcal").value = it.target;
+  rebuild();
+  toast("התפריט של " + name + " נטען");
+});
+$("btnDelete").addEventListener("click", function(){
+  var name = $("savedList").value;
+  if (!name) return;
+  var store = readStore();
+  delete store[name];
+  writeStore(store);
+  refreshSaved();
+  toast("התפריט של " + name + " נמחק");
+});
+$("btnReset").addEventListener("click", function(){
+  state = emptyState();
+  $("clientName").value = "";
+  rebuild();
+  toast("הבונה אופס");
+});
+
+/* ---- copy as text ---- */
+function menuToText(){
+  var totals = sumMenu(state);
+  var target = parseFloat($("targetKcal").value) || 0;
+  var name = ($("clientName").value || "").trim();
+  var lines = [];
+  lines.push("תפריט תזונה אישי" + (name ? " — " + name : ""));
+  lines.push("יעד קלורי יומי: " + n(target) + " קק\"ל");
+  lines.push("");
+  for (var i=0;i<MEAL_KEYS.length;i++){
+    var k = MEAL_KEYS[i];
+    var rows = state[k].filter(function(r){ return r.foodId && r.qty > 0; });
+    if (rows.length === 0) continue;
+    var mt = totals.meals[k];
+    lines.push(MEAL_LABEL[k] + " — " + n(mt.kcal) + " קק\"ל");
+    for (var r=0;r<rows.length;r++){
+      var f = FOOD_BY_ID[rows[r].foodId];
+      lines.push("• " + CAT_LABEL[rows[r].type] + ": " + f.name + " — " + qtyText(f, rows[r].qty) + " — " + n(rowKcal(f.id, rows[r].qty)) + " קק\"ל");
+    }
+    lines.push("");
+  }
+  lines.push("סה\"כ: " + n(totals.kcal) + " קק\"ל");
+  var st = statusOf(totals.kcal, target);
+  lines.push("מול היעד: " + st.text);
+  lines.push("מאקרו: חלבון " + totals.protein + " ג' | פחמימה " + totals.carbs + " ג' | שומן " + totals.fat + " ג'");
+  lines.push("");
+  lines.push("ירקות לא עמילניים — חופשיים. כל כמות מעבר לרשום, אל תספרי.");
+  lines.push("המערכת של סיוון · אינו מהווה ייעוץ רפואי");
+  return lines.join("\n");
+}
+$("btnCopy").addEventListener("click", function(){
+  var text = menuToText();
+  function fallback(){
+    var ta = document.createElement("textarea");
+    ta.value = text;
+    ta.style.position = "fixed"; ta.style.opacity = "0";
+    document.body.appendChild(ta);
+    ta.select();
+    var ok = false;
+    try { ok = document.execCommand("copy"); } catch(e){ ok = false; }
+    document.body.removeChild(ta);
+    toast(ok ? "התפריט הועתק ללוח" : "לא ניתן להעתיק — סמני והעתיקי ידנית");
+  }
+  if (navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(text).then(function(){ toast("התפריט הועתק ללוח"); }, fallback);
+  } else fallback();
+});
+
+/* ---------- foods tab ---------- */
+var foodFilter = "all";
+(function initFoodChips(){
+  var wrap = $("foodChips");
+  var defs = [["all","הכול"],["carb","פחמימה"],["protein","חלבון"],["veg","ירק"],["fat","שומן"],["snack","ביניים"]];
+  for (var i=0;i<defs.length;i++){
+    (function(def){
+      var b = el("button","filter-chip", def[1]);
+      b.type = "button";
+      b.setAttribute("aria-pressed", def[0] === "all" ? "true" : "false");
+      b.addEventListener("click", function(){
+        foodFilter = def[0];
+        var all = wrap.querySelectorAll(".filter-chip");
+        for (var q=0;q<all.length;q++) all[q].setAttribute("aria-pressed", all[q] === b ? "true" : "false");
+        renderFoods();
+      });
+      wrap.appendChild(b);
+    })(defs[i]);
+  }
+})();
+$("foodSearch").addEventListener("input", renderFoods);
+function renderFoods(){
+  var q = ($("foodSearch").value || "").trim();
+  var body = $("foodsBody");
+  body.innerHTML = "";
+  var count = 0;
+  for (var i=0;i<FOODS.length;i++){
+    var f = FOODS[i];
+    if (foodFilter !== "all" && f.cat !== foodFilter) continue;
+    if (q && f.name.indexOf(q) === -1 && f.portion.indexOf(q) === -1) continue;
+    count++;
+    var tr = document.createElement("tr");
+    var td1 = el("td","t-name", f.name);
+    tr.appendChild(td1);
+    tr.appendChild(el("td", null, CAT_LABEL[f.cat]));
+    tr.appendChild(el("td", null, f.portion));
+    tr.appendChild(el("td","n", String(f.grams)));
+    tr.appendChild(el("td","n", String(f.kcal)));
+    tr.appendChild(el("td","n", f.protein + " ג'"));
+    tr.appendChild(el("td","n", f.carbs + " ג'"));
+    tr.appendChild(el("td","n", f.fat + " ג'"));
+    body.appendChild(tr);
+  }
+  $("foodsCount").textContent = count + " מזונות";
+}
+
+/* ---------- categories tab ---------- */
+var CAT_CARDS = [
+  {name:"ירידה במשקל", delta:"גירעון 15-25% (ברירת מחדל 15-20%) · 350-700 קק\"ל", rate:"0.5-1% ממשקל הגוף לשבוע",
+   dur:"12-16 שבועות", prot:"1.6-2.2 ג'/ק\"ג (פריסט 1.9)",
+   points:["אימוני התנגדות הם חובה — בלעדיהם עד 25-30% מהירידה תהיה מסת שריר.",
+           "הפסקת דיאטה כל 8-12 שבועות, 1-2 שבועות ב-TDEE מלא.",
+           "להסביר מראש שהמשקל יעלה לפעמים — מלח, מחזור, גליקוגן, עצירות.",
+           "יעד צעדים קבוע חזק יותר מהוספת קרדיו — NEAT צונח בגירעון."]},
+  {name:"חיטוב", delta:"גירעון 10-20% · 250-500 קק\"ל", rate:"0.4-0.7% ממשקל הגוף לשבוע",
+   dur:"8-12 שבועות (עמוק: עד 16)", prot:"נשים 1.8-2.4 | גברים 2.0-2.6 ג'/ק\"ג",
+   points:["חלבון גבוה הוא המשתנה מספר 1 — בלעדיו זו ירידה במשקל, לא חיטוב.",
+           "העומסים באימון הם מדד שמירת השריר הכי טוב בשטח.",
+           "לא מציפים בקרדיו: קודם קלוריות, אחר כך צעדים, ורק בסוף קרדיו.",
+           "תמונות והיקפים כל 3-4 שבועות — המשקל הוא המדד הכי גרוע כאן."]},
+  {name:"עליית מסה", delta:"עודף 10-20% (בינונית 10-15%) · 200-400 קק\"ל", rate:"0.25-0.5% ממשקל הגוף לשבוע",
+   dur:"12-20 שבועות", prot:"נשים 1.6-2.0 | גברים 1.6-2.2 ג'/ק\"ג (פריסט 2.0)",
+   points:["עודף בלי עומס מתקדם = שומן. יומן אימונים הוא חלק מהתוכנית.",
+           "פחמימות הן הדלק — זה לא הזמן ל-Low Carb.",
+           "חלק מהעלייה יהיה שומן; יחס 50:50 אצל בינונית זו תוצאה טובה.",
+           "נקודת יציאה: ~15-18% שומן (גבר) או ~25-28% (אישה)."]},
+  {name:"שימור / רקומפוזיציה", delta:"TDEE ±5% · ±100 קק\"ל", rate:"אין קצב במאזניים — היקפים, תמונות ושיאים",
+   dur:"ללא הגבלה — הקטגוריה הכי בת-קיימא", prot:"1.6-2.0 ג'/ק\"ג (פריסט 1.8)",
+   points:["עובד מצוין למתחילות, לחוזרות אחרי הפסקה ולמי שאחוזי השומן שלהן גבוהים.",
+           "המאזניים הם אויב כאן — לעבור להיקפים ותמונות.",
+           "3-6 חודשים לשינוי ויזואלי משמעותי. לתאם ציפיות מראש.",
+           "שימור אחרי דיאטה: Reverse Diet של 50-100 קק\"ל בשבוע עד ל-TDEE החדש."]}
+];
+(function renderCats(){
+  var wrap = $("catGrid");
+  for (var i=0;i<CAT_CARDS.length;i++){
+    var c = CAT_CARDS[i];
+    var card = el("div","cat-card");
+    card.appendChild(el("h3", null, c.name));
+    var dl = el("dl","kv");
+    var pairs = [["גירעון / עודף", c.delta],["קצב שינוי", c.rate],["משך מומלץ", c.dur],["חלבון", c.prot]];
+    for (var p=0;p<pairs.length;p++){
+      dl.appendChild(el("dt", null, pairs[p][0]));
+      dl.appendChild(el("dd", null, pairs[p][1]));
+    }
+    card.appendChild(dl);
+    var ul = document.createElement("ul");
+    for (var q=0;q<c.points.length;q++) ul.appendChild(el("li", null, c.points[q]));
+    card.appendChild(ul);
+    wrap.appendChild(card);
+  }
+})();
+
+var PRESETS = {
+  women:{ weights:[60,65,70,75], rows:{
+    60:[["1,450","114 / 141 / 48"],["1,650","126 / 165 / 54"],["2,150","120 / 283 / 60"],["1,900","108 / 232 / 60"]],
+    65:[["1,550","124 / 147 / 52"],["1,750","137 / 168 / 59"],["2,250","130 / 286 / 65"],["2,000","117 / 237 / 65"]],
+    70:[["1,650","133 / 154 / 56"],["1,850","147 / 174 / 63"],["2,350","140 / 290 / 70"],["2,100","126 / 242 / 70"]],
+    75:[["1,750","143 / 160 / 60"],["1,950","158 / 177 / 68"],["2,450","150 / 294 / 75"],["2,200","135 / 246 / 75"]]
+  }},
+  men:{ weights:[75,82,90,95], rows:{
+    75:[["2,000","143 / 213 / 64"],["2,150","165 / 238 / 60"],["2,600","150 / 331 / 75"],["2,400","135 / 296 / 75"]],
+    82:[["2,150","156 / 224 / 70"],["2,300","180 / 247 / 66"],["2,800","164 / 352 / 82"],["2,550","148 / 305 / 82"]],
+    90:[["2,300","171 / 231 / 77"],["2,450","198 / 253 / 72"],["3,000","180 / 368 / 90"],["2,750","162 / 323 / 90"]],
+    95:[["2,400","181 / 237 / 81"],["2,550","209 / 258 / 76"],["3,100","190 / 371 / 95"],["2,850","171 / 328 / 95"]]
+  }}
+};
+function renderPreset(tableId, group){
+  var t = $(tableId);
+  var thead = document.createElement("thead");
+  var htr = document.createElement("tr");
+  var heads = ["משקל","ירידה במשקל","חיטוב","עליית מסה","שימור"];
+  for (var h=0;h<heads.length;h++){ var th = document.createElement("th"); th.textContent = heads[h]; htr.appendChild(th); }
+  thead.appendChild(htr); t.appendChild(thead);
+  var tb = document.createElement("tbody");
+  for (var w=0;w<group.weights.length;w++){
+    var kg = group.weights[w];
+    var tr = document.createElement("tr");
+    var td0 = el("td","t-name", kg + " ק\"ג");
+    tr.appendChild(td0);
+    var cells = group.rows[kg];
+    for (var c=0;c<cells.length;c++){
+      var td = el("td","n");
+      var strong = el("strong", null, cells[c][0] + " קק\"ל");
+      td.appendChild(strong);
+      td.appendChild(el("span","t-sub", cells[c][1]));
+      tr.appendChild(td);
+    }
+    tb.appendChild(tr);
+  }
+  t.appendChild(tb);
+}
+renderPreset("presetWomen", PRESETS.women);
+renderPreset("presetMen", PRESETS.men);
+(function renderSplit(){
+  var t = $("splitTable");
+  var thead = document.createElement("thead");
+  var htr = document.createElement("tr");
+  var heads = ["חלק בתבנית","ירידה","חיטוב","עליית מסה","שימור"];
+  for (var h=0;h<heads.length;h++){ var th = document.createElement("th"); th.textContent = heads[h]; htr.appendChild(th); }
+  thead.appendChild(htr); t.appendChild(thead);
+  var data = [
+    ["ארוחת בוקר","21%","21%","18%","22%"],
+    ["ארוחת צהריים","26%","30%","27%","28%"],
+    ["שומן (מנה יומית)","17%","17%","12%","15%"],
+    ["ארוחת ערב","16%","22%","23%","22%"],
+    ["ארוחות ביניים","20%","10%","20% (×2)","13%"]
+  ];
+  var tb = document.createElement("tbody");
+  for (var i=0;i<data.length;i++){
+    var tr = document.createElement("tr");
+    for (var j=0;j<data[i].length;j++){
+      var td = el("td", j === 0 ? "t-name" : "n", data[i][j]);
+      tr.appendChild(td);
+    }
+    tb.appendChild(tr);
+  }
+  t.appendChild(tb);
+})();
+
+/* ---------- examples tab ---------- */
+(function renderExamples(){
+  var wrap = $("examplesWrap");
+  for (var i=0;i<EXAMPLES.length;i++){
+    (function(ex, idx){
+      var totals = sumMenu(ex.menu);
+      var card = el("article","ex-card");
+      var head = el("div","ex-head");
+      var htxt = el("div");
+      htxt.appendChild(el("h3", null, ex.title + " — " + n(totals.kcal) + " קק\"ל"));
+      htxt.appendChild(el("span","lede", ex.client + " · " + ex.meta));
+      head.appendChild(htxt);
+      var btn = el("button","btn btn-sm","טען לבונה");
+      btn.type = "button";
+      btn.addEventListener("click", function(){ loadExample(idx); });
+      head.appendChild(btn);
+      card.appendChild(head);
+
+      var body = el("div","ex-body");
+      var calc = el("div","calc-box");
+      for (var c=0;c<ex.calc.length;c++) calc.appendChild(el("span", null, ex.calc[c]));
+      calc.appendChild(el("span", null, "מאקרו יעד: " + ex.macroTarget));
+      body.appendChild(calc);
+
+      for (var m=0;m<MEAL_KEYS.length;m++){
+        var key = MEAL_KEYS[m];
+        var rows = (ex.menu[key] || []);
+        if (!rows.length) continue;
+        var mt = totals.meals[key];
+        var block = el("div","stack-sm");
+        var t = el("h4", null, MEAL_LABEL[key] + " — " + n(mt.kcal) + " קק\"ל (" + Math.round(mt.kcal/totals.kcal*100) + "% מהיום)");
+        t.style.fontSize = "13.5px";
+        block.appendChild(t);
+        var scroll = el("div","table-scroll");
+        var tbl = document.createElement("table");
+        var thead = document.createElement("thead");
+        var htr = document.createElement("tr");
+        var hs = ["רכיב","מזון","כמות","קלוריות"];
+        for (var h=0;h<hs.length;h++){ var th = document.createElement("th"); if (h===3) th.className = "n"; th.textContent = hs[h]; htr.appendChild(th); }
+        thead.appendChild(htr); tbl.appendChild(thead);
+        var tb = document.createElement("tbody");
+        for (var r=0;r<rows.length;r++){
+          var f = FOOD_BY_ID[rows[r].foodId];
+          var tr = document.createElement("tr");
+          tr.appendChild(el("td", null, CAT_LABEL[rows[r].type]));
+          tr.appendChild(el("td","t-name", f.name));
+          tr.appendChild(el("td", null, qtyText(f, rows[r].qty)));
+          tr.appendChild(el("td","n", n(rowKcal(f.id, rows[r].qty))));
+          tb.appendChild(tr);
+        }
+        tbl.appendChild(tb);
+        scroll.appendChild(tbl);
+        block.appendChild(scroll);
+        body.appendChild(block);
+      }
+
+      var sumBox = el("div","calc-box");
+      sumBox.appendChild(el("span", null, "סה\"כ קלוריות תפריט: " + n(totals.kcal) + " קק\"ל · סטייה מהיעד: " + (totals.kcal - ex.target >= 0 ? "+" : "") + n(totals.kcal - ex.target) + " קק\"ל"));
+      sumBox.appendChild(el("span", null, "מאקרו בפועל: חלבון " + totals.protein + " ג' | פחמימה " + totals.carbs + " ג' | שומן " + totals.fat + " ג'"));
+      body.appendChild(sumBox);
+
+      card.appendChild(body);
+      wrap.appendChild(card);
+    })(EXAMPLES[i], i);
+  }
+})();
+
+/* ---------- init ---------- */
+state = emptyState();
+rebuild();
+renderFoods();
+refreshSaved();
+runCalc();
+
+})();
+</script>
+</body>
+</html>
