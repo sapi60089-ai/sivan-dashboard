@@ -144,6 +144,21 @@ select{cursor:pointer}
 }
 .filter-chip:hover{border-color:var(--primary); color:var(--text)}
 .filter-chip[aria-pressed="true"]{background:var(--primary); border-color:var(--primary); color:var(--on-primary)}
+.chip-pick{display:flex; flex-wrap:wrap; gap:8px}
+.pick-chip{
+  appearance:none; font:inherit; font-size:15px; font-weight:700; cursor:pointer;
+  padding:11px 16px; min-height:46px; border-radius:999px; border:1.5px solid var(--border-strong);
+  background:var(--surface); color:var(--text-muted); flex:1 1 auto; min-width:76px; text-align:center;
+  transition:background .15s, color .15s, border-color .15s;
+}
+.pick-chip:hover{border-color:var(--primary); color:var(--text)}
+.pick-chip[aria-pressed="true"]{background:var(--primary); border-color:var(--primary); color:var(--on-primary)}
+.adv{border:1px solid var(--border); border-radius:var(--radius-sm); background:var(--surface-2)}
+.adv > summary{cursor:pointer; padding:10px 12px; font-size:13px; font-weight:700; color:var(--text-muted); list-style-position:inside}
+.adv > summary:hover{color:var(--text)}
+.adv[open] > summary{border-bottom:1px solid var(--border)}
+.adv-body{padding:12px; display:flex; flex-direction:column; gap:10px}
+.hint{font-size:11.5px; color:var(--text-soft)}
 .stat-grid{display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px}
 @media (min-width:560px){ .stat-grid-3{grid-template-columns:repeat(3,minmax(0,1fr))} }
 .stat{background:var(--surface-2); border:1px solid var(--border); border-radius:var(--radius-sm); padding:10px 12px; display:flex; flex-direction:column; gap:2px}
@@ -293,14 +308,32 @@ tfoot td{padding:9px 10px; font-weight:800; background:var(--surface-2); border-
           <div class="field"><label for="cHeight">גובה (ס"מ)</label><input type="number" id="cHeight" value="165" min="130" max="220" step="1"></div>
         </div>
         <div class="field">
-          <label for="cActivity">רמת פעילות</label>
-          <select id="cActivity"></select>
+          <span class="lbl">אימונים בשבוע</span>
+          <div class="chip-pick" id="freqPick" role="group" aria-label="כמות אימונים בשבוע"></div>
         </div>
         <div class="field">
-          <label for="cGoal">מטרה / קטגוריה</label>
-          <select id="cGoal"></select>
+          <span class="lbl">עצימות</span>
+          <div class="chip-pick" id="intensityPick" role="group" aria-label="עצימות האימונים"></div>
         </div>
-        <p class="lede">כל המספרים כאן הם נקודת פתיחה, לא אמת מוחלטת. הנוסחה מדויקת ב-±10% אצל כ-70% מהאנשים — המספר האמיתי מתגלה אחרי 2-3 שבועות מעקב.</p>
+        <div class="field">
+          <span class="lbl">מטרה / קטגוריה</span>
+          <div class="chip-pick" id="goalPick" role="group" aria-label="מטרה או קטגוריה"></div>
+        </div>
+        <details class="adv">
+          <summary>מתקדם / הסברים</summary>
+          <div class="adv-body">
+            <div class="field">
+              <label for="cActivity">מקדם פעילות ידני</label>
+              <select id="cActivity">
+                <option value="">אוטומטי — לפי אימונים ועצימות</option>
+              </select>
+              <span class="hint">בחירה כאן דורסת את החישוב האוטומטי. מתאימה למי שלא מתאמן/ת בכלל, למי שמתאמן/ת יותר מ-4 פעמים בשבוע, או לעבודה פיזית קשה.</span>
+            </div>
+            <p class="lede">כל המספרים כאן הם נקודת פתיחה, לא אמת מוחלטת. הנוסחה (Mifflin-St Jeor) מדויקת ב-±10% אצל כ-70% מהאנשים — המספר האמיתי מתגלה אחרי 2-3 שבועות מעקב.</p>
+            <p class="lede">רוב האנשים מדרגים את עצמם רמה אחת גבוה מדי: מי שמתאמן 4 פעמים בשבוע אבל יושב כל היום במשרד הוא לא "פעיל מאוד". בספק — לרדת רמה. עדיף להתחיל נמוך ולהוסיף קלוריות מאשר להתחיל גבוה ולקצץ.</p>
+            <p class="lede">רצפות בטיחות: לא יורדים מתחת ל-BMR המחושב, ולא מתחת ל-1,200 קק"ל לאישה או 1,500 קק"ל לגבר — למעט בפיקוח דיאטנית קלינית או רופא. המערכת אוכפת את הרצפות אוטומטית ומתריעה כשהן נדרכות.</p>
+          </div>
+        </details>
       </div>
 
       <div class="card stack">
@@ -599,6 +632,45 @@ var ACTIVITY = [
   {v:1.9,   name:"ספורטאי / עבודה פיזית קשה", steps:"13,000+ צעדים"}
 ];
 
+/* אימונים בשבוע × עצימות => מקדם פעילות (דטרמיניסטי).
+   מי שלא מתאמן כלל או מתאמן יותר מ-4 בשבוע — מקדם ידני ב"מתקדם" (דורס). */
+var FREQ_OPTIONS = [
+  {key:"w1", label:"1"},
+  {key:"w2", label:"2"},
+  {key:"w3", label:"3"},
+  {key:"w4", label:"4"}
+];
+var INTENSITY_OPTIONS = [
+  {key:"low",  label:"קלה"},
+  {key:"mid",  label:"בינונית"},
+  {key:"high", label:"גבוהה"}
+];
+var ACTIVITY_MATRIX = {
+  w1: {low:1.25,  mid:1.3,   high:1.35},
+  w2: {low:1.3,   mid:1.375, high:1.4},
+  w3: {low:1.375, mid:1.45,  high:1.5},
+  w4: {low:1.45,  mid:1.55,  high:1.6}
+};
+var DEFAULT_FREQ = "w3", DEFAULT_INTENSITY = "mid";
+
+/* manual (אם נבחר מקדם ידני) דורס תמיד את המטריצה */
+function activityFactor(freqKey, intensityKey, manual){
+  var m = parseFloat(manual);
+  if (manual !== undefined && manual !== null && manual !== "" && !isNaN(m)) return {factor:m, source:"manual"};
+  var row = ACTIVITY_MATRIX[freqKey] || ACTIVITY_MATRIX[DEFAULT_FREQ];
+  var f = row[intensityKey];
+  if (f === undefined) f = row[DEFAULT_INTENSITY];
+  return {factor:f, source:"matrix"};
+}
+function freqLabel(key){
+  for (var i=0;i<FREQ_OPTIONS.length;i++) if (FREQ_OPTIONS[i].key === key) return FREQ_OPTIONS[i].label;
+  return "";
+}
+function intensityLabel(key){
+  for (var i=0;i<INTENSITY_OPTIONS.length;i++) if (INTENSITY_OPTIONS[i].key === key) return INTENSITY_OPTIONS[i].label;
+  return "";
+}
+
 var GOALS = {
   loss:  {key:"loss",  name:"ירידה במשקל", factor:0.82, deltaLabel:"גירעון 18% מה-TDEE",
           protein:{female:1.9, male:1.9}, proteinRange:"1.6-2.2 ג'/ק\"ג",
@@ -799,22 +871,43 @@ for (var ti=0; ti<tabBtns.length; ti++){
 
 /* ---------- calculator ---------- */
 var calcSex = "female";
-(function initCalcSelects(){
+var calcFreq = DEFAULT_FREQ;
+var calcIntensity = DEFAULT_INTENSITY;
+var calcGoal = "loss";
+
+function buildPicker(wrapId, options, getValue, setValue){
+  var wrap = $(wrapId);
+  wrap.innerHTML = "";
+  for (var i=0;i<options.length;i++){
+    (function(opt){
+      var b = el("button","pick-chip", opt.label);
+      b.type = "button";
+      b.setAttribute("data-key", opt.key);
+      b.setAttribute("aria-pressed", getValue() === opt.key ? "true" : "false");
+      b.addEventListener("click", function(){
+        setValue(opt.key);
+        var all = wrap.querySelectorAll(".pick-chip");
+        for (var q=0;q<all.length;q++) all[q].setAttribute("aria-pressed", all[q] === b ? "true" : "false");
+        runCalc();
+      });
+      wrap.appendChild(b);
+    })(options[i]);
+  }
+}
+(function initCalcControls(){
   var act = $("cActivity");
   for (var i=0;i<ACTIVITY.length;i++){
     var o = el("option", null, ACTIVITY[i].v + " — " + ACTIVITY[i].name);
     o.value = String(ACTIVITY[i].v);
-    if (ACTIVITY[i].v === 1.375) o.selected = true;
     act.appendChild(o);
   }
-  var goal = $("cGoal");
-  var keys = ["loss","cut","gain","maint"];
-  for (var k=0;k<keys.length;k++){
-    var g = GOALS[keys[k]];
-    var og = el("option", null, g.name + " — " + g.deltaLabel);
-    og.value = g.key;
-    goal.appendChild(og);
-  }
+  buildPicker("freqPick", FREQ_OPTIONS,
+    function(){ return calcFreq; }, function(v){ calcFreq = v; });
+  buildPicker("intensityPick", INTENSITY_OPTIONS,
+    function(){ return calcIntensity; }, function(v){ calcIntensity = v; });
+  var goalOpts = ["loss","cut","gain","maint"].map(function(k){ return {key:k, label:GOALS[k].name}; });
+  buildPicker("goalPick", goalOpts,
+    function(){ return calcGoal; }, function(v){ calcGoal = v; });
 })();
 
 var sexBtns = $("sexSeg").querySelectorAll("button");
@@ -825,7 +918,7 @@ for (var si=0; si<sexBtns.length; si++){
     runCalc();
   });
 }
-var calcInputs = ["cAge","cWeight","cHeight","cActivity","cGoal"];
+var calcInputs = ["cAge","cWeight","cHeight","cActivity"];
 for (var ci=0; ci<calcInputs.length; ci++){
   $(calcInputs[ci]).addEventListener("input", runCalc);
   $(calcInputs[ci]).addEventListener("change", runCalc);
@@ -836,8 +929,9 @@ function runCalc(){
   var age = parseFloat($("cAge").value) || 0;
   var w = parseFloat($("cWeight").value) || 0;
   var h = parseFloat($("cHeight").value) || 0;
-  var factor = parseFloat($("cActivity").value);
-  var goalKey = $("cGoal").value;
+  var act = activityFactor(calcFreq, calcIntensity, $("cActivity").value);
+  var factor = act.factor;
+  var goalKey = calcGoal;
   var alerts = $("calcAlerts");
   alerts.innerHTML = "";
   if (!age || !w || !h){
@@ -855,7 +949,9 @@ function runCalc(){
 
   $("outBmr").textContent = n(bmr);
   $("outTdee").textContent = n(tdee);
-  $("outFactor").textContent = "מקדם פעילות " + factor;
+  $("outFactor").textContent = act.source === "manual"
+    ? "מקדם פעילות " + factor + " (ידני)"
+    : "מקדם פעילות " + factor + " · " + (calcFreq === "w1" ? "אימון אחד" : freqLabel(calcFreq) + " אימונים") + " בשבוע, עצימות " + intensityLabel(calcIntensity);
   $("outTarget").textContent = n(res.target);
   $("outGoalNote").textContent = g.name + " · " + g.deltaLabel;
   $("outProtein").textContent = prot.grams + " ג'";
