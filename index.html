@@ -145,6 +145,8 @@ select{cursor:pointer}
 .filter-chip:hover{border-color:var(--primary); color:var(--text)}
 .filter-chip[aria-pressed="true"]{background:var(--primary); border-color:var(--primary); color:var(--on-primary)}
 .chip-pick{display:flex; flex-wrap:wrap; gap:8px}
+#freqPick{display:grid; grid-template-columns:repeat(4,minmax(0,1fr))}
+#intensityPick{display:grid; grid-template-columns:repeat(3,minmax(0,1fr))}
 .pick-chip{
   appearance:none; font:inherit; font-size:15px; font-weight:700; cursor:pointer;
   padding:11px 16px; min-height:46px; border-radius:999px; border:1.5px solid var(--border-strong);
