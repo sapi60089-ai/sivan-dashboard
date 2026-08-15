@@ -308,7 +308,8 @@ th.sortable[aria-sort="descending"] .sort-ind::after{content:"▼"; width:auto}
 .client-row.is-active{border-color:var(--primary)}
 .client-row-main{display:flex; flex-direction:column; gap:2px; min-width:0; flex:1 1 220px}
 .client-row-name{font-size:15px; font-weight:800}
-.client-row-meta{font-size:12px; color:var(--text-soft)}
+.client-row-meta{font-size:12px; color:var(--text-soft); display:flex; flex-wrap:wrap; gap:4px 8px; align-items:center}
+.client-row-meta .chip{font-size:11px; padding:2px 8px}
 .client-row-actions{display:flex; flex-wrap:wrap; gap:6px; align-items:center}
 
 /* ---------- הגדרת לקוח ---------- */
@@ -402,6 +403,12 @@ th.sortable[aria-sort="descending"] .sort-ind::after{content:"▼"; width:auto}
         <button class="btn btn-sm" id="btnCreateClient" type="button">צור</button>
         <button class="btn btn-ghost btn-sm" id="btnCancelClient" type="button">ביטול</button>
       </div>
+      <div class="row-flex hidden" id="clientSearchRow">
+        <div class="field" style="flex:1 1 260px">
+          <label for="clientSearchIn">חיפוש</label>
+          <input type="text" id="clientSearchIn" placeholder="חיפוש לקוח/ה...">
+        </div>
+      </div>
     </div>
     <div class="stack" id="clientsList"></div>
   </section>
@@ -439,6 +446,27 @@ th.sortable[aria-sort="descending"] .sort-ind::after{content:"▼"; width:auto}
         </div>
       </div>
       <p class="note-line">משמש רק את מחשבון העזר שבתחתית העמוד</p>
+      <div class="stack-sm">
+        <span class="lbl">מנוי</span>
+        <div class="fields-grid">
+          <div class="field">
+            <label for="subStartIn">תחילת מנוי</label>
+            <input type="date" id="subStartIn">
+          </div>
+          <div class="field">
+            <label for="subMonthsIn">אורך המנוי</label>
+            <select id="subMonthsIn">
+              <option value="">ללא</option>
+              <option value="1">חודש</option>
+              <option value="2">חודשיים</option>
+              <option value="3">3 חודשים</option>
+              <option value="6">6 חודשים</option>
+              <option value="12">12 חודשים</option>
+            </select>
+          </div>
+        </div>
+        <p class="note-line hidden" id="subStatusLine"></p>
+      </div>
     </div>
 
     <div class="card stack hidden" id="clientIntakeCard">
@@ -1711,6 +1739,65 @@ function trackingDates(startISO, unit, step, count){
   return out;
 }
 
+/* ===== מנוי הלקוח/ה (מידע עסקי פנימי — לא נכנס למסמך השיתוף) =====
+   הכול נגזר משני שדות בלבד: תאריך התחלה ומספר חודשים. "היום" מגיע מבחוץ
+   (todayISO של שכבת ה-UI) כדי שהבלוק יישאר טהור ודטרמיניסטי. */
+
+/* מספר חודשי מנוי תקין: שלם 1-36 (מספר או מחרוזת ספרות); כל השאר → null */
+function subscriptionMonths(v){
+  var m;
+  if (typeof v === "number") m = v;
+  else if (typeof v === "string" && /^[0-9]{1,2}$/.test(v)) m = parseInt(v, 10);
+  else return null;
+  if (!isFinite(m) || m !== Math.floor(m)) return null;
+  if (m < 1 || m > 36) return null;
+  return m;
+}
+
+/* {startDate:"YYYY-MM-DD" תקין או "", months: שלם 1-36 או null}; כל זבל → ברירת המחדל הריקה */
+function normalizeSubscription(raw){
+  var out = {startDate:"", months:null};
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) return out;
+  if (parseISOParts(raw.startDate)) out.startDate = raw.startDate;
+  out.months = subscriptionMonths(raw.months);
+  return out;
+}
+
+/* תאריך סיום המנוי (התחלה + חודשים); קלט לא תקין → מחרוזת ריקה */
+function subscriptionEnd(startISO, months){
+  if (!parseISOParts(startISO)) return "";
+  var m = subscriptionMonths(months);
+  if (m === null) return "";
+  return addMonthsISO(startISO, m);
+}
+
+/* הפרש ימים שלם (to מינוס from) לפי מונה הימים הגרגוריאני; תאריך פגום → null */
+function daysBetweenISO(fromISO, toISO){
+  var a = parseISOParts(fromISO), b = parseISOParts(toISO);
+  if (!a || !b) return null;
+  return daysFromCivil(b.y, b.m, b.d) - daysFromCivil(a.y, a.m, a.d);
+}
+
+/* מצב המנוי מול תאריך היום; אין מנוי מוגדר / קלט פגום → null */
+function subscriptionStatus(subscription, todayISO){
+  if (!subscription || typeof subscription !== "object" || Array.isArray(subscription)) return null;
+  var end = subscriptionEnd(subscription.startDate, subscription.months);
+  if (end === "") return null;
+  var left = daysBetweenISO(todayISO, end);
+  if (left === null) return null;
+  var level = "ok", text = "פעיל — נותרו " + left + " ימים";
+  if (left < 0){
+    level = "bad";
+    text = "המנוי הסתיים";
+  } else if (left <= 14){
+    level = "warn";
+    if (left === 0) text = "מסתיים היום";
+    else if (left === 1) text = "מסתיים מחר";
+    else text = "מסתיים בעוד " + left + " ימים";
+  }
+  return {end:end, daysLeft:left, level:level, text:text};
+}
+
 var TRACKING_DEFAULT_COLUMNS = [
   {id:"weight", label:"משקל", builtin:true},
   {id:"waist", label:"היקף מותן", builtin:true},
@@ -1882,6 +1969,7 @@ function normalizeClient(raw){
     id: raw.id,
     name: (typeof raw.name === "string" && raw.name !== "") ? raw.name : "לקוח ללא שם",
     sex: (raw.sex === "female" || raw.sex === "male") ? raw.sex : "",
+    subscription: normalizeSubscription(raw.subscription),
     intake: normalizeIntake(raw.intake),
     summary: normalizeSummary(raw.summary),
     targets: normalizeTargets(raw.targets),
@@ -2717,6 +2805,46 @@ function clientMetaText(c){
   return kcal + " · " + c.menus.length + " תפריטים · עודכן " + clientDateText(c.updatedAt || c.createdAt);
 }
 
+/* צ'יפ המנוי בשורת הלקוח/ה — גרסה קצרה: "מנוי עד DD.MM" (או סיום מפורש) */
+function subscriptionChipText(st){
+  if (!st) return "";
+  if (st.level === "bad") return "המנוי הסתיים";
+  return "מנוי עד " + isoDateText(st.end).slice(0, 5);
+}
+
+/* ---------- חיפוש ומיון ברשימת הלקוחות ----------
+   המיון תמיד א-ב (localeCompare בעברית) — סדר ההוספה לא משפיע, וגם הלקוח/ה
+   הפעיל/ה יושב/ת במקומו האלפביתי (רק מסומן/ת). הסינון חי מעל אותה רשימה ממוינת. */
+var clientsFilter = "";
+
+function clientSearchKey(s){
+  return (typeof s === "string" ? s : "").replace(/\s+/g, " ").replace(/^ | $/g, "").toLowerCase();
+}
+
+function sortClientsByName(list){
+  var out = list.slice();
+  out.sort(function(a, b){
+    return String(a.name).localeCompare(String(b.name), "he");
+  });
+  return out;
+}
+
+/* אחרי יצירת לקוח/ה חדש/ה מנקים את החיפוש — אחרת הכרטיס החדש עלול "להיעלם" מהרשימה */
+function clearClientsFilter(){
+  clientsFilter = "";
+  if ($("clientSearchIn")) $("clientSearchIn").value = "";
+}
+
+function filterClientsByName(list, filterText){
+  var q = clientSearchKey(filterText);
+  if (q === "") return list.slice();
+  var out = [];
+  for (var i=0;i<list.length;i++){
+    if (clientSearchKey(list[i].name).indexOf(q) > -1) out.push(list[i]);
+  }
+  return out;
+}
+
 function openNewClientRow(){
   $("newClientBtnRow").classList.add("hidden");
   $("newClientRow").classList.remove("hidden");
@@ -2747,6 +2875,7 @@ function createClient(){
     id: "cl-" + Date.now(),
     name: name,
     sex: "",
+    subscription: {startDate:"", months:null},
     intake: {},
     summary: null,
     targets: {kcal:null, protein:null, carbs:null, fat:null},
@@ -2759,6 +2888,7 @@ function createClient(){
   store.activeId = c.id;
   if (!writeClientsStore(store)) return;
   closeNewClientRow();
+  clearClientsFilter();
   refreshActiveChip();
   renderClients();
   toast("נוצר כרטיס ל" + name + " — והוגדר כלקוח/ה הפעיל/ה");
@@ -2784,6 +2914,7 @@ function renderClients(){
   var wrap = $("clientsList");
   wrap.innerHTML = "";
   var store = readClientsStore();
+  $("clientSearchRow").classList.toggle("hidden", store.clients.length === 0);
 
   if (store.clients.length === 0){
     var empty = el("div","card stack");
@@ -2799,14 +2930,25 @@ function renderClients(){
     return;
   }
 
-  for (var i=0;i<store.clients.length;i++){
+  var shown = filterClientsByName(sortClientsByName(store.clients), clientsFilter);
+  if (shown.length === 0){
+    wrap.appendChild(el("p","note-line","לא נמצאו לקוחות לחיפוש הזה"));
+    return;
+  }
+
+  var today = todayISO();
+  for (var i=0;i<shown.length;i++){
     (function(c){
       var isActive = c.id === store.activeId;
       var row = el("div", "client-row" + (isActive ? " is-active" : ""));
 
       var main = el("div","client-row-main");
       main.appendChild(el("div","client-row-name", c.name));
-      main.appendChild(el("div","client-row-meta", clientMetaText(c)));
+      var meta = el("div","client-row-meta");
+      meta.appendChild(el("span", null, clientMetaText(c)));
+      var subSt = subscriptionStatus(c.subscription, today);
+      if (subSt) meta.appendChild(el("span", "chip " + chipLevelClass(subSt.level), subscriptionChipText(subSt)));
+      main.appendChild(meta);
       row.appendChild(main);
 
       var actions = el("div","client-row-actions");
@@ -2854,7 +2996,7 @@ function renderClients(){
 
       row.appendChild(actions);
       wrap.appendChild(row);
-    })(store.clients[i]);
+    })(shown[i]);
   }
 }
 
@@ -2863,6 +3005,10 @@ $("btnCancelClient").addEventListener("click", closeNewClientRow);
 $("btnCreateClient").addEventListener("click", createClient);
 $("newClientName").addEventListener("keydown", function(e){
   if (e.key === "Enter"){ e.preventDefault(); createClient(); }
+});
+$("clientSearchIn").addEventListener("input", function(){
+  clientsFilter = $("clientSearchIn").value || "";
+  renderClients();
 });
 
 /* ---------- טאב הגדרת לקוח ---------- */
@@ -3269,6 +3415,43 @@ function syncSexSeg(sex){
   }
 }
 
+/* ---------- מנוי הלקוח/ה ----------
+   שני שדות בכרטיס הכותרת; החישוב עצמו יושב ב-PURE-CALC ומקבל את "היום" מכאן. */
+function subscriptionFromInputs(){
+  return normalizeSubscription({
+    startDate: $("subStartIn").value || "",
+    months: $("subMonthsIn").value || ""
+  });
+}
+
+function refreshSubStatusLine(sub){
+  var line = $("subStatusLine");
+  line.innerHTML = "";
+  var st = subscriptionStatus(sub, todayISO());
+  line.classList.toggle("hidden", !st);
+  if (!st) return;
+  line.appendChild(el("span", null, "עד " + isoDateText(st.end) + " · "));
+  line.appendChild(el("span", "chip " + chipLevelClass(st.level), st.text));
+}
+
+function fillSubscriptionFields(c){
+  var sub = normalizeSubscription(c ? c.subscription : null);
+  $("subStartIn").value = sub.startDate;
+  $("subMonthsIn").value = (sub.months === null) ? "" : String(sub.months);
+  refreshSubStatusLine(sub);
+}
+
+function saveSubscription(){
+  var store = readClientsStore();
+  var c = getActiveClient(store);
+  if (!c) return;
+  c.subscription = subscriptionFromInputs();
+  touchClient(c);
+  if (!writeClientsStore(store)) return;
+  fillSubscriptionFields(c);
+  renderClients();
+}
+
 /* הרינדור המלא של הטאב — נקרא מ-showTab("client") ומה-init */
 function renderClientTab(){
   flushIntake();
@@ -3287,6 +3470,7 @@ function renderClientTab(){
   $("clientTitle").textContent = c.name;
   $("clientNameInput").value = c.name;
   syncSexSeg(c.sex);
+  fillSubscriptionFields(c);
 
   if (!intakeBuilt){ buildIntakeFields(); intakeBuilt = true; }
   fillIntakeFields(c);
@@ -3343,6 +3527,9 @@ $("clientNameInput").addEventListener("change", function(){
     })(btns[sxi]);
   }
 })();
+
+$("subStartIn").addEventListener("change", saveSubscription);
+$("subMonthsIn").addEventListener("change", saveSubscription);
 
 $("summaryEdit").addEventListener("input", function(){ queueSummaryEdit($("summaryEdit").value); });
 $("btnGenSummary").addEventListener("click", generateSummary);
