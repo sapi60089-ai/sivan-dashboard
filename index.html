@@ -836,6 +836,10 @@ th.sortable[aria-sort="descending"] .sort-ind::after{content:"▼"; width:auto}
 
 /* FOODS_DATA_START */
 var FOODS = [
+/* --- אבות מזון (כמות חופשית) --- */
+{id:"g1",name:"פחמימה — כמות חופשית",cat:"carb",portion:"לבחירת הלקוח/ה",grams:40,kcal100:400,protein100:0,carbs100:100,fat100:0,generic:true},
+{id:"g2",name:"חלבון — כמות חופשית",cat:"protein",portion:"לבחירת הלקוח/ה",grams:30,kcal100:400,protein100:100,carbs100:0,fat100:0,generic:true},
+{id:"g3",name:"שומן — כמות חופשית",cat:"fat",portion:"לבחירת הלקוח/ה",grams:10,kcal100:900,protein100:0,carbs100:0,fat100:100,generic:true},
 /* --- פחמימות (עמילניים) --- */
 {id:"c1",name:"לחם מלא",cat:"carb",portion:"פרוסה",grams:30,kcal100:250,protein100:10,carbs100:43.3,fat100:3.3},
 {id:"c2",name:"לחם לבן",cat:"carb",portion:"פרוסה",grams:30,kcal100:256.7,protein100:8.3,carbs100:50,fat100:2.7},
@@ -4031,6 +4035,8 @@ var builderState = {meals: defaultMeals(4), menuName: "", loadedMenuId: null};
 var builderClientId = null;          /* הלקוח/ה שהמצב הנוכחי שייך לו/ה — החלפה מאפסת את הבונה */
 var BUILDER_CARDS = ["builderTopCard","daySummary","mealsWrap"];
 var BUILDER_CAT_ORDER = ["carb","protein","veg","fat","snack"];
+/* אבות המזון: שורות "כמות חופשית" בבונה — הלקוח/ה בוחר/ת את המזון בפועל, החישוב לפי 4/4/9 */
+var GENERIC_GROUP_LABEL = "אבות מזון — כמות חופשית";
 var MACRO_KEYS = ["kcal","protein","carbs","fat"];
 var STAT_ID = {kcal:"statKcal", protein:"statProtein", carbs:"statCarbs", fat:"statFat"};
 var TARGET_LABEL = {kcal:"יעד קלוריות", protein:"יעד חלבון", carbs:"יעד פחמימה", fat:"יעד שומן"};
@@ -4126,21 +4132,34 @@ function twoStep(btn, label, confirmLabel, action){
   });
 }
 
-/* תבנית אחת של רשימת המזונות משוכפלת לכל שורה — 5 קבוצות לפי סדר הקטגוריות */
+/* תבנית אחת של רשימת המזונות משוכפלת לכל שורה — קבוצת אבות המזון בראש, ואחריה 5 קבוצות לפי סדר הקטגוריות.
+   אבות המזון (generic) מופיעים רק בקבוצה שלהם — מסוננים מקבוצות הקטגוריות כדי שלא יופיעו פעמיים */
 function foodSelectTemplate(list){
   var sel = document.createElement("select");
   var first = document.createElement("option");
   first.value = "";
   first.textContent = "בחרי מזון…";
   sel.appendChild(first);
+  var i, f, o;
+  var generics = document.createElement("optgroup");
+  generics.label = GENERIC_GROUP_LABEL;
+  for (i=0;i<list.length;i++){
+    f = list[i];
+    if (!f.generic) continue;
+    o = document.createElement("option");
+    o.value = f.id;
+    o.textContent = f.name;
+    generics.appendChild(o);
+  }
+  if (generics.childNodes.length) sel.appendChild(generics);
   for (var ci=0; ci<BUILDER_CAT_ORDER.length; ci++){
     var cat = BUILDER_CAT_ORDER[ci];
     var group = document.createElement("optgroup");
     group.label = CAT_LABEL[cat];
-    for (var i=0;i<list.length;i++){
-      var f = list[i];
-      if (f.cat !== cat) continue;
-      var o = document.createElement("option");
+    for (i=0;i<list.length;i++){
+      f = list[i];
+      if (f.cat !== cat || f.generic) continue;
+      o = document.createElement("option");
       o.value = f.id;
       o.textContent = f.name + (isCustomFoodId(f.id) ? " (מותאם)" : "");
       group.appendChild(o);
@@ -4929,12 +4948,14 @@ function deleteCustomFood(id){
   toast(name ? ("המזון נמחק: " + name) : "המזון נמחק");
 }
 
-/* הטבלה נבנית מהמאגר הממוזג — מזון אישי מסומן בצ'יפ ואפשר למחוק אותו מכאן */
+/* הטבלה נבנית מהמאגר הממוזג — מזון אישי מסומן בצ'יפ ואפשר למחוק אותו מכאן.
+   אבות המזון (generic) לא מוצגים כאן: הם שורות מרשם לבונה, לא ערכים במאגר */
 function renderFoods(){
   var q = ($("foodSearch").value || "").trim();
   var body = $("foodsBody");
   body.innerHTML = "";
-  var list = activeFoods().list;
+  var all = activeFoods().list, list = [];
+  for (var k=0;k<all.length;k++){ if (!all[k].generic) list.push(all[k]); }
   var count = 0, customTotal = 0;
   for (var i=0;i<list.length;i++){
     (function(f){
@@ -4968,7 +4989,7 @@ function renderFoods(){
       body.appendChild(tr);
     })(list[i]);
   }
-  var totalText = FOODS.length + (customTotal > 0 ? (" + " + customTotal + " מותאמים") : "");
+  var totalText = (list.length - customTotal) + (customTotal > 0 ? (" + " + customTotal + " מותאמים") : "");
   $("foodsCount").textContent = (count === list.length)
     ? ("כל המזונות (" + totalText + ")")
     : (count + " מתוך " + totalText);
