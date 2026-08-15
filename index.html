@@ -6,6 +6,7 @@
 <title>הדשבורד של סיוון — מערכת תפריטים</title>
 <style>*{margin:0;padding:0}html,body{height:100%}img,svg{display:block;max-width:100%}button,input,select,textarea{font:inherit;color:inherit}</style>
 <style>
+/* THEME-TOKENS-START */
 :root{
   --bg:#F8F2E7; --surface:#FFFFFF; --surface-2:#F6EFDF; --surface-3:#EFE4CC;
   --text:#2A1F14; --text-muted:#6E5E45; --text-soft:#95835F;
@@ -53,6 +54,7 @@
   --bad:#A34A2B; --bad-bg:#F6E0D6;
   --shadow:0 1px 2px rgba(58,42,20,.07), 0 8px 22px rgba(58,42,20,.06);
 }
+/* THEME-TOKENS-END */
 
 *,*::before,*::after{box-sizing:border-box}
 .app{
@@ -76,6 +78,7 @@
 .brand strong{display:block; font-size:15px; letter-spacing:.01em}
 .brand-sub{display:block; font-size:11px; color:var(--text-soft); letter-spacing:.06em}
 .tabs{display:flex; flex-wrap:nowrap; gap:4px; overflow-x:auto; flex:1 1 auto; scrollbar-width:thin; padding-bottom:2px}
+#cloudBtn{max-width:190px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
 .tab-btn{
   appearance:none; border:1px solid transparent; background:transparent; color:var(--text-muted);
   font:inherit; font-size:14px; font-weight:600; padding:7px 12px; border-radius:999px; cursor:pointer;
@@ -130,6 +133,7 @@ textarea{resize:vertical; min-height:64px; line-height:1.5}
 .btn-quiet{background:var(--surface-2); color:var(--text-muted); border-color:var(--border)}
 .btn-quiet:hover{background:var(--surface-3); color:var(--text)}
 .btn-sm{font-size:12.5px; padding:6px 10px; border-radius:8px}
+.btn:disabled{opacity:.55; cursor:not-allowed; filter:none}
 
 /* ---------- chips / stats ---------- */
 .chip{display:inline-flex; align-items:center; gap:6px; font-size:12.5px; font-weight:700; padding:4px 10px; border-radius:999px; border:1px solid transparent; white-space:nowrap}
@@ -314,6 +318,8 @@ th.sortable[aria-sort="descending"] .sort-ind::after{content:"▼"; width:auto}
 .rubric-row{display:flex; flex-wrap:wrap; gap:8px; align-items:end}
 .rubric-row .field{flex:1 1 210px}
 .rubric-row .field-narrow{flex:0 1 108px}
+#shareLinkOut{flex:1 1 240px; width:auto; min-width:0; font-size:13px; text-align:left; background:var(--surface-2)}
+#clientShareCard .note-line{margin-top:-2px}
 
 /* ---------- טבלת מעקב ---------- */
 #trackTable{min-width:720px}
@@ -368,6 +374,8 @@ th.sortable[aria-sort="descending"] .sort-ind::after{content:"▼"; width:auto}
     </nav>
     <button class="chip chip-neutral" id="activeClientChip" type="button" title="מעבר לרשימת הלקוחות">אין לקוח פעיל</button>
     <button class="btn btn-ghost btn-sm" id="themeToggle" type="button">מצב כהה</button>
+    <button class="btn btn-ghost btn-sm" id="cloudBtn" type="button"></button>
+    <span class="chip chip-neutral" id="cloudStatus"><span class="chip-dot"></span><span id="cloudStatusText"></span></span>
   </div>
 </header>
 
@@ -501,6 +509,25 @@ th.sortable[aria-sort="descending"] .sort-ind::after{content:"▼"; width:auto}
         </div>
       </div>
     </details>
+
+    <div class="card stack hidden" id="clientShareCard">
+      <div>
+        <span class="eyebrow">שיתוף וייצוא</span>
+        <h2 class="card-title">שיתוף עם הלקוח/ה וקבצים להורדה</h2>
+      </div>
+      <div class="row-flex" id="shareRow">
+        <button class="btn" id="btnPublishShare" type="button">פרסם קישור אישי</button>
+        <input type="text" id="shareLinkOut" dir="ltr" readonly placeholder="אין קישור פעיל">
+        <button class="btn btn-ghost btn-sm" id="btnCopyShareLink" type="button">העתק</button>
+        <button class="btn btn-quiet btn-sm" id="btnRevokeShare" type="button">בטל קישור</button>
+      </div>
+      <p class="note-line" id="shareAutoNote">כל שמירה מעדכנת אוטומטית את מה שהלקוח/ה רואה בקישור.</p>
+      <p class="note-line hidden" id="shareLocalNote">שיתוף קישור זמין רק באתר החי (דרוש חיבור לענן).</p>
+      <div class="row-flex">
+        <button class="btn" id="btnExportXlsx" type="button">הורד אקסל תפריט</button>
+        <button class="btn" id="btnExportPptx" type="button">הורד מצגת תהליך</button>
+      </div>
+    </div>
   </section>
 
   <!-- ===== 3. בונה תפריט ===== -->
@@ -792,6 +819,13 @@ th.sortable[aria-sort="descending"] .sort-ind::after{content:"▼"; width:auto}
 </div>
 
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script src="vendor/firebase-app-compat.js"></script>
+<script src="vendor/firebase-auth-compat.js"></script>
+<script src="vendor/firebase-firestore-compat.js"></script>
+<script src="firebase-config.js"></script>
+<script src="vendor/xlsx.bundle.js"></script>
+<script src="vendor/pptxgen.bundle.js"></script>
 </div>
 
 <script>
@@ -1998,13 +2032,22 @@ function writeJSON(key, value, failMsg){
 }
 
 function readClientsStore(){ return normalizeClientsStore(readJSON(CLIENTS_KEY)); }
+/* נקודת החנק של כל מוטציות הלקוחות — מכאן גם יוצא הסנכרון לענן (ראו "שכבת ענן") */
 function writeClientsStore(store){
-  return writeJSON(CLIENTS_KEY, store, "לא ניתן לשמור בדפדפן הזה — השינוי לא נשמר");
+  var okWrite = writeJSON(CLIENTS_KEY, store, "לא ניתן לשמור בדפדפן הזה — השינוי לא נשמר");
+  if (okWrite && !applyingRemote && cloudMode === "on"){
+    markDirty(lastTouchedId);
+    lastTouchedId = null;
+    schedulePush();
+  }
+  return okWrite;
 }
 
 function readFactors(){ return normalizeFactors(readJSON(FACTORS_KEY), DEFAULT_FACTOR_RUBRICS); }
 function writeFactors(f){
-  return writeJSON(FACTORS_KEY, normalizeFactors(f, DEFAULT_FACTOR_RUBRICS), "לא ניתן לשמור את רובריקות המקדם בדפדפן הזה");
+  var okWrite = writeJSON(FACTORS_KEY, normalizeFactors(f, DEFAULT_FACTOR_RUBRICS), "לא ניתן לשמור את רובריקות המקדם בדפדפן הזה");
+  if (okWrite && !applyingRemote && cloudMode === "on"){ settingsDirty = true; schedulePush(); }
+  return okWrite;
 }
 
 /* {version:1, nextId, foods:[]} — קריאה סלחנית: כל מבנה פגום חוזר לברירת מחדל ריקה */
@@ -2019,7 +2062,9 @@ function writeCustomFoods(cf){
   var src = (cf && typeof cf === "object" && !Array.isArray(cf)) ? cf : {};
   var foods = Array.isArray(src.foods) ? src.foods : [];
   var next = (typeof src.nextId === "number" && isFinite(src.nextId) && src.nextId > 0) ? Math.floor(src.nextId) : (foods.length + 1);
-  return writeJSON(CUSTOM_FOODS_KEY, {version:1, nextId:next, foods:foods}, "לא ניתן לשמור מזונות אישיים בדפדפן הזה");
+  var okWrite = writeJSON(CUSTOM_FOODS_KEY, {version:1, nextId:next, foods:foods}, "לא ניתן לשמור מזונות אישיים בדפדפן הזה");
+  if (okWrite && !applyingRemote && cloudMode === "on"){ settingsDirty = true; schedulePush(); }
+  return okWrite;
 }
 
 /* המקור היחיד לנתוני מזון בכל ה-UI: מאגר הבסיס + המזונות האישיים */
@@ -2035,6 +2080,7 @@ function getActiveClient(store){
 }
 function touchClient(client){
   if (client) client.updatedAt = new Date().toISOString();
+  lastTouchedId = client && client.id ? client.id : null;
   return client;
 }
 
@@ -2089,6 +2135,454 @@ function toast(msg){
   if (toastTimer) clearTimeout(toastTimer);
   toastTimer = setTimeout(function(){ t.classList.remove("is-on"); }, 2200);
 }
+
+/* ================= שכבת ענן: Firebase Auth + Firestore =================
+   מצב מקומי (file: / אין SDK / אין קונפיג) → cloudMode="off" והאפליקציה מתנהגת בדיוק כמו לפני הענן.
+   applyingRemote מונע לולאת הד בין localStorage לענן; hasPendingWrites מסנן הד snapshot.
+   activeId לעולם אינו מסונכרן — הוא מצב UX פר-מכשיר. */
+var fbApp = null, fbAuth = null, fbDb = null, cloudMode = "off", cloudUser = null,
+    applyingRemote = false, dirtyClientIds = {}, settingsDirty = false, pushTimer = null,
+    lastTouchedId = null, cloudSettingsCache = null, bootDone = false, cloudUnsubs = [],
+    pendingWrites = 0;
+
+var CLOUD_CLIENTS = "clients", CLOUD_SETTINGS = "settings", CLOUD_SETTINGS_DOC = "main";
+
+function initFirebase(){
+  if (location.protocol === "file:") return false;
+  if (typeof firebase === "undefined") return false;
+  if (!window.SIVAN_FIREBASE_CONFIG) return false;
+  try {
+    fbApp = firebase.initializeApp(window.SIVAN_FIREBASE_CONFIG);
+    fbAuth = firebase.auth();
+    fbDb = firebase.firestore();
+    try { fbDb.enablePersistence({synchronizeTabs:true}).catch(function(){}); } catch(e){}
+    cloudMode = "signedout";
+    return true;
+  } catch(e){
+    fbApp = null; fbAuth = null; fbDb = null;
+    cloudMode = "off";
+    return false;
+  }
+}
+
+function cloudSignIn(){
+  if (!fbAuth) return;
+  var provider = new firebase.auth.GoogleAuthProvider();
+  fbAuth.signInWithPopup(provider).catch(function(err){
+    var code = (err && err.code) ? err.code : "";
+    if (code === "auth/popup-blocked" || code === "auth/operation-not-supported-in-this-environment"){
+      fbAuth.signInWithRedirect(provider).catch(function(){
+        toast("ההתחברות נכשלה — נסי שוב");
+      });
+      return;
+    }
+    if (code === "auth/popup-closed-by-user" || code === "auth/cancelled-popup-request") return;
+    toast("ההתחברות נכשלה — נסי שוב");
+  });
+}
+
+function cloudSignOut(){
+  cloudStopSync();
+  if (fbAuth){ fbAuth.signOut().catch(function(){}); }
+  cloudMode = "signedout";
+  refreshCloudUI();
+  toast("התנתקת — הנתונים נשמרים במכשיר הזה בלבד");
+}
+
+/* ניתוק מלא של הצינור: מנויים, טיימר וכל הדגלים הממתינים */
+function cloudStopSync(){
+  unsubscribeSnapshots();
+  cloudUser = null;
+  dirtyClientIds = {};
+  settingsDirty = false;
+  pendingWrites = 0;
+  if (pushTimer){ clearTimeout(pushTimer); pushTimer = null; }
+}
+
+function unsubscribeSnapshots(){
+  for (var i=0;i<cloudUnsubs.length;i++){
+    try { cloudUnsubs[i](); } catch(e){}
+  }
+  cloudUnsubs = [];
+}
+
+function isPermissionDenied(err){
+  if (!err) return false;
+  var code = err.code ? String(err.code) : "";
+  if (code === "permission-denied" || code === "PERMISSION_DENIED" || code === "auth/insufficient-permission") return true;
+  var msg = err.message ? String(err.message) : "";
+  return msg.indexOf("permission-denied") > -1 || msg.indexOf("insufficient permissions") > -1;
+}
+
+/* חשבון שאינו ברשימת האדמינים בחוקי האבטחה — ניתוק שקט עם הסבר */
+function handleUnauthorized(){
+  cloudStopSync();
+  if (fbAuth){ fbAuth.signOut().catch(function(){}); }
+  cloudMode = "signedout";
+  refreshCloudUI();
+  toast("החשבון הזה אינו מורשה למערכת");
+}
+
+function cloudSettingsShape(raw){
+  var src = (raw && typeof raw === "object" && !Array.isArray(raw)) ? raw : {};
+  var tokens = (src.shareTokens && typeof src.shareTokens === "object" && !Array.isArray(src.shareTokens)) ? src.shareTokens : {};
+  var del = (src.deleted && typeof src.deleted === "object" && !Array.isArray(src.deleted)) ? src.deleted : {};
+  return {version:1, shareTokens:tokens, deleted:del};
+}
+function cachedShareTokens(){ return cloudSettingsCache ? cloudSettingsCache.shareTokens : {}; }
+function cachedDeleted(){ return cloudSettingsCache ? cloudSettingsCache.deleted : {}; }
+
+/* ---------- הידרציה ראשונית: מיזוג ענן ↔ מקומי ---------- */
+function hydrateFromCloud(){
+  if (!fbDb) return Promise.resolve(null);
+  return Promise.all([
+    fbDb.collection(CLOUD_CLIENTS).get(),
+    fbDb.collection(CLOUD_SETTINGS).doc(CLOUD_SETTINGS_DOC).get()
+  ]).then(function(res){
+    var snap = res[0], settingsDoc = res[1];
+    var remote = {};
+    if (snap && typeof snap.forEach === "function"){
+      snap.forEach(function(doc){
+        var data = doc.data ? doc.data() : null;
+        if (!data || typeof data !== "object") return;
+        data.id = doc.id;
+        remote[doc.id] = data;
+      });
+    }
+    var hasSettings = !!(settingsDoc && settingsDoc.exists);
+    var settings = hasSettings ? (settingsDoc.data() || {}) : null;
+    cloudSettingsCache = hasSettings ? cloudSettingsShape(settings) : null;
+    return mergeCloudIntoLocal(remote, settings, hasSettings);
+  });
+}
+
+/* מיזוג פר-לקוח: updatedAt חדש גובר (השוואת מחרוזות ISO); tombstone חדש מהעריכה המקומית מוחק */
+function mergeCloudIntoLocal(remote, settings, hasSettings){
+  var store = readClientsStore();
+  var localExisted = readRaw(CLIENTS_KEY) !== null;
+  var deleted = cachedDeleted();
+  var merged = [], seen = {}, i, id;
+  var fromCloud = 0, adopted = 0, dropped = 0, pushed = 0;
+
+  for (i=0;i<store.clients.length;i++){
+    var lc = store.clients[i];
+    id = lc.id;
+    seen["k" + id] = true;
+    var rc = Object.prototype.hasOwnProperty.call(remote, id) ? remote[id] : null;
+    var lu = (typeof lc.updatedAt === "string") ? lc.updatedAt : "";
+    if (rc){
+      var ru = (typeof rc.updatedAt === "string") ? rc.updatedAt : "";
+      if (ru > lu){ merged.push(rc); fromCloud++; }
+      else if (lu > ru){ merged.push(lc); markDirty(id); pushed++; }
+      else { merged.push(lc); }
+      continue;
+    }
+    var tomb = Object.prototype.hasOwnProperty.call(deleted, id) ? deleted[id] : null;
+    if (typeof tomb === "string" && tomb > lu){ dropped++; continue; }
+    merged.push(lc);
+    markDirty(id);
+    pushed++;
+  }
+
+  for (id in remote){
+    if (!Object.prototype.hasOwnProperty.call(remote, id)) continue;
+    if (Object.prototype.hasOwnProperty.call(seen, "k" + id)) continue;
+    merged.push(remote[id]);
+    adopted++;
+  }
+
+  var changed = (fromCloud + adopted + dropped) > 0;
+  var next = normalizeClientsStore({version:1, activeId:store.activeId, clients:merged});
+  if (localExisted || changed){
+    applyingRemote = true;
+    writeClientsStore(next);
+    applyingRemote = false;
+  }
+
+  if (hasSettings){
+    applyingRemote = true;
+    if (settings && settings.factors) writeFactors(settings.factors);
+    if (settings && settings.customFoods) writeCustomFoods(settings.customFoods);
+    applyingRemote = false;
+  } else {
+    settingsDirty = true;
+  }
+
+  if (fromCloud + adopted > 0) toast("עודכנו " + (fromCloud + adopted) + " כרטיסי לקוח מהענן");
+  if (settingsDirty || hasDirty()) schedulePush();
+  return {fromCloud:fromCloud, adopted:adopted, dropped:dropped, pushed:pushed};
+}
+
+/* ---------- סנכרון חי ---------- */
+function subscribeSnapshots(){
+  if (!fbDb) return;
+  unsubscribeSnapshots();
+  try {
+    cloudUnsubs.push(fbDb.collection(CLOUD_CLIENTS).onSnapshot(function(snap){
+      if (snap && snap.metadata && snap.metadata.hasPendingWrites) return;
+      applyClientsSnapshot(snap);
+    }, function(err){ cloudStreamFailed(err); }));
+    cloudUnsubs.push(fbDb.collection(CLOUD_SETTINGS).doc(CLOUD_SETTINGS_DOC).onSnapshot(function(doc){
+      if (doc && doc.metadata && doc.metadata.hasPendingWrites) return;
+      applySettingsSnapshot(doc);
+    }, function(err){ cloudStreamFailed(err); }));
+  } catch(e){}
+}
+
+function cloudStreamFailed(err){
+  if (isPermissionDenied(err)){ handleUnauthorized(); return; }
+  refreshCloudUI();
+}
+
+function applyClientsSnapshot(snap){
+  if (!snap || typeof snap.docChanges !== "function") return;
+  var changes = snap.docChanges();
+  if (!changes || changes.length === 0) return;
+  var store = readClientsStore();
+  var list = store.clients.slice();
+  var touched = 0, i, idx, id, data;
+  for (i=0;i<changes.length;i++){
+    var ch = changes[i];
+    if (!ch || !ch.doc) continue;
+    id = ch.doc.id;
+    if (!id) continue;
+    idx = indexOfClientId(list, id);
+    if (ch.type === "removed"){
+      if (idx > -1){ list.splice(idx, 1); touched++; }
+      continue;
+    }
+    data = ch.doc.data ? ch.doc.data() : null;
+    if (!data || typeof data !== "object") continue;
+    data.id = id;
+    if (idx > -1) list[idx] = data; else list.push(data);
+    touched++;
+  }
+  if (touched === 0) return;
+
+  var activeId = store.activeId;
+  if (activeId && indexOfClientId(list, activeId) === -1) activeId = null;
+  var next = normalizeClientsStore({version:1, activeId:activeId, clients:list});
+  applyingRemote = true;
+  writeClientsStore(next);
+  applyingRemote = false;
+
+  renderClients();
+  renderClientTab();
+  syncBuilderClient();
+  rebuild();
+  renderTrackingTab();
+  refreshActiveChip();
+  refreshCloudUI();
+}
+
+function indexOfClientId(list, id){
+  for (var i=0;i<list.length;i++){ if (list[i] && list[i].id === id) return i; }
+  return -1;
+}
+
+function applySettingsSnapshot(doc){
+  if (!doc || !doc.exists){ cloudSettingsCache = null; refreshCloudUI(); return; }
+  var data = doc.data ? (doc.data() || {}) : {};
+  cloudSettingsCache = cloudSettingsShape(data);
+  applyingRemote = true;
+  if (data.factors) writeFactors(data.factors);
+  if (data.customFoods){ writeCustomFoods(data.customFoods); }
+  applyingRemote = false;
+  if (data.customFoods) renderFoods();
+  refreshCloudUI();
+}
+
+/* ---------- דחיפה לענן (debounce 1.5ש') ---------- */
+function markDirty(id){
+  if (id){ dirtyClientIds[id] = true; return; }
+  var store = readClientsStore();
+  for (var i=0;i<store.clients.length;i++) dirtyClientIds[store.clients[i].id] = true;
+}
+function hasDirty(){
+  for (var k in dirtyClientIds){
+    if (Object.prototype.hasOwnProperty.call(dirtyClientIds, k)) return true;
+  }
+  return false;
+}
+function schedulePush(){
+  if (pushTimer) clearTimeout(pushTimer);
+  pushTimer = setTimeout(flushPush, 1500);
+  refreshCloudUI();
+}
+
+function flushPush(){
+  if (pushTimer){ clearTimeout(pushTimer); pushTimer = null; }
+  if (cloudMode !== "on" || !fbDb) return;
+  var ids = [], k, i;
+  for (k in dirtyClientIds){
+    if (Object.prototype.hasOwnProperty.call(dirtyClientIds, k)) ids.push(k);
+  }
+  dirtyClientIds = {};
+  var store = readClientsStore();
+  var byId = {};
+  for (i=0;i<store.clients.length;i++) byId["k" + store.clients[i].id] = store.clients[i];
+  for (i=0;i<ids.length;i++){
+    var client = Object.prototype.hasOwnProperty.call(byId, "k" + ids[i]) ? byId["k" + ids[i]] : null;
+    if (!client) continue;
+    pushClientDoc(client);
+  }
+  if (settingsDirty){
+    settingsDirty = false;
+    pushSettingsDoc();
+  }
+  refreshCloudUI();
+}
+
+function pushClientDoc(client){
+  var id = client.id;
+  pendingWrites++;
+  fbDb.collection(CLOUD_CLIENTS).doc(id).set(client).then(function(){
+    pendingWrites--;
+    pushShareIfPublished(client);
+    refreshCloudUI();
+  }).catch(function(err){
+    pendingWrites--;
+    cloudWriteFailed(err, id);
+  });
+}
+
+function pushSettingsDoc(){
+  var payload = {
+    version: 1,
+    factors: readFactors(),
+    customFoods: readCustomFoods(),
+    shareTokens: cachedShareTokens(),
+    deleted: cachedDeleted()
+  };
+  pendingWrites++;
+  fbDb.collection(CLOUD_SETTINGS).doc(CLOUD_SETTINGS_DOC).set(payload, {merge:true}).then(function(){
+    pendingWrites--;
+    refreshCloudUI();
+  }).catch(function(err){
+    pendingWrites--;
+    cloudWriteFailed(err, null);
+  });
+}
+
+function cloudWriteFailed(err, id){
+  if (isPermissionDenied(err)){ handleUnauthorized(); return; }
+  if (id) dirtyClientIds[id] = true; else settingsDirty = true;
+  refreshCloudUI();
+}
+
+/* מחיקה: המסמך יורד, ה-tombstone נשאר ב-settings כדי שמכשיר אחר לא יחזיר את הלקוח */
+function deleteClientCloud(id){
+  if (cloudMode !== "on" || !fbDb || !id) return;
+  if (Object.prototype.hasOwnProperty.call(dirtyClientIds, id)) delete dirtyClientIds[id];
+  var now = new Date().toISOString();
+  if (!cloudSettingsCache) cloudSettingsCache = cloudSettingsShape(null);
+  cloudSettingsCache.deleted[id] = now;
+  var tomb = {deleted:{}};
+  tomb.deleted[id] = now;
+  pendingWrites++;
+  fbDb.collection(CLOUD_CLIENTS).doc(id).delete().then(function(){
+    pendingWrites--;
+    refreshCloudUI();
+  }).catch(function(err){
+    pendingWrites--;
+    cloudWriteFailed(err, null);
+  });
+  fbDb.collection(CLOUD_SETTINGS).doc(CLOUD_SETTINGS_DOC).set(tomb, {merge:true}).catch(function(){});
+  deleteShareIfPublished(id);
+  refreshCloudUI();
+}
+
+/* ---------- שיתוף: "מה ששמור — משותף" ---------- */
+/* אוסף השיתופים: get פתוח למי שמחזיק בטוקן, list חסום בחוקי האבטחה, כתיבה לאדמין בלבד */
+function sharesCollection(){ return fbDb.collection("shares"); }
+
+/* מסמך shares/{token} נכתב מחדש אחרי כל דחיפה מוצלחת של כרטיס הלקוח,
+   כך שהקישור האישי תמיד מציג בדיוק את מה שנשמר בדשבורד. */
+function pushShareIfPublished(client){
+  if (cloudMode !== "on" || !fbDb || !client || !client.id) return "";
+  var token = shareTokenOf(client.id);
+  if (token === "") return "";
+  var payload = null;
+  try { payload = buildShareDoc(client); } catch(e){ return ""; }
+  var id = client.id;
+  pendingWrites++;
+  sharesCollection().doc(token).set(payload).then(function(){
+    pendingWrites--;
+    refreshCloudUI();
+  }).catch(function(err){
+    pendingWrites--;
+    cloudWriteFailed(err, id);   /* סימון מחדש כמלוכלך — הדחיפה הבאה תנסה גם את השיתוף */
+  });
+  return token;
+}
+
+/* מחיקת לקוח מוחקת גם את הקישור האישי שלו (deleteClientCloud כבר כותב tombstone ומרענן UI) */
+function deleteShareIfPublished(id){
+  if (cloudMode !== "on" || !fbDb || !id) return "";
+  var token = shareTokenOf(id);
+  if (token === "") return "";
+  if (cloudSettingsCache) delete cloudSettingsCache.shareTokens[id];
+  cloudForgetShareToken(id);
+  sharesCollection().doc(token).delete().catch(function(){});
+  return token;
+}
+
+/* merge ממזג מפתחות במפה ולא מוחק אותם — בלי סנטינל delete() הטוקן היה חוזר
+   מהענן בסנאפשוט ההגדרות הבא ומחייה קישור שבוטל. */
+function cloudForgetShareToken(clientId){
+  if (!fbDb || !clientId) return false;
+  var sentinel = null;
+  try { sentinel = firebase.firestore.FieldValue.delete(); } catch(e){ sentinel = null; }
+  if (!sentinel) return false;
+  var patch = {shareTokens:{}};
+  patch.shareTokens[clientId] = sentinel;
+  fbDb.collection(CLOUD_SETTINGS).doc(CLOUD_SETTINGS_DOC).set(patch, {merge:true}).catch(function(){});
+  return true;
+}
+
+function flushCloud(){
+  if (pushTimer){ clearTimeout(pushTimer); pushTimer = null; }
+  flushPush();
+}
+window.addEventListener("beforeunload", flushCloud);
+document.addEventListener("visibilitychange", function(){
+  if (document.hidden) flushCloud();
+});
+
+/* ---------- UI הענן בטופבר ---------- */
+function refreshCloudUI(){
+  refreshShareCard();   /* מצב הענן קובע אם שורת השיתוף מוצגת בכלל */
+  var btn = $("cloudBtn"), chip = $("cloudStatus"), txt = $("cloudStatusText");
+  if (!btn || !chip || !txt) return;
+  if (cloudMode === "off"){
+    btn.classList.add("hidden");
+    chip.classList.add("hidden");
+    return;
+  }
+  btn.classList.remove("hidden");
+  chip.classList.remove("hidden");
+  chip.classList.remove("chip-ok");
+  chip.classList.remove("chip-warn");
+  chip.classList.remove("chip-neutral");
+  if (cloudMode === "on"){
+    var who = "";
+    if (cloudUser) who = cloudUser.displayName || cloudUser.email || "";
+    if (!who) who = "מחוברת";
+    btn.textContent = who + " · התנתק";
+    var pending = hasDirty() || settingsDirty || pushTimer !== null || pendingWrites > 0;
+    chip.classList.add(pending ? "chip-warn" : "chip-ok");
+    txt.textContent = pending ? "ממתין לסנכרון" : "מסונכרן";
+    return;
+  }
+  btn.textContent = "התחבר עם Google";
+  chip.classList.add("chip-neutral");
+  txt.textContent = "מקומי בלבד";
+}
+
+$("cloudBtn").addEventListener("click", function(){
+  if (cloudMode === "on"){ cloudSignOut(); return; }
+  if (cloudMode === "signedout"){ cloudSignIn(); }
+});
 
 /* ---------- theme ---------- */
 function currentTheme(){
@@ -2212,6 +2706,7 @@ function deleteClient(id){
   store.clients = keep;
   if (store.activeId === id) store.activeId = null;
   if (!writeClientsStore(store)) return;
+  if (cloudMode === "on"){ deleteClientCloud(id); }
   refreshActiveChip();
   renderClients();
   toast("הכרטיס נמחק");
@@ -2304,7 +2799,7 @@ $("newClientName").addEventListener("keydown", function(e){
 
 /* ---------- טאב הגדרת לקוח ---------- */
 /* כל כרטיסי הטאב מוצגים רק כשיש לקוח/ה פעיל/ה; אחרת מוצג כרטיס "אין לקוח פעיל" בלבד */
-var CLIENT_TAB_CARDS = ["clientHeaderCard","clientIntakeCard","clientSummaryCard","clientTargetsCard","clientHelperCard"];
+var CLIENT_TAB_CARDS = ["clientHeaderCard","clientIntakeCard","clientSummaryCard","clientTargetsCard","clientHelperCard","clientShareCard"];
 var TARGET_FIELD_IDS = ["targetKcalIn","targetProteinIn","targetCarbsIn","targetFatIn"];
 var GOAL_ORDER = ["loss","cut","gain","maint"];
 
@@ -2737,6 +3232,7 @@ function renderClientTab(){
   renderRubricRows();
   prefillHelper(c, true);
   runHelperCalc();
+  refreshShareCard();
 }
 
 $("btnGoClients").addEventListener("click", function(){ showTab("clients"); });
@@ -2826,6 +3322,706 @@ $("btnCopyToTargets").addEventListener("click", function(){
   $("targetKcalIn").value = helperTarget;
   $("targetProteinIn").value = helperProtein;
   if (saveTargets()) toast("הועתק ליעדים ונשמר — פחמימה ושומן נשארים ידניים");
+});
+
+/* ---------- כרטיס שיתוף וייצוא ---------- */
+/* שורת השיתוף מוצגת רק כשהענן מחובר; כפתורי הייצוא עובדים תמיד — כל עוד הספריות נטענו */
+var SHARE_LINK_BASE = "https://sapi60089-ai.github.io/sivan-dashboard/client.html#t=";
+var EXPORT_MISSING_MSG = "הייצוא לא זמין בגרסה הזו";
+
+/* הסיכום כפי שהלקוח/ה רואה אותו: טקסט ערוך ידנית גובר על המערכים,
+   ושורה שמתחילה ב-"⚠ " חוזרת להיות אזהרה. משותף לייצוא ולפרסום השיתוף (C10). */
+function derivedSummary(client){
+  var out = {points:[], warnings:[]};
+  var s = client ? client.summary : null;
+  if (!s) return out;
+  if (typeof s.edited === "string" && s.edited !== ""){
+    var lines = s.edited.split("\n");
+    for (var i=0;i<lines.length;i++){
+      var line = lines[i].trim();
+      if (line === "") continue;
+      if (line.indexOf("⚠ ") === 0) out.warnings.push(line.slice(2).trim());
+      else out.points.push(line);
+    }
+    return out;
+  }
+  for (var p=0;p<s.points.length;p++) out.points.push(s.points[p]);
+  for (var w=0;w<s.warnings.length;w++) out.warnings.push(s.warnings[w]);
+  return out;
+}
+
+/* ===== מסמך השיתוף shares/{token} =====
+   דה-נורמליזציה מלאה: הפורטל רק מצייר — אין לו FOODS ואין בו שום חישוב תזונתי.
+   המבנה חייב להישאר תואם ל-renderShare שב-client.html. */
+var SHARE_UNKNOWN_FOOD = "מזון לא מוכר";
+var SHARE_VS_KEYS = ["kcal","protein","carbs","fat"];
+var SHARE_PUBLISHED_MSG = "הקישור פורסם — הועתק ללוח";
+
+/* בייצוא מזון חסר מוצג לפי ה-id (עזרה לסיוון); בקישור של הלקוח/ה — טקסט אנושי */
+function shareFoodName(byId, foodId){
+  var f = (byId && typeof foodId === "string" && Object.prototype.hasOwnProperty.call(byId, foodId)) ? byId[foodId] : null;
+  return (f && typeof f.name === "string" && f.name !== "") ? f.name : SHARE_UNKNOWN_FOOD;
+}
+
+function shareMenuDoc(byId, menu, targets){
+  var meals = (menu && menu.meals) ? menu.meals : [];
+  var sums = sumMenuMeals(byId, meals);
+  var outMeals = [], i, r;
+  for (i=0;i<meals.length;i++){
+    var src = meals[i].rows || [], rows = [];
+    for (r=0;r<src.length;r++){
+      var m = foodMacros(byId, src[r].foodId, src[r].grams);
+      rows.push({
+        name: shareFoodName(byId, src[r].foodId),
+        grams: src[r].grams,
+        kcal: m.kcal,
+        protein: round1(m.protein),
+        carbs: round1(m.carbs),
+        fat: round1(m.fat)
+      });
+    }
+    var per = sums.perMeal[i] || {kcal:0, protein:0, carbs:0, fat:0};
+    outMeals.push({
+      name: meals[i].name,
+      rows: rows,
+      sums: {kcal:per.kcal, protein:per.protein, carbs:per.carbs, fat:per.fat}
+    });
+  }
+  var totals = {kcal:sums.kcal, protein:sums.protein, carbs:sums.carbs, fat:sums.fat};
+  var st = targetsStatus(totals, targets), vs = {};
+  for (i=0;i<st.length;i++) vs[st[i].key] = {diff:st[i].diff, level:st[i].level, text:st[i].text};
+  for (i=0;i<SHARE_VS_KEYS.length;i++){
+    if (!Object.prototype.hasOwnProperty.call(vs, SHARE_VS_KEYS[i])) vs[SHARE_VS_KEYS[i]] = {diff:0, level:"neutral", text:"אין יעד"};
+  }
+  return {
+    id: menu.id,
+    name: menu.name,
+    savedAt: (typeof menu.savedAt === "string") ? menu.savedAt : "",
+    meals: outMeals,
+    totals: totals,
+    vs: vs
+  };
+}
+
+/* התאריכים נשלחים מחושבים — כדי שהפורטל לא יצטרך את חשבון התאריכים של PURE-CALC */
+function shareTrackingDoc(tracking){
+  if (!tracking) return null;
+  var cols = [], rows = {}, i;
+  var srcCols = tracking.columns || [];
+  for (i=0;i<srcCols.length;i++) cols.push({id:srcCols[i].id, label:srcCols[i].label});
+  var keys = Object.keys(tracking.rows || {});
+  for (i=0;i<keys.length;i++) rows[keys[i]] = tracking.rows[keys[i]];
+  return {
+    startDate: tracking.startDate,
+    unit: tracking.unit,
+    step: tracking.step,
+    count: tracking.count,
+    columns: cols,
+    rows: rows,
+    dates: trackingDates(tracking.startDate, tracking.unit, tracking.step, tracking.count)
+  };
+}
+
+function buildShareDoc(client){
+  var byId = activeFoods().byId;
+  var list = (client && client.menus) ? client.menus : [];
+  var menus = [], i;
+  for (i=0;i<list.length;i++) menus.push(shareMenuDoc(byId, list[i], client.targets));
+  var sum = derivedSummary(client);
+  var hasSummary = (sum.warnings.length + sum.points.length) > 0;
+  var t = client.targets || {};
+  return {
+    v: 1,
+    clientId: client.id,
+    clientName: client.name,
+    sex: (client.sex === "female" || client.sex === "male") ? client.sex : "",
+    publishedAt: new Date().toISOString(),
+    targets: {kcal:numOrNull(t.kcal), protein:numOrNull(t.protein), carbs:numOrNull(t.carbs), fat:numOrNull(t.fat)},
+    summary: hasSummary ? {warnings:sum.warnings, points:sum.points} : null,
+    menus: menus,
+    tracking: shareTrackingDoc(client.tracking)
+  };
+}
+
+/* ===== הטוקן: 28 תווים מתוך 36 (36^28 ≈ 2^145) — בלתי ניתן לניחוש, ואין מנייה בענן ===== */
+var SHARE_TOKEN_ALPHABET = "abcdefghijklmnopqrstuvwxyz0123456789";
+var SHARE_TOKEN_LEN = 28;
+
+function shareRandomBytes(count){
+  var out = [], i;
+  if (window.crypto && window.crypto.getRandomValues){
+    try {
+      var buf = new Uint8Array(count);
+      window.crypto.getRandomValues(buf);
+      for (i=0;i<count;i++) out.push(buf[i]);
+      return out;
+    } catch(e){ out = []; }
+  }
+  /* דפדפן בלי crypto — עדיין טוקן, רק פחות חזק (לא אמור לקרות באתר החי) */
+  for (i=0;i<count;i++) out.push(Math.floor(Math.random() * 256));
+  return out;
+}
+
+function newShareToken(){
+  var out = "", guard = 0, i;
+  while (out.length < SHARE_TOKEN_LEN && guard < 12){
+    guard++;
+    var bytes = shareRandomBytes(64);
+    for (i=0;i<bytes.length && out.length < SHARE_TOKEN_LEN;i++){
+      if (bytes[i] >= 252) continue;   /* 252 = 7×36 — חיתוך שמונע הטיית מודולו */
+      out += SHARE_TOKEN_ALPHABET.charAt(bytes[i] % 36);
+    }
+  }
+  return out;
+}
+
+/* פרסום: טוקן קיים מתחדש עם התוכן העדכני (אותו קישור), אחרת נוצר טוקן חדש.
+   המצב המקומי מתעדכן רק אחרי שהכתיבה לענן הצליחה. */
+function publishShare(client){
+  if (cloudMode !== "on" || !fbDb){ toast("פרסום קישור זמין רק כשהענן מחובר"); return ""; }
+  if (!client || !client.id){ toast("אין לקוח/ה פעיל/ה"); return ""; }
+  var token = shareTokenOf(client.id);
+  if (token === "") token = newShareToken();
+  var payload = null;
+  try { payload = buildShareDoc(client); }
+  catch(e){ toast("הפרסום נכשל — נסי שוב"); return ""; }
+  var id = client.id;
+  pendingWrites++;
+  sharesCollection().doc(token).set(payload).then(function(){
+    pendingWrites--;
+    if (!cloudSettingsCache) cloudSettingsCache = cloudSettingsShape(null);
+    cloudSettingsCache.shareTokens[id] = token;
+    settingsDirty = true;
+    schedulePush();
+    refreshShareCard();
+    var out = $("shareLinkOut");
+    if (out && out.value === SHARE_LINK_BASE + token) copyShareLink(SHARE_PUBLISHED_MSG);
+    else toast(SHARE_PUBLISHED_MSG);   /* פורסם לקוח/ה שאינו/ה הפעיל/ה — אין מה להעתיק מהשדה */
+  }).catch(function(err){
+    pendingWrites--;
+    if (isPermissionDenied(err)){ handleUnauthorized(); return; }
+    refreshCloudUI();
+    toast("הפרסום נכשל — נסי שוב");
+  });
+  return token;
+}
+
+/* ביטול: קודם מוחקים את המסמך בענן, ורק אז משכיחים את הטוקן — כישלון משאיר קישור להמשך ניסיון */
+function revokeShare(client){
+  if (cloudMode !== "on" || !fbDb){ toast("ביטול קישור זמין רק כשהענן מחובר"); return ""; }
+  var token = (client && client.id) ? shareTokenOf(client.id) : "";
+  if (token === ""){ toast("אין קישור פעיל לביטול"); return ""; }
+  var id = client.id;
+  pendingWrites++;
+  sharesCollection().doc(token).delete().then(function(){
+    pendingWrites--;
+    if (cloudSettingsCache) delete cloudSettingsCache.shareTokens[id];
+    cloudForgetShareToken(id);
+    settingsDirty = true;
+    schedulePush();
+    refreshShareCard();
+    toast("הקישור בוטל");
+  }).catch(function(err){
+    pendingWrites--;
+    if (isPermissionDenied(err)){ handleUnauthorized(); return; }
+    refreshCloudUI();
+    toast("הביטול נכשל — נסי שוב");
+  });
+  return token;
+}
+
+function shareTokenOf(clientId){
+  var tokens = cachedShareTokens() || {};
+  if (!clientId || !Object.prototype.hasOwnProperty.call(tokens, clientId)) return "";
+  return (typeof tokens[clientId] === "string") ? tokens[clientId] : "";
+}
+
+function refreshShareCard(){
+  var row = $("shareRow");
+  if (!row) return;
+  var c = getActiveClient(null);
+  var cloudOn = cloudMode === "on";
+  row.classList.toggle("hidden", !cloudOn);
+  $("shareAutoNote").classList.toggle("hidden", !cloudOn);
+  $("shareLocalNote").classList.toggle("hidden", cloudOn);
+  var token = (cloudOn && c) ? shareTokenOf(c.id) : "";
+  $("shareLinkOut").value = token ? (SHARE_LINK_BASE + token) : "";
+  $("btnPublishShare").classList.toggle("hidden", token !== "");
+  $("btnCopyShareLink").classList.toggle("hidden", token === "");
+  $("btnRevokeShare").classList.toggle("hidden", token === "");
+  var noMenus = !c || c.menus.length === 0;
+  $("btnExportXlsx").disabled = noMenus;
+  if (noMenus) $("btnExportXlsx").setAttribute("title", "אין תפריט שמור");
+  else $("btnExportXlsx").removeAttribute("title");
+}
+
+/* העתקת הקישור: clipboard API, ובדפדפן שחוסם אותו — textarea + execCommand.
+   okMsg מאפשר לפרסום להודיע "פורסם והועתק" בהודעה אחת; מהאזנת הקליק מגיע אירוע ולכן רק מחרוזת נחשבת */
+function copyShareLink(okMsg){
+  var txt = $("shareLinkOut").value || "";
+  if (txt === ""){ toast("אין קישור פעיל להעתקה"); return; }
+  var okText = (typeof okMsg === "string" && okMsg !== "") ? okMsg : "הקישור הועתק";
+  function fallback(){
+    try {
+      var ta = document.createElement("textarea");
+      ta.value = txt;
+      ta.setAttribute("readonly","readonly");
+      ta.style.position = "fixed";
+      ta.style.insetInlineStart = "-1000px";
+      document.body.appendChild(ta);
+      ta.select();
+      var done = document.execCommand ? document.execCommand("copy") : false;
+      document.body.removeChild(ta);
+      toast(done ? okText : "ההעתקה נכשלה — אפשר לסמן ולהעתיק ידנית");
+    } catch(e){
+      toast("ההעתקה נכשלה — אפשר לסמן ולהעתיק ידנית");
+    }
+  }
+  if (navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(txt).then(function(){ toast(okText); }, fallback);
+  } else {
+    fallback();
+  }
+}
+
+/* ===== נתוני הייצוא — אותה טבלה מזינה את האקסל ואת המצגת ===== */
+var EXPORT_HEAD = ["מזון", "גרם", "קק\"ל", "חלבון (ג')", "פחמימה (ג')", "שומן (ג')"];
+var EXPORT_TARGET_ROWS = [["kcal","קלוריות"], ["protein","חלבון (ג')"], ["carbs","פחמימה (ג')"], ["fat","שומן (ג')"]];
+
+function round1(x){
+  var v = Number(x);
+  if (!isFinite(v)) return 0;
+  return Math.round(v * 10) / 10;
+}
+
+function foodNameOf(byId, foodId){
+  var f = (byId && Object.prototype.hasOwnProperty.call(byId, foodId)) ? byId[foodId] : null;
+  return f ? f.name : foodId;
+}
+
+function hasAnyTarget(targets){
+  var t = targets || {};
+  return typeof t.kcal === "number" || typeof t.protein === "number" || typeof t.carbs === "number" || typeof t.fat === "number";
+}
+
+/* שורות התפריט לייצוא: לכל ארוחה — כותרת, שורות מזון וסיכום ארוחה */
+function menuExportRows(byId, menu){
+  var meals = (menu && menu.meals) ? menu.meals : [];
+  var sums = sumMenuMeals(byId, meals);
+  var out = [];
+  for (var i=0;i<meals.length;i++){
+    var meal = meals[i];
+    out.push({kind:"meal", cells:[meal.name, "", "", "", "", ""]});
+    for (var r=0;r<meal.rows.length;r++){
+      var row = meal.rows[r];
+      var m = foodMacros(byId, row.foodId, row.grams);
+      out.push({kind:"food", cells:[foodNameOf(byId, row.foodId), row.grams, m.kcal, round1(m.protein), round1(m.carbs), round1(m.fat)]});
+    }
+    var per = sums.perMeal[i] || {kcal:0, protein:0, carbs:0, fat:0};
+    out.push({kind:"sum", cells:["סה\"כ ארוחה", "", per.kcal, per.protein, per.carbs, per.fat]});
+  }
+  return {rows:out, totals:sums};
+}
+
+/* שורת "מול היעד": פער חתום פר מאקרו, ודגל אדום לכל חריגה מעל היעד */
+function menuTargetDeltas(totals, targets){
+  var st = targetsStatus(totals, targets);
+  var cells = ["מול היעד", ""];
+  var reds = [false, false];
+  for (var i=0;i<st.length;i++){
+    if (st[i].level === "neutral"){ cells.push("—"); reds.push(false); continue; }
+    cells.push(st[i].diff);
+    reds.push(st[i].diff > 0);
+  }
+  return {cells:cells, reds:reds};
+}
+
+/* ===== ייצוא אקסל (xlsx-js-style) ===== */
+
+/* אקסל מצפה ל-ARGB בן 8 ספרות — צבעי הפלטה נשמרים ב-6 ומתורגמים כאן */
+function xRgb(hex){ return hex.length === 6 ? "FF" + hex : hex; }
+
+function xStyle(o){
+  var opts = o || {};
+  var st = {alignment:{horizontal:"right", vertical:"center"}, font:{name:"Arial"}};
+  if (opts.bold) st.font.bold = true;
+  if (opts.size) st.font.sz = opts.size;
+  if (opts.color) st.font.color = {rgb:xRgb(opts.color)};
+  if (opts.fill) st.fill = {patternType:"solid", fgColor:{rgb:xRgb(opts.fill)}};
+  if (opts.fmt) st.numFmt = opts.fmt;
+  return st;
+}
+
+function newSheet(){ return {rows:[], styles:[], merges:[]}; }
+
+function sheetRow(sb, cells, styles){
+  var r = sb.rows.length;
+  sb.rows.push(cells);
+  var list = styles || [];
+  for (var c=0;c<list.length;c++){
+    if (list[c]) sb.styles.push({r:r, c:c, s:list[c]});
+  }
+  return r;
+}
+
+function sameStyles(style, count){
+  var out = [];
+  for (var i=0;i<count;i++) out.push(style);
+  return out;
+}
+
+function blankCells(){ return ["", "", "", "", "", ""]; }
+
+function buildSheet(sb){
+  var ws = XLSX.utils.aoa_to_sheet(sb.rows);
+  for (var i=0;i<sb.styles.length;i++){
+    var addr = XLSX.utils.encode_cell({r:sb.styles[i].r, c:sb.styles[i].c});
+    if (!ws[addr]) ws[addr] = {t:"s", v:""};
+    ws[addr].s = sb.styles[i].s;
+  }
+  ws["!cols"] = [{wch:30},{wch:8},{wch:9},{wch:11},{wch:12},{wch:10}];
+  if (sb.merges.length) ws["!merges"] = sb.merges;
+  return ws;
+}
+
+/* שם גיליון חוקי: בלי []:*?/\ , עד 31 תווים, ובלי כפילויות */
+function sheetNameSafe(name, used){
+  var raw = (typeof name === "string") ? name : "";
+  var clean = raw.replace(/[\[\]:*?\/\\]/g, " ").replace(/\s+/g, " ").trim();
+  if (clean === "") clean = "תפריט";
+  if (clean.length > 31) clean = clean.slice(0, 31).trim();
+  var out = clean, k = 2;
+  while (Object.prototype.hasOwnProperty.call(used, out)){
+    var suffix = " " + k;
+    var base = (clean.length + suffix.length > 31) ? clean.slice(0, 31 - suffix.length).trim() : clean;
+    out = base + suffix;
+    k++;
+  }
+  used[out] = true;
+  return out;
+}
+
+function xlsxSummarySheet(client){
+  var sb = newSheet();
+  sheetRow(sb, ["תוכנית תזונה — " + client.name, "", "", "", "", ""], [xStyle({bold:true, size:14, color:"7A5230"})]);
+  sb.merges.push({s:{r:0, c:0}, e:{r:0, c:5}});
+  sheetRow(sb, ["תאריך: " + isoDateText(todayISO()), "", "", "", "", ""], [xStyle({color:"2A1F14"})]);
+  sheetRow(sb, blankCells(), null);
+  sheetRow(sb, ["היעדים", "", "", "", "", ""], sameStyles(xStyle({bold:true, color:"7A5230", fill:"EFE0C8"}), 6));
+  for (var i=0;i<EXPORT_TARGET_ROWS.length;i++){
+    var v = client.targets[EXPORT_TARGET_ROWS[i][0]];
+    var has = typeof v === "number" && isFinite(v);
+    sheetRow(sb, [EXPORT_TARGET_ROWS[i][1], has ? v : "—", "", "", "", ""], [xStyle({}), xStyle({bold:true, color:"7A5230"})]);
+  }
+  return buildSheet(sb);
+}
+
+function xlsxMenuSheet(byId, client, menu){
+  var sb = newSheet();
+  var built = menuExportRows(byId, menu);
+  var mealStyle = xStyle({bold:true, color:"FFFFFF", fill:"7A5230"});
+  var headStyle = xStyle({bold:true, color:"7A5230", fill:"EFE0C8"});
+  var sumStyle = xStyle({bold:true, fill:"F6EFDF"});
+  var sumNumStyle = xStyle({bold:true, fill:"F6EFDF", fmt:"0"});
+  var gramStyle = xStyle({fmt:"0.##"});
+  var intStyle = xStyle({fmt:"0"});
+  var decStyle = xStyle({fmt:"0.0"});
+  for (var i=0;i<built.rows.length;i++){
+    var row = built.rows[i];
+    if (row.kind === "meal"){
+      var r = sheetRow(sb, row.cells, sameStyles(mealStyle, 6));
+      sb.merges.push({s:{r:r, c:0}, e:{r:r, c:5}});
+      sheetRow(sb, EXPORT_HEAD.slice(0), sameStyles(headStyle, 6));
+      continue;
+    }
+    if (row.kind === "sum"){
+      sheetRow(sb, row.cells, [sumStyle, sumStyle, sumNumStyle, sumNumStyle, sumNumStyle, sumNumStyle]);
+      continue;
+    }
+    sheetRow(sb, row.cells, [xStyle({}), gramStyle, intStyle, decStyle, decStyle, decStyle]);
+  }
+  sheetRow(sb, blankCells(), null);
+  var t = built.totals;
+  var totalStyle = xStyle({bold:true, color:"7A5230", fill:"EFE0C8"});
+  var totalNumStyle = xStyle({bold:true, color:"7A5230", fill:"EFE0C8", fmt:"0"});
+  sheetRow(sb, ["סה\"כ תפריט", "", t.kcal, t.protein, t.carbs, t.fat],
+    [totalStyle, totalStyle, totalNumStyle, totalNumStyle, totalNumStyle, totalNumStyle]);
+  if (hasAnyTarget(client.targets)){
+    var d = menuTargetDeltas(t, client.targets);
+    var styles = [xStyle({bold:true}), xStyle({})];
+    for (var c=2;c<6;c++){
+      styles.push(xStyle({bold:true, color:d.reds[c] ? "A34A2B" : "2A1F14", fmt:"+#,##0;-#,##0;0"}));
+    }
+    sheetRow(sb, d.cells, styles);
+  }
+  return buildSheet(sb);
+}
+
+function exportClientXlsx(client){
+  if (typeof XLSX === "undefined" || !XLSX || !XLSX.utils){ toast(EXPORT_MISSING_MSG); return false; }
+  try {
+    var byId = activeFoods().byId;
+    var wb = XLSX.utils.book_new();
+    wb.Workbook = {Views:[{RTL:true}]};
+    XLSX.utils.book_append_sheet(wb, xlsxSummarySheet(client), "סיכום");
+    var used = {"סיכום":true};
+    for (var i=0;i<client.menus.length;i++){
+      XLSX.utils.book_append_sheet(wb, xlsxMenuSheet(byId, client, client.menus[i]), sheetNameSafe(client.menus[i].name, used));
+    }
+    XLSX.writeFile(wb, "תפריט-" + client.name + ".xlsx");
+  } catch(e){
+    toast("יצירת האקסל נכשלה");
+    return false;
+  }
+  toast("האקסל יורד…");
+  return true;
+}
+
+/* ===== ייצוא מצגת (PptxGenJS) ===== */
+
+var PPT_STEPS = ["שאלון היכרות", "סיכום אישי", "יעדים", "תפריט", "מעקב"];
+var PPT_TARGET_TILES = [["kcal","קלוריות (קק\"ל)"], ["protein","חלבון (ג')"], ["carbs","פחמימה (ג')"], ["fat","שומן (ג')"]];
+var PPT_ROWS_PER_SLIDE = 14;
+
+function pptOpts(extra){
+  var o = {align:"right", rtlMode:true, lang:"he-IL", fontFace:"Arial"};
+  var src = extra || {};
+  var keys = Object.keys(src);
+  for (var i=0;i<keys.length;i++) o[keys[i]] = src[keys[i]];
+  return o;
+}
+
+function pptTitle(slide, txt){
+  slide.addText(txt, pptOpts({x:0.7, y:0.45, w:11.9, h:0.9, fontSize:32, bold:true, color:"7A5230"}));
+}
+
+/* טבלאות pptxgen נבנות משמאל לימין ואין בהן דגל RTL — לכן סדר העמודות מתהפך,
+   כדי שהעמודה הראשונה (מזון / תאריך) תופיע בקצה הימני כמו שקוראים בעברית */
+function pptRow(cells, opts){
+  var out = [];
+  for (var i=cells.length-1;i>=0;i--){
+    out.push({text:String(cells[i]), options:(Array.isArray(opts) ? opts[i] : opts)});
+  }
+  return out;
+}
+
+function pptTableOpts(colW){
+  var rev = [];
+  for (var i=colW.length-1;i>=0;i--) rev.push(colW[i]);
+  return {x:0.75, y:1.5, w:11.8, colW:rev, rowH:0.33, border:{type:"solid", color:"E4D5BC", pt:1}, autoPage:false};
+}
+
+function pptxCover(pptx, client){
+  var s = pptx.addSlide();
+  s.background = {color:"F8F2E7"};
+  s.addShape(pptx.ShapeType.roundRect, {x:12.35, y:1.1, w:0.25, h:5.0, rectRadius:0.12, fill:{color:"C9A227"}, line:{color:"C9A227", width:1}});
+  s.addText("תוכנית תזונה אישית", pptOpts({x:0.8, y:2.0, w:11.2, h:1.0, fontSize:40, bold:true, color:"7A5230"}));
+  s.addText(client.name, pptOpts({x:0.8, y:3.1, w:11.2, h:0.8, fontSize:28, color:"2A1F14"}));
+  s.addText(isoDateText(todayISO()), pptOpts({x:0.8, y:3.9, w:11.2, h:0.5, fontSize:16, color:"2A1F14"}));
+  s.addText("הוכן על ידי סיוון — ייעוץ תזונה", pptOpts({x:0.8, y:6.3, w:11.2, h:0.5, fontSize:14, color:"7A5230"}));
+}
+
+function pptxSteps(pptx){
+  var s = pptx.addSlide();
+  s.background = {color:"F8F2E7"};
+  pptTitle(s, "כך עבדנו יחד");
+  for (var i=0;i<PPT_STEPS.length;i++){
+    var x = 10.73 - i * 2.55;
+    s.addText(PPT_STEPS[i], pptOpts({
+      shape:pptx.ShapeType.roundRect, x:x, y:2.7, w:2.1, h:1.5, rectRadius:0.15,
+      fill:{color:"EFE0C8"}, line:{color:"7A5230", width:1},
+      fontSize:16, bold:true, color:"2A1F14", align:"center", valign:"middle"
+    }));
+    if (i < PPT_STEPS.length - 1){
+      s.addShape(pptx.ShapeType.rect, {x:x - 0.39, y:3.42, w:0.33, h:0.06, fill:{color:"7A5230"}, line:{color:"7A5230", width:1}});
+    }
+  }
+  s.addText("כל שלב נבנה עלייך — מהשאלון ועד המעקב השוטף", pptOpts({x:0.7, y:4.6, w:11.9, h:0.5, fontSize:14, color:"2A1F14"}));
+}
+
+/* התבליטים נכתבים כ-"• " ידני — bullet:true של pptxgen מתנגש עם פסקאות RTL.
+   rtlMode חוזר על כל שורה: במערך של ריצות טקסט pptxgen לא מוריש אותו מהאפשרויות הכלליות */
+function pptLineOpts(){ return {breakLine:true, rtlMode:true, align:"right", lang:"he-IL"}; }
+
+function pptxSummary(pptx, client){
+  var s = pptx.addSlide();
+  s.background = {color:"F8F2E7"};
+  pptTitle(s, "מה למדנו עלייך");
+  var sum = derivedSummary(client);
+  var y = 1.6, i;
+  if (sum.warnings.length){
+    var h = 0.42 * sum.warnings.length + 0.4;
+    s.addShape(pptx.ShapeType.roundRect, {x:0.7, y:y, w:11.9, h:h, rectRadius:0.1, fill:{color:"F7ECCB"}, line:{color:"C9A227", width:1}});
+    var wruns = [];
+    for (i=0;i<sum.warnings.length;i++) wruns.push({text:"⚠ " + sum.warnings[i], options:pptLineOpts()});
+    s.addText(wruns, pptOpts({x:0.95, y:y + 0.2, w:11.4, h:h - 0.4, fontSize:14, color:"2A1F14", valign:"top"}));
+    y += h + 0.35;
+  }
+  if (sum.points.length){
+    var pruns = [];
+    for (i=0;i<sum.points.length;i++) pruns.push({text:"• " + sum.points[i], options:pptLineOpts()});
+    s.addText(pruns, pptOpts({x:0.7, y:y, w:11.9, h:6.6 - y, fontSize:16, color:"2A1F14", valign:"top", lineSpacingMultiple:1.3}));
+  } else if (!sum.warnings.length){
+    s.addText("עוד לא נוצר סיכום לשאלון", pptOpts({x:0.7, y:y, w:11.9, h:0.6, fontSize:16, color:"2A1F14"}));
+  }
+}
+
+function pptxTargets(pptx, client){
+  var s = pptx.addSlide();
+  s.background = {color:"F8F2E7"};
+  pptTitle(s, "היעדים שלך");
+  for (var i=0;i<PPT_TARGET_TILES.length;i++){
+    var x = 10.13 - i * 3.15;
+    var v = client.targets[PPT_TARGET_TILES[i][0]];
+    var txt = (typeof v === "number" && isFinite(v)) ? n(v) : "—";
+    s.addShape(pptx.ShapeType.roundRect, {x:x, y:2.4, w:2.7, h:2.0, rectRadius:0.15, fill:{color:"FFFFFF"}, line:{color:"7A5230", width:1.5}});
+    s.addText(txt, pptOpts({x:x, y:2.6, w:2.7, h:1.0, fontSize:30, bold:true, color:"7A5230", align:"center", valign:"middle"}));
+    s.addText(PPT_TARGET_TILES[i][1], pptOpts({x:x, y:3.6, w:2.7, h:0.6, fontSize:12, color:"2A1F14", align:"center", valign:"middle"}));
+  }
+}
+
+function pptxMenu(pptx, byId, client, menu){
+  var built = menuExportRows(byId, menu);
+  var body = built.rows.slice(0);
+  var k;
+  body.push({kind:"total", cells:["סה\"כ תפריט", "", built.totals.kcal, built.totals.protein, built.totals.carbs, built.totals.fat]});
+  if (hasAnyTarget(client.targets)){
+    var d = menuTargetDeltas(built.totals, client.targets);
+    var cells = [];
+    for (k=0;k<d.cells.length;k++){
+      if (typeof d.cells[k] !== "number"){ cells.push(String(d.cells[k])); continue; }
+      /* סימן חיובי/שלילי בתוך פסקה RTL קופץ לצד הלא נכון — LRM נועל אותו לשמאל המספר */
+      cells.push("\u200E" + (d.cells[k] > 0 ? "+" : "") + d.cells[k]);
+    }
+    body.push({kind:"delta", cells:cells, reds:d.reds});
+  }
+  var headCells = pptRow(EXPORT_HEAD, pptOpts({fill:{color:"7A5230"}, color:"FFFFFF", bold:true, fontSize:12}));
+  var part = 0, idx = 0;
+  while (idx < body.length){
+    var rows = [headCells];
+    var stop = idx + PPT_ROWS_PER_SLIDE;
+    for (; idx < body.length && idx < stop; idx++){
+      var row = body[idx];
+      if (row.kind === "meal"){
+        rows.push([{text:row.cells[0], options:pptOpts({fill:{color:"EFE0C8"}, color:"2A1F14", bold:true, fontSize:12, colspan:6})}]);
+        continue;
+      }
+      if (row.kind === "sum"){
+        rows.push(pptRow(row.cells, pptOpts({fill:{color:"F6EFDF"}, color:"2A1F14", bold:true, fontSize:11})));
+        continue;
+      }
+      if (row.kind === "total"){
+        rows.push(pptRow(row.cells, pptOpts({fill:{color:"EFE0C8"}, color:"7A5230", bold:true, fontSize:11})));
+        continue;
+      }
+      if (row.kind === "delta"){
+        var deltaOpts = [];
+        for (k=0;k<row.cells.length;k++){
+          deltaOpts.push(pptOpts({color:row.reds[k] ? "A34A2B" : "2A1F14", bold:true, fontSize:11}));
+        }
+        rows.push(pptRow(row.cells, deltaOpts));
+        continue;
+      }
+      rows.push(pptRow(row.cells, pptOpts({color:"2A1F14", fontSize:11})));
+    }
+    var s = pptx.addSlide();
+    s.background = {color:"F8F2E7"};
+    pptTitle(s, "התפריט — " + menu.name + (part ? " (המשך)" : ""));
+    s.addTable(rows, pptTableOpts([4.2, 1.2, 1.4, 1.6, 1.7, 1.7]));
+    part++;
+  }
+}
+
+/* עד 10 התאריכים האחרונים שיש בהם נתון, מהישן לחדש */
+function trackingExportRows(tracking){
+  var out = [];
+  if (!tracking) return out;
+  var dates = trackingDates(tracking.startDate, tracking.unit, tracking.step, tracking.count);
+  for (var i=0;i<dates.length;i++){
+    var row = tracking.rows[dates[i]];
+    if (!row) continue;
+    var any = false, cells = [isoDateText(dates[i])];
+    for (var c=0;c<tracking.columns.length;c++){
+      var v = row[tracking.columns[c].id];
+      var txt = (typeof v === "number") ? String(v) : ((typeof v === "string") ? v : "");
+      if (txt !== "") any = true;
+      cells.push(txt === "" ? "—" : txt);
+    }
+    if (any) out.push(cells);
+  }
+  return out.length > 10 ? out.slice(out.length - 10) : out;
+}
+
+function pptxTracking(pptx, client){
+  var rowsData = trackingExportRows(client.tracking);
+  if (!rowsData.length) return;
+  var s = pptx.addSlide();
+  s.background = {color:"F8F2E7"};
+  pptTitle(s, "המעקב שלך");
+  var head = ["תאריך"], i;
+  for (i=0;i<client.tracking.columns.length;i++) head.push(client.tracking.columns[i].label);
+  var colW = [1.6];
+  var rest = (11.8 - 1.6) / (head.length > 1 ? head.length - 1 : 1);
+  for (i=1;i<head.length;i++) colW.push(rest);
+  var rows = [pptRow(head, pptOpts({fill:{color:"7A5230"}, color:"FFFFFF", bold:true, fontSize:11}))];
+  for (i=0;i<rowsData.length;i++) rows.push(pptRow(rowsData[i], pptOpts({color:"2A1F14", fontSize:10})));
+  s.addTable(rows, pptTableOpts(colW));
+}
+
+function pptxClosing(pptx){
+  var s = pptx.addSlide();
+  s.background = {color:"F8F2E7"};
+  s.addShape(pptx.ShapeType.roundRect, {x:12.35, y:1.1, w:0.25, h:5.0, rectRadius:0.12, fill:{color:"C9A227"}, line:{color:"C9A227", width:1}});
+  s.addText("בהצלחה! אני כאן לכל שאלה 💪", pptOpts({x:0.8, y:2.6, w:11.2, h:1.0, fontSize:32, bold:true, color:"7A5230"}));
+  s.addText("סיוון — ייעוץ תזונה אישי", pptOpts({x:0.8, y:3.7, w:11.2, h:0.6, fontSize:18, color:"2A1F14"}));
+}
+
+function exportClientPptx(client){
+  if (typeof PptxGenJS === "undefined" || !PptxGenJS){ toast(EXPORT_MISSING_MSG); return false; }
+  try {
+    var byId = activeFoods().byId;
+    var pptx = new PptxGenJS();
+    pptx.defineLayout({name:"W", width:13.33, height:7.5});
+    pptx.layout = "W";
+    pptxCover(pptx, client);
+    pptxSteps(pptx);
+    pptxSummary(pptx, client);
+    pptxTargets(pptx, client);
+    for (var i=0;i<client.menus.length;i++) pptxMenu(pptx, byId, client, client.menus[i]);
+    pptxTracking(pptx, client);
+    pptxClosing(pptx);
+    pptx.writeFile({fileName:"תהליך-" + client.name + ".pptx"}).then(null, function(){ toast("יצירת המצגת נכשלה"); });
+  } catch(e){
+    toast("יצירת המצגת נכשלה");
+    return false;
+  }
+  toast("המצגת מוכנה להורדה…");
+  return true;
+}
+
+/* --- חיווט הכפתורים --- */
+$("btnPublishShare").addEventListener("click", function(){
+  var c = getActiveClient(null);
+  if (!c){ toast("אין לקוח/ה פעיל/ה"); return; }
+  publishShare(c);
+});
+twoStep($("btnRevokeShare"), "בטל קישור", "לביטול — לחצי שוב", function(){
+  var c = getActiveClient(null);
+  if (!c){ toast("אין לקוח/ה פעיל/ה"); return; }
+  revokeShare(c);
+});
+$("btnCopyShareLink").addEventListener("click", copyShareLink);
+
+$("btnExportXlsx").addEventListener("click", function(){
+  var c = getActiveClient(null);
+  if (!c){ toast("אין לקוח/ה פעיל/ה"); return; }
+  if (c.menus.length === 0){ toast("אין תפריט שמור לייצוא"); return; }
+  exportClientXlsx(c);
+});
+$("btnExportPptx").addEventListener("click", function(){
+  var c = getActiveClient(null);
+  if (!c){ toast("אין לקוח/ה פעיל/ה"); return; }
+  exportClientPptx(c);
 });
 
 /* ---------- טאב בונה תפריט ---------- */
@@ -4214,18 +5410,69 @@ function renderExamples(){
 }
 
 /* ---------- init ---------- */
-runMigrationIfNeeded();
-renderClients();
-renderClientTab();
-syncBuilderClient();
-rebuild();
-renderTrackingTab();
-renderFoods();
-renderProducts();
-renderCats();
-renderSplit();
-renderExamples();
-refreshActiveChip();
+/* הציור הראשון עטוף ב-bootUI כדי שההידרציה מהענן תקדים את המיגרציה המקומית.
+   רץ פעם אחת בדיוק: מסלול הענן, מסלול "אין ענן", או ה-watchdog — מי שמגיע ראשון. */
+function bootUI(){
+  if (bootDone) return;
+  bootDone = true;
+  runMigrationIfNeeded();
+  renderClients();
+  renderClientTab();
+  syncBuilderClient();
+  rebuild();
+  renderTrackingTab();
+  renderFoods();
+  renderProducts();
+  renderCats();
+  renderSplit();
+  renderExamples();
+  refreshActiveChip();
+  refreshCloudUI();
+}
+
+if (!initFirebase()){
+  bootUI();
+} else {
+  refreshCloudUI();
+  var bootWatchdog = setTimeout(bootUI, 4000);
+  fbAuth.onAuthStateChanged(function(user){
+    clearTimeout(bootWatchdog);
+    if (!user){
+      cloudStopSync();
+      if (cloudMode !== "off") cloudMode = "signedout";
+      if (!bootDone) bootUI();
+      refreshCloudUI();
+      return;
+    }
+    cloudUser = user;
+    cloudMode = "on";
+    refreshCloudUI();
+    hydrateFromCloud().then(function(){
+      return true;
+    }, function(err){
+      /* permission-denied בכל שלב של ההידרציה = חשבון לא מורשה */
+      if (isPermissionDenied(err)){
+        handleUnauthorized();
+      } else {
+        toast("סנכרון הענן נכשל — ממשיכים מקומית");
+      }
+      return false;
+    }).then(function(hydrated){
+      if (!bootDone){
+        bootUI();
+      } else if (hydrated){
+        renderClients();
+        renderClientTab();
+        syncBuilderClient();
+        rebuild();
+        renderTrackingTab();
+        refreshActiveChip();
+      }
+      if (hydrated && cloudMode === "on") subscribeSnapshots();
+      refreshCloudUI();
+    });
+  });
+}
 
 })();
 </script>

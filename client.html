@@ -1,0 +1,724 @@
+<!doctype html>
+<html dir="rtl" lang="he">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>התוכנית שלי — סיוון ייעוץ תזונה</title>
+<style>
+/* THEME-TOKENS-START */
+:root{
+  --bg:#F8F2E7; --surface:#FFFFFF; --surface-2:#F6EFDF; --surface-3:#EFE4CC;
+  --text:#2A1F14; --text-muted:#6E5E45; --text-soft:#95835F;
+  --primary:#7A5230; --primary-soft:#EFE0C8; --on-primary:#FFFFFF;
+  --border:#E7DAC0; --border-strong:#D2BE97;
+  --accent:#C9A227; --accent-soft:#F5EBCE;
+  --ok:#55702F; --ok-bg:#EAF0DC;
+  --warn:#8F6D14; --warn-bg:#F7ECCB;
+  --bad:#A34A2B; --bad-bg:#F6E0D6;
+  --shadow:0 1px 2px rgba(58,42,20,.07), 0 8px 22px rgba(58,42,20,.06);
+  --radius:14px; --radius-sm:9px;
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --bg:#1F1710; --surface:#2A2114; --surface-2:#332818; --surface-3:#3D301C;
+    --text:#EBDDC4; --text-muted:#B7A283; --text-soft:#8F7B5C;
+    --primary:#C2955C; --primary-soft:#3A2C16; --on-primary:#1F1710;
+    --border:#453723; --border-strong:#5C4B2E;
+    --accent:#D4B04A; --accent-soft:#382D12;
+    --ok:#A9C878; --ok-bg:#28311A;
+    --warn:#DBB255; --warn-bg:#352A10;
+    --bad:#E08D6B; --bad-bg:#3A2115;
+    --shadow:0 1px 2px rgba(0,0,0,.35), 0 8px 22px rgba(0,0,0,.3);
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#1F1710; --surface:#2A2114; --surface-2:#332818; --surface-3:#3D301C;
+  --text:#EBDDC4; --text-muted:#B7A283; --text-soft:#8F7B5C;
+  --primary:#C2955C; --primary-soft:#3A2C16; --on-primary:#1F1710;
+  --border:#453723; --border-strong:#5C4B2E;
+  --accent:#D4B04A; --accent-soft:#382D12;
+  --ok:#A9C878; --ok-bg:#28311A;
+  --warn:#DBB255; --warn-bg:#352A10;
+  --bad:#E08D6B; --bad-bg:#3A2115;
+  --shadow:0 1px 2px rgba(0,0,0,.35), 0 8px 22px rgba(0,0,0,.3);
+}
+:root[data-theme="light"]{
+  --bg:#F8F2E7; --surface:#FFFFFF; --surface-2:#F6EFDF; --surface-3:#EFE4CC;
+  --text:#2A1F14; --text-muted:#6E5E45; --text-soft:#95835F;
+  --primary:#7A5230; --primary-soft:#EFE0C8; --on-primary:#FFFFFF;
+  --border:#E7DAC0; --border-strong:#D2BE97;
+  --accent:#C9A227; --accent-soft:#F5EBCE;
+  --ok:#55702F; --ok-bg:#EAF0DC;
+  --warn:#8F6D14; --warn-bg:#F7ECCB;
+  --bad:#A34A2B; --bad-bg:#F6E0D6;
+  --shadow:0 1px 2px rgba(58,42,20,.07), 0 8px 22px rgba(58,42,20,.06);
+}
+/* THEME-TOKENS-END */
+
+/* ---------- base ---------- */
+*,*::before,*::after{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0; padding:0; background:var(--bg)}
+button{font:inherit; color:inherit}
+.app{
+  font-family:"Segoe UI",-apple-system,BlinkMacSystemFont,Arial,sans-serif;
+  background:var(--bg); color:var(--text);
+  min-height:100vh; line-height:1.55; font-size:15px;
+  -webkit-font-smoothing:antialiased;
+  overflow-x:hidden;
+  display:flex; flex-direction:column;
+}
+.app h1,.app h2,.app h3{margin:0; font-weight:800; text-wrap:balance; line-height:1.25}
+.app p{margin:0}
+.app ul{margin:0; padding-inline-start:1.15em}
+.num,.app table td,.app table th{font-variant-numeric:tabular-nums}
+.app :focus-visible{outline:2px solid var(--primary); outline-offset:2px; border-radius:6px}
+
+/* ---------- topbar ---------- */
+.topbar{position:sticky; top:0; z-index:40; background:var(--surface); border-bottom:1px solid var(--border); box-shadow:0 1px 0 rgba(0,0,0,.02)}
+.topbar-inner{max-width:1100px; margin:0 auto; padding:10px 16px; display:flex; flex-wrap:wrap; align-items:center; gap:10px 16px; justify-content:space-between}
+.brand{display:flex; align-items:center; gap:10px; min-width:0}
+.brand-mark{width:26px; height:26px; border-radius:8px; background:var(--primary); flex:0 0 auto; position:relative}
+.brand-mark::after{content:""; position:absolute; inset:7px; border-radius:3px; background:var(--surface); opacity:.85}
+.brand strong{display:block; font-size:15px; letter-spacing:.01em}
+.brand-sub{display:block; font-size:11px; color:var(--text-soft); letter-spacing:.06em}
+
+/* ---------- controls ---------- */
+.btn{
+  appearance:none; font:inherit; font-size:14px; font-weight:700; cursor:pointer;
+  border-radius:var(--radius-sm); padding:9px 14px; border:1px solid var(--primary);
+  background:var(--primary); color:var(--on-primary); transition:filter .15s, background .15s, color .15s;
+}
+.btn:hover{filter:brightness(1.08)}
+.btn-ghost{background:transparent; color:var(--primary)}
+.btn-ghost:hover{background:var(--primary-soft)}
+.btn-sm{font-size:12.5px; padding:6px 10px; border-radius:8px}
+
+/* ---------- layout ---------- */
+.wrap{max-width:1100px; width:100%; margin:0 auto; padding:18px 16px 28px; display:flex; flex-direction:column; gap:18px; flex:1 1 auto}
+.card{background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); box-shadow:var(--shadow); padding:16px}
+.card-title{font-size:17px; display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap}
+.eyebrow{font-size:11px; letter-spacing:.12em; color:var(--text-soft); font-weight:700}
+.lede{color:var(--text-muted); font-size:13.5px}
+.stack{display:flex; flex-direction:column; gap:14px}
+.stack-sm{display:flex; flex-direction:column; gap:8px}
+.row-flex{display:flex; flex-wrap:wrap; gap:8px; align-items:center}
+.note-line{font-size:12px; color:var(--text-soft); border-top:1px dashed var(--border-strong); padding-top:8px}
+
+/* ---------- chips ---------- */
+.chip{display:inline-flex; align-items:center; gap:6px; font-size:12.5px; font-weight:700; padding:4px 10px; border-radius:999px; border:1px solid transparent; white-space:nowrap}
+.chip-ok{background:var(--ok-bg); color:var(--ok); border-color:var(--ok)}
+.chip-warn{background:var(--warn-bg); color:var(--warn); border-color:var(--warn)}
+.chip-bad{background:var(--bad-bg); color:var(--bad); border-color:var(--bad)}
+.chip-neutral{background:var(--surface-2); color:var(--text-muted); border-color:var(--border)}
+.chip-dot{width:7px; height:7px; border-radius:50%; background:currentColor; flex:0 0 auto}
+.chip-pick{display:flex; flex-wrap:wrap; gap:8px}
+.pick-chip{
+  appearance:none; font:inherit; font-size:15px; font-weight:700; cursor:pointer;
+  padding:11px 16px; min-height:46px; border-radius:999px; border:1.5px solid var(--border-strong);
+  background:var(--surface); color:var(--text-muted); flex:1 1 auto; min-width:76px; text-align:center;
+  transition:background .15s, color .15s, border-color .15s;
+}
+.pick-chip:hover{border-color:var(--primary); color:var(--text)}
+.pick-chip[aria-pressed="true"]{background:var(--primary); border-color:var(--primary); color:var(--on-primary)}
+
+/* ---------- stats ---------- */
+.stat-grid{display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px}
+.stat-grid-4{grid-template-columns:repeat(2,minmax(0,1fr))}
+@media (min-width:760px){ .stat-grid-4{grid-template-columns:repeat(4,minmax(0,1fr))} }
+.stat{background:var(--surface-2); border:1px solid var(--border); border-radius:var(--radius-sm); padding:10px 12px; display:flex; flex-direction:column; gap:2px}
+.stat-label{font-size:11px; font-weight:700; letter-spacing:.08em; color:var(--text-soft)}
+.stat-value{font-size:24px; font-weight:800; line-height:1.15}
+.stat-note{font-size:12px; color:var(--text-muted)}
+.stat-hero{background:var(--primary-soft); border-color:var(--primary)}
+.stat-hero .stat-value{color:var(--primary)}
+
+/* ---------- bars ---------- */
+.bar{height:9px; border-radius:999px; background:var(--surface-3); overflow:hidden; display:flex}
+.bar-fill{height:100%; background:var(--primary); border-radius:999px}
+.bar-accent{height:14px}
+.bar-accent .bar-fill{background:var(--accent)}
+
+/* ---------- tables ---------- */
+.table-scroll{overflow-x:auto; border:1px solid var(--border); border-radius:var(--radius-sm); background:var(--surface); -webkit-overflow-scrolling:touch}
+table{border-collapse:collapse; width:100%; font-size:13.5px}
+thead th{
+  text-align:start; font-size:11px; letter-spacing:.07em; font-weight:800; color:var(--text-soft);
+  background:var(--surface-2); padding:9px 10px; border-bottom:1px solid var(--border); white-space:nowrap;
+}
+tbody td{padding:8px 10px; border-bottom:1px solid var(--border); vertical-align:top}
+tbody tr:last-child td{border-bottom:0}
+tfoot td{padding:9px 10px; font-weight:800; background:var(--surface-2); border-top:1px solid var(--border-strong)}
+td.n,th.n{text-align:end; white-space:nowrap}
+.t-name{font-weight:600}
+.trk-date{white-space:nowrap; font-weight:700}
+.trk-cell{min-width:86px; white-space:nowrap}
+
+/* ---------- meal cards ---------- */
+.meal{padding:0; overflow:hidden}
+.meal-head{display:flex; align-items:baseline; justify-content:space-between; gap:10px; padding:12px 14px; background:var(--surface-2); border-bottom:1px solid var(--border); flex-wrap:wrap}
+.meal-head h3{font-size:14.5px}
+.meal-total{font-size:13px; color:var(--text-muted); font-weight:700; display:flex; gap:8px; align-items:baseline}
+.meal-total b{font-size:17px; color:var(--text)}
+.meal .table-scroll{border:0; border-radius:0}
+.meal table{min-width:430px}
+.sum-head{display:flex; flex-wrap:wrap; align-items:center; gap:10px 14px; justify-content:space-between}
+.sum-total{display:flex; align-items:baseline; gap:8px}
+.sum-total b{font-size:32px; font-weight:800; letter-spacing:-.01em}
+.sum-total span{font-size:13px; color:var(--text-muted)}
+.menu-sum{background:var(--surface-2)}
+
+/* ---------- alerts + summary ---------- */
+.alert{border:1px solid var(--warn); background:var(--warn-bg); color:var(--warn); border-radius:var(--radius-sm); padding:9px 12px; font-size:13px; font-weight:600}
+.alert-bad{border-color:var(--bad); background:var(--bad-bg); color:var(--bad)}
+.summary-points{display:flex; flex-direction:column; gap:5px; font-size:13px; color:var(--text-muted)}
+.summary-points:empty{display:none}
+
+/* ---------- loading ---------- */
+.loading-row{display:flex; align-items:center; gap:12px}
+.spinner{
+  width:26px; height:26px; border-radius:50%; flex:0 0 auto;
+  border:3px solid var(--border-strong); border-top-color:var(--primary);
+  animation:portal-spin .9s linear infinite;
+}
+@keyframes portal-spin{to{transform:rotate(360deg)}}
+
+/* ---------- footer ---------- */
+.foot{border-top:1px solid var(--border); background:var(--surface); margin-top:8px}
+.foot-inner{max-width:1100px; margin:0 auto; padding:18px 16px 26px; display:flex; flex-direction:column; gap:8px; font-size:12.5px; color:var(--text-muted)}
+.foot .sig{font-size:12px; letter-spacing:.06em; color:var(--text-soft)}
+
+.hidden{display:none !important}
+@media (prefers-reduced-motion: reduce){
+  *,*::before,*::after{transition-duration:.001ms !important; animation-duration:.001ms !important}
+}
+</style>
+</head>
+<body>
+
+<div class="app" dir="rtl" lang="he">
+
+<header class="topbar">
+  <div class="topbar-inner">
+    <div class="brand">
+      <span class="brand-mark" aria-hidden="true"></span>
+      <div><strong>סיוון — ייעוץ תזונה</strong><span class="brand-sub">התוכנית האישית שלך</span></div>
+    </div>
+    <button class="btn btn-ghost btn-sm" id="themeToggle" type="button">מצב כהה</button>
+  </div>
+</header>
+
+<main class="wrap">
+
+  <div class="card" id="loadingCard">
+    <div class="loading-row">
+      <span class="spinner" aria-hidden="true"></span>
+      <p class="lede">טוען את התוכנית שלך...</p>
+    </div>
+  </div>
+
+  <div class="card stack hidden" id="errorCard">
+    <div>
+      <span class="eyebrow">קישור אישי</span>
+      <h2 class="card-title">הקישור אינו פעיל או שגוי</h2>
+    </div>
+    <p class="lede">פנו לסיוון לקבלת קישור מעודכן</p>
+  </div>
+
+  <div class="stack hidden" id="contentWrap">
+
+    <section class="card stack" id="greetCard">
+      <div>
+        <span class="eyebrow">התוכנית שלי</span>
+        <h2 class="card-title" id="greetTitle">שלום 👋</h2>
+      </div>
+      <p class="note-line hidden" id="updatedLine"></p>
+    </section>
+
+    <section class="card stack hidden" id="targetsCard">
+      <div>
+        <span class="eyebrow">יעדים יומיים</span>
+        <h2 class="card-title">היעדים שלך</h2>
+      </div>
+      <div class="stat-grid stat-grid-4">
+        <div class="stat stat-hero">
+          <span class="stat-label">קלוריות</span>
+          <span class="stat-value num" id="tgtKcal">—</span>
+          <span class="stat-note">קק"ל ליום</span>
+        </div>
+        <div class="stat">
+          <span class="stat-label">חלבון</span>
+          <span class="stat-value num" id="tgtProtein">—</span>
+          <span class="stat-note">גרם ליום</span>
+        </div>
+        <div class="stat">
+          <span class="stat-label">פחמימה</span>
+          <span class="stat-value num" id="tgtCarbs">—</span>
+          <span class="stat-note">גרם ליום</span>
+        </div>
+        <div class="stat">
+          <span class="stat-label">שומן</span>
+          <span class="stat-value num" id="tgtFat">—</span>
+          <span class="stat-note">גרם ליום</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="card stack hidden" id="menusCard">
+      <div>
+        <span class="eyebrow">תפריט</span>
+        <h2 class="card-title">התפריט שלך</h2>
+      </div>
+      <div class="chip-pick hidden" id="menuPick"></div>
+      <p class="note-line hidden" id="menuMeta"></p>
+      <div class="stack" id="menuBody"></div>
+    </section>
+
+    <section class="card stack hidden" id="trackCard">
+      <div>
+        <span class="eyebrow">מעקב</span>
+        <h2 class="card-title">המעקב שלך</h2>
+      </div>
+      <div class="table-scroll">
+        <table id="trackTable"></table>
+      </div>
+    </section>
+
+    <section class="card stack hidden" id="summaryCard">
+      <div>
+        <span class="eyebrow">סיכום</span>
+        <h2 class="card-title">נקודות חשובות</h2>
+      </div>
+      <div class="stack-sm" id="summaryWarnings"></div>
+      <ul class="summary-points" id="summaryPoints"></ul>
+    </section>
+
+  </div>
+
+</main>
+
+<footer class="foot">
+  <div class="foot-inner">
+    <span class="sig">הוכן באהבה על ידי סיוון — ייעוץ תזונה אישי 🌸</span>
+  </div>
+</footer>
+
+</div>
+
+<script src="vendor/firebase-app-compat.js"></script>
+<script src="vendor/firebase-firestore-compat.js"></script>
+<script src="firebase-config.js"></script>
+<script>
+/* ============================================================
+   פורטל הלקוח — תצוגה בלבד.
+   כל הנתונים מגיעים מוכנים מ-shares/{token}: אין כאן שום חישוב תזונתי.
+   הכתיבה היחידה המותרת בעמוד הזה: מפתח ערכת הנושא sivan-portal-theme.
+   ============================================================ */
+
+/* ---------- helpers ---------- */
+var $ = function(id){ return document.getElementById(id); };
+function n(x){ return Number(x).toLocaleString("he-IL"); }
+function el(tag, cls, txt){
+  var e = document.createElement(tag);
+  if (cls) e.className = cls;
+  if (txt !== undefined && txt !== null) e.textContent = txt;
+  return e;
+}
+/* תצוגת תאריך מ-ISO בלי Date — כדי שאזור זמן לא יזיז את היום */
+function isoDateText(iso){
+  var s = (typeof iso === "string") ? iso : "";
+  if (s.length > 10) s = s.slice(0,10);
+  if (s.length !== 10) return s;
+  return s.slice(8,10) + "." + s.slice(5,7) + "." + s.slice(0,4);
+}
+function numText(v, dec){
+  if (v === null || v === undefined || v === "") return "—";
+  var x = Number(v);
+  if (!isFinite(x)) return "—";
+  var p = Math.pow(10, dec || 0);
+  return n(Math.round(x * p) / p);
+}
+function textOf(v){
+  if (v === null || v === undefined) return "";
+  return String(v);
+}
+function arrOf(v){ return Array.isArray(v) ? v : []; }
+function objOf(v){ return (v && typeof v === "object") ? v : null; }
+function show(node, on){
+  if (!node) return;
+  if (on) node.classList.remove("hidden"); else node.classList.add("hidden");
+}
+function clear(node){
+  if (!node) return;
+  while (node.firstChild) node.removeChild(node.firstChild);
+}
+
+var MACRO_LABEL = {kcal:"קלוריות", protein:"חלבון", carbs:"פחמימה", fat:"שומן"};
+var MACRO_KEYS = ["kcal","protein","carbs","fat"];
+
+function chipLevelClass(level){
+  if (level === "ok") return "chip-ok";
+  if (level === "warn") return "chip-warn";
+  if (level === "bad") return "chip-bad";
+  return "chip-neutral";
+}
+
+/* ---------- מצבי עמוד ---------- */
+function showError(){
+  show($("loadingCard"), false);
+  show($("contentWrap"), false);
+  show($("errorCard"), true);
+}
+function showContent(){
+  show($("loadingCard"), false);
+  show($("errorCard"), false);
+  show($("contentWrap"), true);
+}
+
+/* ---------- רינדור ---------- */
+var PORTAL_MENUS = [];
+var PORTAL_TARGETS = null;
+
+function renderGreeting(data){
+  var name = textOf(data.clientName).trim();
+  $("greetTitle").textContent = name ? ("שלום " + name + " 👋") : "שלום 👋";
+  var when = isoDateText(textOf(data.publishedAt));
+  var line = $("updatedLine");
+  if (when){
+    line.textContent = "עודכן לאחרונה: " + when;
+    show(line, true);
+  } else {
+    line.textContent = "";
+    show(line, false);
+  }
+}
+
+function renderTargets(targets){
+  var card = $("targetsCard");
+  var t = objOf(targets);
+  if (!t){ show(card, false); return; }
+  $("tgtKcal").textContent = numText(t.kcal, 0);
+  $("tgtProtein").textContent = numText(t.protein, 0);
+  $("tgtCarbs").textContent = numText(t.carbs, 0);
+  $("tgtFat").textContent = numText(t.fat, 0);
+  show(card, true);
+}
+
+function mealCard(meal){
+  var card = el("article","card meal");
+  var m = objOf(meal) || {};
+  var sums = objOf(m.sums) || {};
+  var head = el("div","meal-head");
+  head.appendChild(el("h3", null, textOf(m.name) || "ארוחה"));
+  var tot = el("div","meal-total");
+  tot.appendChild(el("b","num", numText(sums.kcal, 0)));
+  tot.appendChild(el("span", null, "קק\"ל"));
+  head.appendChild(tot);
+  card.appendChild(head);
+
+  var scroll = el("div","table-scroll");
+  var table = document.createElement("table");
+  var thead = document.createElement("thead");
+  var htr = document.createElement("tr");
+  var heads = ["מזון","גרם","קק\"ל","חלבון","פחמימה","שומן"];
+  for (var h=0; h<heads.length; h++){
+    var th = el("th", h === 0 ? null : "n", heads[h]);
+    htr.appendChild(th);
+  }
+  thead.appendChild(htr);
+  table.appendChild(thead);
+
+  var tbody = document.createElement("tbody");
+  var rows = arrOf(m.rows);
+  for (var i=0; i<rows.length; i++){
+    var r = objOf(rows[i]) || {};
+    var tr = document.createElement("tr");
+    tr.appendChild(el("td","t-name", textOf(r.name) || "—"));
+    tr.appendChild(el("td","n", numText(r.grams, 0)));
+    tr.appendChild(el("td","n", numText(r.kcal, 0)));
+    tr.appendChild(el("td","n", numText(r.protein, 1)));
+    tr.appendChild(el("td","n", numText(r.carbs, 1)));
+    tr.appendChild(el("td","n", numText(r.fat, 1)));
+    tbody.appendChild(tr);
+  }
+  table.appendChild(tbody);
+
+  var tfoot = document.createElement("tfoot");
+  var ftr = document.createElement("tr");
+  ftr.appendChild(el("td", null, "סה\"כ בארוחה"));
+  ftr.appendChild(el("td","n", ""));
+  ftr.appendChild(el("td","n", numText(sums.kcal, 0)));
+  ftr.appendChild(el("td","n", numText(sums.protein, 1)));
+  ftr.appendChild(el("td","n", numText(sums.carbs, 1)));
+  ftr.appendChild(el("td","n", numText(sums.fat, 1)));
+  tfoot.appendChild(ftr);
+  table.appendChild(tfoot);
+
+  scroll.appendChild(table);
+  card.appendChild(scroll);
+  return card;
+}
+
+function menuSummary(menu, targets){
+  var box = el("div","card stack menu-sum");
+  var totals = objOf(menu.totals) || {};
+  var head = el("div","sum-head");
+  var tot = el("div","sum-total");
+  tot.appendChild(el("b","num", numText(totals.kcal, 0)));
+  tot.appendChild(el("span", null, "קק\"ל בסך הכול"));
+  head.appendChild(tot);
+  head.appendChild(el("p","lede",
+    "חלבון " + numText(totals.protein, 1) + " ג' · פחמימה " + numText(totals.carbs, 1) + " ג' · שומן " + numText(totals.fat, 1) + " ג'"));
+  box.appendChild(head);
+
+  var t = objOf(targets) || {};
+  var goal = Number(t.kcal);
+  var done = Number(totals.kcal);
+  if (isFinite(goal) && goal > 0 && isFinite(done) && done >= 0){
+    var bar = el("div","bar bar-accent");
+    var fill = el("div","bar-fill");
+    var pct = Math.round((done / goal) * 100);
+    if (pct < 0) pct = 0;
+    if (pct > 100) pct = 100;
+    fill.style.width = pct + "%";
+    bar.appendChild(fill);
+    box.appendChild(bar);
+  }
+
+  var vs = objOf(menu.vs) || {};
+  var chips = el("div","row-flex");
+  for (var i=0; i<MACRO_KEYS.length; i++){
+    var key = MACRO_KEYS[i];
+    var s = objOf(vs[key]);
+    var level = s ? textOf(s.level) : "neutral";
+    var text = (s && textOf(s.text)) ? textOf(s.text) : "אין יעד";
+    if (!s) level = "neutral";
+    var chip = el("span","chip " + chipLevelClass(level));
+    chip.appendChild(el("span","chip-dot"));
+    chip.appendChild(el("span", null, MACRO_LABEL[key] + ": " + text));
+    chip.setAttribute("data-vs-key", key);
+    chips.appendChild(chip);
+  }
+  box.appendChild(chips);
+  return box;
+}
+
+function showMenu(idx){
+  var body = $("menuBody");
+  var meta = $("menuMeta");
+  clear(body);
+  var menu = PORTAL_MENUS[idx];
+  if (!menu){ show(meta, false); return; }
+
+  var picks = $("menuPick").childNodes;
+  for (var p=0; p<picks.length; p++){
+    if (picks[p].setAttribute) picks[p].setAttribute("aria-pressed", p === idx ? "true" : "false");
+  }
+
+  var saved = isoDateText(textOf(menu.savedAt));
+  var metaText = textOf(menu.name) || "התפריט שלך";
+  if (saved) metaText += " · נשמר ב-" + saved;
+  meta.textContent = metaText;
+  show(meta, true);
+
+  var meals = arrOf(menu.meals);
+  for (var i=0; i<meals.length; i++){
+    body.appendChild(mealCard(meals[i]));
+  }
+  body.appendChild(menuSummary(menu, PORTAL_TARGETS));
+}
+
+function renderMenus(menus, targets){
+  var card = $("menusCard");
+  var pick = $("menuPick");
+  clear(pick);
+  clear($("menuBody"));
+  PORTAL_TARGETS = objOf(targets);
+  PORTAL_MENUS = [];
+
+  var list = [];
+  var raw = arrOf(menus);
+  for (var i=0; i<raw.length; i++){
+    var m = objOf(raw[i]);
+    if (m) list.push(m);
+  }
+  if (!list.length){ show(card, false); show(pick, false); show($("menuMeta"), false); return; }
+
+  list.sort(function(a,b){ return textOf(b.savedAt).localeCompare(textOf(a.savedAt)); });
+  PORTAL_MENUS = list;
+  show(card, true);
+
+  if (list.length > 1){
+    for (var j=0; j<list.length; j++){
+      var btn = el("button","pick-chip", textOf(list[j].name) || ("תפריט " + (j+1)));
+      btn.type = "button";
+      btn.setAttribute("data-menu-idx", String(j));
+      btn.setAttribute("aria-pressed", j === 0 ? "true" : "false");
+      btn.addEventListener("click", onPickMenu);
+      pick.appendChild(btn);
+    }
+    show(pick, true);
+  } else {
+    show(pick, false);
+  }
+  showMenu(0);
+}
+
+function onPickMenu(ev){
+  var node = ev && ev.currentTarget ? ev.currentTarget : this;
+  var idx = Number(node.getAttribute("data-menu-idx"));
+  if (!isFinite(idx)) idx = 0;
+  showMenu(idx);
+}
+
+function renderTracking(tracking){
+  var card = $("trackCard");
+  var table = $("trackTable");
+  clear(table);
+  var tr = objOf(tracking);
+  if (!tr){ show(card, false); return; }
+
+  var cols = [];
+  var rawCols = arrOf(tr.columns);
+  for (var c=0; c<rawCols.length; c++){
+    var col = objOf(rawCols[c]);
+    if (col && textOf(col.id)) cols.push(col);
+  }
+  var rows = objOf(tr.rows) || {};
+
+  var dates = [];
+  var rawDates = arrOf(tr.dates);
+  if (rawDates.length){
+    for (var d=0; d<rawDates.length; d++) dates.push(textOf(rawDates[d]));
+  } else {
+    dates = Object.keys(rows).sort();
+  }
+
+  var withData = [];
+  for (var i=0; i<dates.length; i++){
+    var row = objOf(rows[dates[i]]);
+    if (!row) continue;
+    var has = false;
+    for (var k in row){
+      if (Object.prototype.hasOwnProperty.call(row, k) && textOf(row[k]) !== ""){ has = true; break; }
+    }
+    if (has) withData.push(dates[i]);
+  }
+  if (!cols.length || !withData.length){ show(card, false); return; }
+
+  var thead = document.createElement("thead");
+  var htr = document.createElement("tr");
+  htr.appendChild(el("th", null, "תאריך"));
+  for (var h=0; h<cols.length; h++){
+    htr.appendChild(el("th", null, textOf(cols[h].label) || textOf(cols[h].id)));
+  }
+  thead.appendChild(htr);
+  table.appendChild(thead);
+
+  var tbody = document.createElement("tbody");
+  for (var r=0; r<withData.length; r++){
+    var iso = withData[r];
+    var vals = objOf(rows[iso]) || {};
+    var trow = document.createElement("tr");
+    trow.appendChild(el("td","trk-date", isoDateText(iso)));
+    for (var q=0; q<cols.length; q++){
+      var v = textOf(vals[cols[q].id]);
+      trow.appendChild(el("td","trk-cell", v === "" ? "—" : v));
+    }
+    tbody.appendChild(trow);
+  }
+  table.appendChild(tbody);
+  show(card, true);
+}
+
+function renderSummary(summary){
+  var card = $("summaryCard");
+  var warnBox = $("summaryWarnings");
+  var pointsBox = $("summaryPoints");
+  clear(warnBox);
+  clear(pointsBox);
+  var s = objOf(summary);
+  if (!s){ show(card, false); return; }
+
+  var warnings = [];
+  var rawW = arrOf(s.warnings);
+  for (var i=0; i<rawW.length; i++){
+    var w = textOf(rawW[i]).trim();
+    if (w) warnings.push(w);
+  }
+  var points = [];
+  var rawP = arrOf(s.points);
+  for (var j=0; j<rawP.length; j++){
+    var p = textOf(rawP[j]).trim();
+    if (p) points.push(p);
+  }
+  if (!warnings.length && !points.length){ show(card, false); return; }
+
+  for (var a=0; a<warnings.length; a++){
+    var cls = warnings[a].indexOf("דגל אדום") > -1 ? "alert alert-bad" : "alert";
+    warnBox.appendChild(el("div", cls, warnings[a]));
+  }
+  for (var b=0; b<points.length; b++){
+    pointsBox.appendChild(el("li", null, points[b]));
+  }
+  show(card, true);
+}
+
+/* פונקציית התצוגה היחידה — מקבלת מסמך שיתוף מוכן ומציירת את כל העמוד */
+function renderShare(data){
+  var d = objOf(data);
+  if (!d){ showError(); return; }
+  showContent();
+  renderGreeting(d);
+  renderTargets(d.targets);
+  renderMenus(d.menus, d.targets);
+  renderTracking(d.tracking);
+  renderSummary(d.summary);
+}
+
+/* ---------- ערכת נושא (הכתיבה היחידה בעמוד) ---------- */
+function currentTheme(){
+  var a = document.documentElement.getAttribute("data-theme");
+  if (a) return a;
+  return (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light";
+}
+function syncThemeLabel(){
+  $("themeToggle").textContent = currentTheme() === "dark" ? "מצב בהיר" : "מצב כהה";
+}
+function restoreTheme(){
+  var saved = null;
+  try { saved = window.localStorage.getItem("sivan-portal-theme"); } catch (e){ saved = null; }
+  if (saved === "dark" || saved === "light") document.documentElement.setAttribute("data-theme", saved);
+  syncThemeLabel();
+}
+$("themeToggle").addEventListener("click", function(){
+  var next = currentTheme() === "dark" ? "light" : "dark";
+  document.documentElement.setAttribute("data-theme", next);
+  try { window.localStorage.setItem("sivan-portal-theme", next); } catch (e){}
+  syncThemeLabel();
+});
+restoreTheme();
+
+/* ---------- טעינת מסמך השיתוף ---------- */
+function shareToken(){
+  var m = String(location.hash || "").match(/[#&]t=([a-z0-9]{20,})/);
+  return m ? m[1] : "";
+}
+
+function boot(){
+  var token = shareToken();
+  if (!token || typeof firebase === "undefined" || !window.SIVAN_FIREBASE_CONFIG){ showError(); return; }
+  try {
+    firebase.initializeApp(window.SIVAN_FIREBASE_CONFIG);
+    firebase.firestore().collection("shares").doc(token).get().then(function(snap){
+      if (!snap || !snap.exists){ showError(); return; }
+      try { renderShare(snap.data()); } catch (e){ showError(); }
+    }).catch(function(){ showError(); });
+  } catch (e){ showError(); }
+}
+boot();
+</script>
+
+</body>
+</html>
