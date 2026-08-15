@@ -152,6 +152,7 @@ tbody tr:last-child td{border-bottom:0}
 tfoot td{padding:9px 10px; font-weight:800; background:var(--surface-2); border-top:1px solid var(--border-strong)}
 td.n,th.n{text-align:end; white-space:nowrap}
 .t-name{font-weight:600}
+.t-units{display:block; margin-top:2px; font-size:11.5px; font-weight:500; color:var(--text-soft)}
 .trk-date{white-space:nowrap; font-weight:700}
 .trk-cell{min-width:86px; white-space:nowrap}
 
@@ -434,7 +435,11 @@ function mealCard(meal){
   for (var i=0; i<rows.length; i++){
     var r = objOf(rows[i]) || {};
     var tr = document.createElement("tr");
-    tr.appendChild(el("td","t-name", textOf(r.name) || "—"));
+    /* units — שדה חדש (משוב #5). מסמכי שיתוף ישנים בלי השדה מציגים בדיוק כמו קודם */
+    var nameTd = el("td","t-name", textOf(r.name) || "—");
+    var units = textOf(r.units);
+    if (units !== "") nameTd.appendChild(el("span","t-units", "≈ " + units));
+    tr.appendChild(nameTd);
     tr.appendChild(el("td","n", numText(r.grams, 0)));
     tr.appendChild(el("td","n", numText(r.kcal, 0)));
     tr.appendChild(el("td","n", numText(r.protein, 1)));
