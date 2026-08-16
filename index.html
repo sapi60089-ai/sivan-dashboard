@@ -262,6 +262,19 @@ th.sortable[aria-sort="descending"] .sort-ind::after{content:"▼"; width:auto}
 .stat-chip{align-self:start; margin-top:3px}
 .meal-name{flex:1 1 150px; max-width:280px; font-size:14.5px; font-weight:800; padding:6px 9px}
 .meal-head .btn{flex:0 0 auto}
+.choice-meal{border:1px solid var(--border); border-radius:10px; overflow:hidden}
+.choice-meal-head{display:flex; justify-content:space-between; align-items:baseline; gap:10px; padding:8px 12px; background:var(--surface-2); border-bottom:1px solid var(--border); font-size:13.5px}
+.choice-meal-total{font-size:12.5px; color:var(--text-muted); font-weight:700}
+.choice-meal-total.over{color:var(--bad)}
+.choice-row{padding:7px 12px; font-size:13px; border-bottom:1px solid var(--border)}
+.choice-row:last-child{border-bottom:0}
+.choice-row.muted{color:var(--text-soft)}
+.meal-budget{display:flex; align-items:center; gap:6px; flex:0 0 auto}
+.meal-budget-label{font-size:11.5px; color:var(--text-soft); font-weight:700; white-space:nowrap}
+.meal-budget-input{width:74px; padding:6px 9px}
+.meal-budget-note{font-size:11.5px; color:var(--text-soft); font-weight:600; white-space:nowrap}
+.meal-budget-note:empty{display:none}
+.meal-total.over-budget b, .meal-total.over-budget .meal-budget-note{color:var(--bad)}
 /* ---------- בורר המזון עם חיפוש (combobox) ----------
    מחליף את רשימת ה-select הארוכה בשורות הבונה: מקלידים חלק מהשם ומקבלים תוצאות */
 .food-pick{position:relative; min-width:0}
@@ -595,6 +608,14 @@ th.sortable[aria-sort="descending"] .sort-ind::after{content:"▼"; width:auto}
       </div>
       <p class="note-line" id="shareAutoNote">כל שמירה מעדכנת אוטומטית את מה שהלקוח/ה רואה בקישור.</p>
       <p class="note-line hidden" id="shareLocalNote">שיתוף קישור זמין רק באתר החי (דרוש חיבור לענן).</p>
+      <div class="stack hidden" id="clientChoicesWrap">
+        <div>
+          <span class="eyebrow">מילוי עצמי</span>
+          <h3 class="card-title">הבחירות של הלקוח/ה</h3>
+        </div>
+        <p class="note-line" id="clientChoicesMeta"></p>
+        <div class="stack" id="clientChoicesBody"></div>
+      </div>
       <div class="row-flex">
         <button class="btn" id="btnExportXlsx" type="button">הורד אקסל תפריט</button>
         <button class="btn" id="btnExportPptx" type="button">הורד מצגת תהליך</button>
@@ -1500,13 +1521,90 @@ function macroKcal(protein, carbs, fat){
 
 function mealName(index){ return "ארוחה " + (index + 1); }
 
+/* תקציב קק"ל לארוחה (מילוי-לקוח): מספר חיובי שלם, אחרת null (אין תקציב) */
+function normalizeMealBudget(raw){
+  var b = numOrNull(raw);
+  if (b === null || b <= 0) return null;
+  return Math.round(b);
+}
+
+/* מצב עמידה בתקציב ארוחה: null אם אין תקציב; אחרת over=true בחריגה מעל התקציב */
+function mealBudgetStatus(kcal, budget){
+  var b = normalizeMealBudget(budget);
+  if (b === null) return null;
+  var k = (typeof kcal === "number" && isFinite(kcal)) ? Math.round(kcal) : 0;
+  return {budget:b, kcal:k, diff:k - b, over:k > b};
+}
+
 function defaultMeals(n){
   var k = (typeof n === "number" && isFinite(n)) ? Math.floor(n) : 1;
   if (k < 1) k = 1;
   if (k > 12) k = 12;
   var out = [];
-  for (var i=0;i<k;i++) out.push({name:mealName(i), rows:[]});
+  for (var i=0;i<k;i++) out.push({name:mealName(i), rows:[], budget:null});
   return out;
+}
+
+/* קטלוג המזונות שמתפרסם לפורטל (catalog/main) — בלי אבות המזון הגנריים,
+   רק השדות שהלקוחה צריכה לבחירה; free תמיד בוליאני (Firestore דוחה undefined) */
+function catalogFoods(list){
+  var out = [], i;
+  if (!Array.isArray(list)) return out;
+  for (i=0;i<list.length;i++){
+    var f = list[i];
+    if (!f || typeof f !== "object") continue;
+    if (f.generic === true) continue;
+    if (typeof f.id !== "string" || f.id === "") continue;
+    if (typeof f.name !== "string" || f.name === "") continue;
+    out.push({
+      id: f.id,
+      name: f.name,
+      cat: (typeof f.cat === "string") ? f.cat : "",
+      kcal100: numOrNull(f.kcal100) === null ? 0 : f.kcal100,
+      protein100: numOrNull(f.protein100) === null ? 0 : f.protein100,
+      carbs100: numOrNull(f.carbs100) === null ? 0 : f.carbs100,
+      fat100: numOrNull(f.fat100) === null ? 0 : f.fat100,
+      free: f.free === true
+    });
+  }
+  return out;
+}
+
+/* מסמך responses/{token} — הבחירות שהלקוחה שומרת מהפורטל. חוקי Firestore מגבילים
+   את המסמך למפתחות v/updatedAt/meals; הנורמליזציה כאן סלחנית כי המסמך מגיע מבחוץ. */
+function normalizeResponseDoc(raw){
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) return null;
+  var meals = [], src = Array.isArray(raw.meals) ? raw.meals : [];
+  for (var i=0;i<src.length && i<24;i++){
+    var m = src[i];
+    if (!m || typeof m !== "object") continue;
+    var rows = [], rsrc = Array.isArray(m.rows) ? m.rows : [];
+    var kcal = 0;
+    for (var j=0;j<rsrc.length && j<60;j++){
+      var r = rsrc[j];
+      if (!r || typeof r !== "object") continue;
+      if (typeof r.name !== "string" || r.name === "") continue;
+      var g = numOrNull(r.grams);
+      var k = numOrNull(r.kcal);
+      if (g === null || g <= 0) g = 0;
+      if (k === null || k < 0) k = 0;
+      var free = r.free === true;
+      if (g === 0 && !free) continue;
+      rows.push({name:r.name, grams:Math.round(g), kcal:Math.round(k), free:free});
+      kcal += Math.round(k);
+    }
+    meals.push({
+      name: (typeof m.name === "string" && m.name !== "") ? m.name : mealName(meals.length),
+      budget: normalizeMealBudget(m.budget),
+      rows: rows,
+      kcal: kcal
+    });
+  }
+  return {
+    v: 1,
+    updatedAt: (typeof raw.updatedAt === "string") ? raw.updatedAt : "",
+    meals: meals
+  };
 }
 
 function statusOf(total, target){
@@ -1993,7 +2091,7 @@ function normalizeMeals(raw){
     var m = raw[i];
     if (!m || typeof m !== "object") continue;
     var name = (typeof m.name === "string" && m.name !== "") ? m.name : mealName(out.length);
-    out.push({name:name, rows:normalizeMenuRows(m.rows)});
+    out.push({name:name, rows:normalizeMenuRows(m.rows), budget:normalizeMealBudget(m.budget)});
   }
   return out;
 }
@@ -2463,6 +2561,71 @@ function unsubscribeSnapshots(){
     try { cloudUnsubs[i](); } catch(e){}
   }
   cloudUnsubs = [];
+  stopResponseWatch();
+}
+
+/* ---------- הבחירות של הלקוח/ה (responses/{token}) ---------- */
+var responseUnsub = null, responseTokenWatched = "", clientResponseCache = null;
+
+function stopResponseWatch(){
+  if (responseUnsub){ try { responseUnsub(); } catch(e){} }
+  responseUnsub = null;
+  responseTokenWatched = "";
+  clientResponseCache = null;
+}
+
+/* נקרא מ-refreshShareCard עם הטוקן של הלקוח הפעיל ("" כשאין) —
+   מאזין חי, כך שבחירה שהלקוחה שומרת בטלפון מופיעה אצל סיוון מיד */
+function watchClientResponse(token){
+  var t = (typeof token === "string") ? token : "";
+  if (t === responseTokenWatched){ renderClientChoices(); return; }
+  if (responseUnsub){ try { responseUnsub(); } catch(e){} responseUnsub = null; }
+  responseTokenWatched = t;
+  clientResponseCache = null;
+  renderClientChoices();
+  if (t === "" || cloudMode !== "on" || !fbDb) return;
+  responseUnsub = fbDb.collection("responses").doc(t).onSnapshot(function(snap){
+    clientResponseCache = (snap && snap.exists) ? normalizeResponseDoc(snap.data()) : null;
+    renderClientChoices();
+  }, function(){
+    clientResponseCache = null;
+    renderClientChoices();
+  });
+}
+
+function renderClientChoices(){
+  var wrap = $("clientChoicesWrap");
+  if (!wrap) return;
+  var resp = clientResponseCache;
+  var has = !!(resp && resp.meals && resp.meals.length);
+  wrap.classList.toggle("hidden", !has);
+  if (!has) return;
+  $("clientChoicesMeta").textContent = resp.updatedAt ? ("הלקוח/ה עדכנ/ה לאחרונה: " + clientDateText(resp.updatedAt)) : "";
+  var body = $("clientChoicesBody");
+  body.textContent = "";
+  for (var i=0;i<resp.meals.length;i++){
+    var m = resp.meals[i];
+    var box = el("div","choice-meal");
+    var head = el("div","choice-meal-head");
+    head.appendChild(el("b", null, m.name));
+    var bs = mealBudgetStatus(m.kcal, m.budget);
+    var totalTxt = m.kcal.toLocaleString("he-IL") + " קק\"ל" + (bs ? (" מתוך " + bs.budget.toLocaleString("he-IL")) : "");
+    var totalEl = el("span","choice-meal-total", totalTxt);
+    if (bs && bs.over) totalEl.classList.add("over");
+    head.appendChild(totalEl);
+    box.appendChild(head);
+    if (m.rows.length === 0){
+      box.appendChild(el("div","choice-row muted","— עדיין אין בחירות בארוחה הזו —"));
+    }
+    for (var j=0;j<m.rows.length;j++){
+      var r = m.rows[j];
+      var line = r.free
+        ? (r.name + " · חופשי")
+        : (r.name + " · " + r.grams.toLocaleString("he-IL") + " ג' · " + r.kcal.toLocaleString("he-IL") + " קק\"ל");
+      box.appendChild(el("div","choice-row", line));
+    }
+    body.appendChild(box);
+  }
 }
 
 function isPermissionDenied(err){
@@ -2721,6 +2884,7 @@ function pushSettingsDoc(){
     pendingWrites--;
     cloudWriteFailed(err, null);
   });
+  pushCatalogDoc();   /* מזונות אישיים חדשים יגיעו גם לקטלוג הפורטל */
 }
 
 function cloudWriteFailed(err, id){
@@ -2773,6 +2937,24 @@ function pushShareIfPublished(client){
     cloudWriteFailed(err, id);   /* סימון מחדש כמלוכלך — הדחיפה הבאה תנסה גם את השיתוף */
   });
   return token;
+}
+
+/* ---------- קטלוג המזונות לפורטל (מילוי-לקוח) ----------
+   catalog/main: get פתוח, כתיבה לאדמין בלבד. נדחף בפרסום קישור, בשינוי מזונות
+   אישיים ובכניסה לענן — כך הקטלוג מתעדכן גם אחרי פריסת גרסה עם מאגר חדש. */
+function catalogCollection(){ return fbDb.collection("catalog"); }
+
+function pushCatalogDoc(){
+  if (cloudMode !== "on" || !fbDb) return;
+  var payload = {v:1, updatedAt:new Date().toISOString(), foods:catalogFoods(activeFoods().list)};
+  pendingWrites++;
+  catalogCollection().doc("main").set(payload).then(function(){
+    pendingWrites--;
+    refreshCloudUI();
+  }).catch(function(err){
+    pendingWrites--;
+    cloudWriteFailed(err, null);
+  });
 }
 
 /* מחיקת לקוח מוחקת גם את הקישור האישי שלו (deleteClientCloud כבר כותב tombstone ומרענן UI) */
@@ -3743,6 +3925,7 @@ function shareMenuDoc(byId, menu, targets){
     outMeals.push({
       name: meals[i].name,
       rows: rows,
+      budget: normalizeMealBudget(meals[i].budget),   /* null ולא undefined — Firestore דוחה undefined */
       sums: {kcal:per.kcal, protein:per.protein, carbs:per.carbs, fat:per.fat}
     });
   }
@@ -3846,6 +4029,7 @@ function publishShare(client){
   catch(e){ toast("הפרסום נכשל — נסי שוב"); return ""; }
   var id = client.id;
   pendingWrites++;
+  pushCatalogDoc();   /* הפורטל של הקישור החדש צריך קטלוג עדכני לבחירת מזונות */
   sharesCollection().doc(token).set(payload).then(function(){
     pendingWrites--;
     if (!cloudSettingsCache) cloudSettingsCache = cloudSettingsShape(null);
@@ -3904,6 +4088,7 @@ function refreshShareCard(){
   $("shareAutoNote").classList.toggle("hidden", !cloudOn);
   $("shareLocalNote").classList.toggle("hidden", cloudOn);
   var token = (cloudOn && c) ? shareTokenOf(c.id) : "";
+  watchClientResponse(token);
   $("shareLinkOut").value = token ? (SHARE_LINK_BASE + token) : "";
   $("btnPublishShare").classList.toggle("hidden", token !== "");
   $("btnCopyShareLink").classList.toggle("hidden", token === "");
@@ -4439,7 +4624,7 @@ function copyMeals(meals){
         grams: (isFinite(g) && g > 0) ? g : 0
       });
     }
-    out.push({name: (typeof m.name === "string" && m.name !== "") ? m.name : mealName(out.length), rows:rows});
+    out.push({name: (typeof m.name === "string" && m.name !== "") ? m.name : mealName(out.length), rows:rows, budget:normalizeMealBudget(m.budget)});
   }
   return out;
 }
@@ -4454,7 +4639,7 @@ function cleanMealsForSave(){
       if (!isFinite(g) || g <= 0) continue;
       rows.push({foodId:m.rows[j].foodId, grams:g});
     }
-    out.push({name:m.name, rows:rows});
+    out.push({name:m.name, rows:rows, budget:normalizeMealBudget(m.budget)});
   }
   return out;
 }
@@ -4894,11 +5079,35 @@ function buildMealCard(foods, meal){
   head.appendChild(nameIn);
 
   var total = el("div","meal-total");
+  total.setAttribute("data-meal-total","1");
   var totalNum = el("b","num","0");
   totalNum.setAttribute("data-meal-kcal","1");
   total.appendChild(totalNum);
   total.appendChild(el("span", null, "קק\"ל"));
+  var budgetNote = el("span","meal-budget-note");
+  budgetNote.setAttribute("data-meal-budget-note","1");
+  total.appendChild(budgetNote);
   head.appendChild(total);
+
+  var budgetWrap = el("label","meal-budget");
+  budgetWrap.appendChild(el("span","meal-budget-label","תקציב ללקוח"));
+  var budgetIn = document.createElement("input");
+  budgetIn.type = "number";
+  budgetIn.min = "0";
+  budgetIn.step = "10";
+  budgetIn.placeholder = "ללא";
+  budgetIn.className = "meal-budget-input";
+  budgetIn.value = (meal.budget === null || meal.budget === undefined) ? "" : String(meal.budget);
+  budgetIn.setAttribute("aria-label","תקציב קלוריות ללקוח לארוחה זו");
+  budgetIn.addEventListener("change", function(){
+    var b = normalizeMealBudget(budgetIn.value === "" ? null : Number(budgetIn.value));
+    meal.budget = b;
+    budgetIn.value = (b === null) ? "" : String(b);
+    recalc();
+  });
+  budgetWrap.appendChild(budgetIn);
+  budgetWrap.appendChild(el("span","meal-budget-label","קק\"ל"));
+  head.appendChild(budgetWrap);
 
   var del = el("button","btn btn-quiet btn-sm","מחק ארוחה");
   del.type = "button";
@@ -5020,6 +5229,11 @@ function recalc(){
     var per = totals.perMeal[i] || {kcal:0};
     var mealKcal = cards[i].querySelector("[data-meal-kcal]");
     if (mealKcal) mealKcal.textContent = n(per.kcal);
+    var totalWrap = cards[i].querySelector("[data-meal-total]");
+    var budgetNote = cards[i].querySelector("[data-meal-budget-note]");
+    var bs = mealBudgetStatus(per.kcal, meal.budget);
+    if (budgetNote) budgetNote.textContent = bs ? ("מתוך תקציב " + n(bs.budget)) : "";
+    if (totalWrap) totalWrap.classList.toggle("over-budget", !!(bs && bs.over));
     var rowNums = cards[i].querySelectorAll("[data-row-kcal]");
     var rowCats = cards[i].querySelectorAll("[data-row-cat]");
     var rowUnits = cards[i].querySelectorAll("[data-row-units]");
@@ -5279,7 +5493,7 @@ $("btnMenuLoad").addEventListener("click", loadMenu);
 $("btnMenuCopy").addEventListener("click", copyMenuText);
 $("btnAddMeal").addEventListener("click", function(){
   if (builderState.meals.length >= 12){ toast("אפשר עד 12 ארוחות בתפריט"); return; }
-  builderState.meals.push({name: mealName(builderState.meals.length), rows:[]});
+  builderState.meals.push({name: mealName(builderState.meals.length), rows:[], budget:null});
   rebuild();
 });
 $("menuNameIn").addEventListener("input", function(){ builderState.menuName = $("menuNameIn").value; });
@@ -6225,7 +6439,10 @@ if (!initFirebase()){
         renderTrackingTab();
         refreshActiveChip();
       }
-      if (hydrated && cloudMode === "on") subscribeSnapshots();
+      if (hydrated && cloudMode === "on"){
+        subscribeSnapshots();
+        pushCatalogDoc();   /* רענון הקטלוג בכל כניסה — תופס גם פריסת גרסה עם מאגר מעודכן */
+      }
       refreshCloudUI();
     });
   });

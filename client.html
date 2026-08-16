@@ -170,6 +170,40 @@ td.n,th.n{text-align:end; white-space:nowrap}
 .sum-total span{font-size:13px; color:var(--text-muted)}
 .menu-sum{background:var(--surface-2)}
 
+/* ---------- מילוי עצמי (ארוחה עם תקציב) ---------- */
+.fill{border-top:2px solid var(--border-strong); background:var(--surface); padding:12px 14px; display:flex; flex-direction:column; gap:10px}
+.fill-head{display:flex; flex-wrap:wrap; justify-content:space-between; align-items:baseline; gap:8px}
+.fill-title{font-size:13.5px; font-weight:800}
+.fill-total{font-size:13px; font-weight:700; color:var(--text-muted)}
+.fill-total b{font-size:16px; color:var(--text)}
+.fill-total.over, .fill-total.over b{color:var(--bad)}
+.fill-rows{display:flex; flex-direction:column; border:1px solid var(--border); border-radius:var(--radius-sm); overflow:hidden}
+.fill-rows:empty{display:none}
+.fill-row{display:flex; flex-wrap:wrap; align-items:center; gap:8px 10px; padding:8px 10px; border-bottom:1px solid var(--border)}
+.fill-row:last-child{border-bottom:0}
+.fill-row-name{flex:1 1 140px; font-weight:600; font-size:13.5px; min-width:0}
+.fill-row-free{font-size:12px; color:var(--ok); font-weight:700; white-space:nowrap}
+.fill-row-qty{display:flex; align-items:center; gap:5px}
+.fill-row-qty input{width:72px; font:inherit; font-size:14px; padding:6px 8px; border:1px solid var(--border-strong); border-radius:8px; background:var(--surface); color:var(--text)}
+.fill-row-qty span{font-size:12px; color:var(--text-soft)}
+.fill-row-kcal{font-size:13px; font-weight:700; white-space:nowrap; min-width:64px; text-align:end}
+.fill-row-del{appearance:none; border:1px solid var(--border); background:var(--surface); color:var(--text-soft); border-radius:8px; width:30px; height:30px; font-size:16px; line-height:1; cursor:pointer}
+.fill-row-del:hover{border-color:var(--bad); color:var(--bad); background:var(--bad-bg)}
+.fill-search{position:relative}
+.fill-search input{width:100%; font:inherit; font-size:14px; padding:9px 11px; border:1px solid var(--border-strong); border-radius:var(--radius-sm); background:var(--surface); color:var(--text)}
+.fill-results{border:1px solid var(--border-strong); border-radius:var(--radius-sm); margin-top:4px; max-height:230px; overflow-y:auto; background:var(--surface); box-shadow:var(--shadow)}
+.fill-results:empty{display:none}
+.fill-opt{display:flex; justify-content:space-between; gap:10px; width:100%; text-align:start; appearance:none; background:none; border:0; border-bottom:1px solid var(--border); padding:9px 11px; font:inherit; font-size:13.5px; cursor:pointer}
+.fill-opt:last-child{border-bottom:0}
+.fill-opt:hover{background:var(--surface-2)}
+.fill-opt .hint{color:var(--text-soft); font-size:12px; white-space:nowrap}
+.fill-alert{border:1px solid var(--bad); background:var(--bad-bg); color:var(--bad); border-radius:var(--radius-sm); padding:8px 11px; font-size:13px; font-weight:700}
+.fill-note{font-size:12px; color:var(--text-soft)}
+.fill-save{display:flex; flex-wrap:wrap; align-items:center; gap:10px; border-top:1px dashed var(--border-strong); padding-top:12px}
+.fill-save-note{font-size:12.5px; color:var(--text-muted)}
+.fill-save-note.ok{color:var(--ok); font-weight:700}
+.fill-save-note.bad{color:var(--bad); font-weight:700}
+
 /* ---------- alerts + summary ---------- */
 .alert{border:1px solid var(--warn); background:var(--warn-bg); color:var(--warn); border-radius:var(--radius-sm); padding:9px 12px; font-size:13px; font-weight:600}
 .alert-bad{border-color:var(--bad); background:var(--bad-bg); color:var(--bad)}
@@ -274,6 +308,10 @@ td.n,th.n{text-align:end; white-space:nowrap}
       <div class="chip-pick hidden" id="menuPick"></div>
       <p class="note-line hidden" id="menuMeta"></p>
       <div class="stack" id="menuBody"></div>
+      <div class="fill-save hidden" id="fillSaveBar">
+        <button class="btn" id="btnSaveChoices" type="button">שמירת הבחירות שלי</button>
+        <span class="fill-save-note" id="fillSaveNote"></span>
+      </div>
     </section>
 
     <section class="card stack hidden" id="trackCard">
@@ -312,9 +350,13 @@ td.n,th.n{text-align:end; white-space:nowrap}
 <script src="firebase-config.js"></script>
 <script>
 /* ============================================================
-   פורטל הלקוח — תצוגה בלבד.
-   כל הנתונים מגיעים מוכנים מ-shares/{token}: אין כאן שום חישוב תזונתי.
-   הכתיבה היחידה המותרת בעמוד הזה: מפתח ערכת הנושא sivan-portal-theme.
+   פורטל הלקוח — תצוגה + מילוי עצמי.
+   כל הנתונים מגיעים מוכנים מ-shares/{token}: אין כאן שום חישוב תזונתי
+   מלבד קק"ל לבחירה עצמית (kcal100 × גרמים ÷ 100, מהקטלוג catalog/main).
+   כתיבות מותרות בעמוד הזה — שתיים בלבד:
+   1. מפתח ערכת הנושא sivan-portal-theme (localStorage).
+   2. הבחירות של הלקוח/ה למסמך responses/{token} (מפתחות v/updatedAt/meals,
+      נאכף גם בחוקי האבטחה של Firestore).
    ============================================================ */
 
 /* ---------- helpers ---------- */
@@ -381,6 +423,50 @@ function showContent(){
 var PORTAL_MENUS = [];
 var PORTAL_TARGETS = null;
 
+/* ---------- מילוי עצמי: מצב ---------- */
+var PORTAL_TOKEN = "";
+var PORTAL_DB = null;
+var CATALOG = [];            /* מזונות מ-catalog/main: {id,name,cat,kcal100,...,free} */
+var CATALOG_READY = false;
+var ACTIVE_MENU_IDX = 0;
+var FILL_CHOICES = {};       /* "menuIdx:mealIdx" → מערך {name, grams, kcal100, free} */
+var SAVED_AT = "";           /* updatedAt של המסמך השמור בענן */
+
+function fillKey(menuIdx, mealIdx){ return menuIdx + ":" + mealIdx; }
+
+function mealBudgetOf(meal){
+  var b = Number(meal && meal.budget);
+  return (isFinite(b) && b > 0) ? Math.round(b) : null;
+}
+
+function rowKcal(row){
+  if (row.free) return 0;
+  var g = Number(row.grams), k = Number(row.kcal100);
+  if (!isFinite(g) || g <= 0 || !isFinite(k)) return 0;
+  return Math.round(k * g / 100);
+}
+
+function choicesTotal(rows){
+  var sum = 0;
+  for (var i=0;i<rows.length;i++) sum += rowKcal(rows[i]);
+  return sum;
+}
+
+/* חיפוש בקטלוג: קודם מי שמתחיל במחרוזת, אחר כך מי שמכיל אותה */
+function searchCatalog(q){
+  var query = String(q || "").trim();
+  if (query === "" || !CATALOG.length) return [];
+  var starts = [], contains = [];
+  for (var i=0;i<CATALOG.length;i++){
+    var f = CATALOG[i];
+    var pos = f.name.indexOf(query);
+    if (pos === 0) starts.push(f);
+    else if (pos > 0) contains.push(f);
+    if (starts.length >= 12) break;
+  }
+  return starts.concat(contains).slice(0, 12);
+}
+
 function renderGreeting(data){
   var name = textOf(data.clientName).trim();
   $("greetTitle").textContent = name ? ("שלום " + name + " 👋") : "שלום 👋";
@@ -406,7 +492,125 @@ function renderTargets(targets){
   show(card, true);
 }
 
-function mealCard(meal){
+/* ---------- מילוי עצמי: הממשק בתוך כרטיס ארוחה עם תקציב ---------- */
+function buildFillSection(meal, menuIdx, mealIdx){
+  var budget = mealBudgetOf(meal);
+  var key = fillKey(menuIdx, mealIdx);
+  if (!Object.prototype.hasOwnProperty.call(FILL_CHOICES, key)) FILL_CHOICES[key] = [];
+  var rows = FILL_CHOICES[key];
+
+  var box = el("div","fill");
+  var head = el("div","fill-head");
+  head.appendChild(el("span","fill-title","הבחירה שלך לארוחה זו"));
+  var total = el("span","fill-total");
+  var totalNum = el("b","num","0");
+  total.appendChild(totalNum);
+  total.appendChild(el("span", null, " מתוך " + n(budget) + " קק\"ל"));
+  head.appendChild(total);
+  box.appendChild(head);
+
+  var rowsWrap = el("div","fill-rows");
+  box.appendChild(rowsWrap);
+
+  var alertBox = el("div","fill-alert hidden");
+  alertBox.textContent = "חריגה מהתקציב — בצע/י שינוי כדי שאפשר יהיה לשמור";
+  box.appendChild(alertBox);
+
+  var search = el("div","fill-search");
+  var input = document.createElement("input");
+  input.type = "text";
+  input.placeholder = "הקלידו שם מזון להוספה...";
+  input.setAttribute("aria-label","חיפוש מזון להוספה לארוחה");
+  var results = el("div","fill-results");
+  search.appendChild(input);
+  search.appendChild(results);
+  box.appendChild(search);
+  box.appendChild(el("p","fill-note","הכמויות בגרמים · ירקות חופשיים לא נספרים בתקציב"));
+
+  function refreshTotal(){
+    var sum = choicesTotal(rows);
+    totalNum.textContent = n(sum);
+    var over = sum > budget;
+    total.classList.toggle("over", over);
+    show(alertBox, over);
+    refreshSaveBar();
+  }
+
+  function buildRow(row){
+    var line = el("div","fill-row");
+    line.appendChild(el("span","fill-row-name", row.name));
+    if (row.free){
+      line.appendChild(el("span","fill-row-free","חופשי — לא נספר"));
+    } else {
+      var qty = el("span","fill-row-qty");
+      var g = document.createElement("input");
+      g.type = "number";
+      g.min = "0";
+      g.step = "5";
+      g.value = String(row.grams);
+      g.setAttribute("aria-label","כמות בגרמים: " + row.name);
+      g.addEventListener("input", function(){
+        var v = Number(g.value);
+        row.grams = (isFinite(v) && v > 0) ? v : 0;
+        kcalEl.textContent = n(rowKcal(row)) + " קק\"ל";
+        refreshTotal();
+      });
+      qty.appendChild(g);
+      qty.appendChild(el("span", null, "ג'"));
+      line.appendChild(qty);
+      var kcalEl = el("span","fill-row-kcal num", n(rowKcal(row)) + " קק\"ל");
+      line.appendChild(kcalEl);
+    }
+    var del = el("button","fill-row-del","×");
+    del.type = "button";
+    del.setAttribute("aria-label","הסרת " + row.name);
+    del.addEventListener("click", function(){
+      var idx = rows.indexOf(row);
+      if (idx > -1) rows.splice(idx, 1);
+      if (line.parentNode) line.parentNode.removeChild(line);
+      refreshTotal();
+    });
+    line.appendChild(del);
+    return line;
+  }
+
+  function renderRows(){
+    clear(rowsWrap);
+    for (var i=0;i<rows.length;i++) rowsWrap.appendChild(buildRow(rows[i]));
+  }
+
+  function renderResults(){
+    clear(results);
+    var found = searchCatalog(input.value);
+    for (var i=0;i<found.length;i++){
+      (function(f){
+        var opt = el("button","fill-opt");
+        opt.type = "button";
+        opt.appendChild(el("span", null, f.name));
+        opt.appendChild(el("span","hint", f.free ? "חופשי" : (n(f.kcal100) + " קק\"ל ל-100 ג'")));
+        opt.addEventListener("click", function(){
+          rows.push({name:f.name, grams:f.free ? 0 : 100, kcal100:Number(f.kcal100) || 0, free:f.free === true});
+          input.value = "";
+          clear(results);
+          renderRows();
+          refreshTotal();
+        });
+        results.appendChild(opt);
+      })(found[i]);
+    }
+  }
+
+  input.addEventListener("input", renderResults);
+  input.addEventListener("blur", function(){
+    window.setTimeout(function(){ clear(results); }, 250);
+  });
+
+  renderRows();
+  refreshTotal();
+  return box;
+}
+
+function mealCard(meal, menuIdx, mealIdx){
   var card = el("article","card meal");
   var m = objOf(meal) || {};
   var sums = objOf(m.sums) || {};
@@ -462,6 +666,11 @@ function mealCard(meal){
 
   scroll.appendChild(table);
   card.appendChild(scroll);
+
+  /* ארוחה עם תקציב + קטלוג טעון → אזור הבחירה העצמית */
+  if (CATALOG_READY && mealBudgetOf(m) !== null){
+    card.appendChild(buildFillSection(m, menuIdx, mealIdx));
+  }
   return card;
 }
 
@@ -527,11 +736,13 @@ function showMenu(idx){
   meta.textContent = metaText;
   show(meta, true);
 
+  ACTIVE_MENU_IDX = idx;
   var meals = arrOf(menu.meals);
   for (var i=0; i<meals.length; i++){
-    body.appendChild(mealCard(meals[i]));
+    body.appendChild(mealCard(meals[i], idx, i));
   }
   body.appendChild(menuSummary(menu, PORTAL_TARGETS));
+  refreshSaveBar();
 }
 
 function renderMenus(menus, targets){
@@ -670,6 +881,155 @@ function renderSummary(summary){
   show(card, true);
 }
 
+/* ---------- מילוי עצמי: שמירה ---------- */
+function menuHasBudget(menu){
+  var meals = arrOf(menu && menu.meals);
+  for (var i=0;i<meals.length;i++){
+    if (mealBudgetOf(objOf(meals[i]))) return true;
+  }
+  return false;
+}
+
+function shareHasBudget(data){
+  var menus = arrOf(data && data.menus);
+  for (var i=0;i<menus.length;i++){
+    if (menuHasBudget(objOf(menus[i]))) return true;
+  }
+  return false;
+}
+
+/* יש חריגה באחת הארוחות של התפריט המוצג? (חוסם שמירה) */
+function anyOverBudget(){
+  var menu = PORTAL_MENUS[ACTIVE_MENU_IDX];
+  var meals = arrOf(menu && menu.meals);
+  for (var i=0;i<meals.length;i++){
+    var b = mealBudgetOf(objOf(meals[i]));
+    if (b === null) continue;
+    var rows = FILL_CHOICES[fillKey(ACTIVE_MENU_IDX, i)] || [];
+    if (choicesTotal(rows) > b) return true;
+  }
+  return false;
+}
+
+function refreshSaveBar(){
+  var bar = $("fillSaveBar");
+  if (!bar) return;
+  var menu = PORTAL_MENUS[ACTIVE_MENU_IDX];
+  var active = CATALOG_READY && menu && menuHasBudget(menu);
+  show(bar, active);
+  if (!active) return;
+  var over = anyOverBudget();
+  var btn = $("btnSaveChoices");
+  btn.disabled = over;
+  var note = $("fillSaveNote");
+  if (over){
+    note.textContent = "יש חריגה מהתקציב באחת הארוחות — בצע/י שינוי כדי לשמור";
+    note.className = "fill-save-note bad";
+  } else if (SAVED_AT){
+    note.textContent = "נשמר לאחרונה: " + isoDateText(SAVED_AT);
+    note.className = "fill-save-note";
+  } else {
+    note.textContent = "הבחירות יישלחו לסיוון";
+    note.className = "fill-save-note";
+  }
+}
+
+function saveChoices(){
+  if (!PORTAL_DB || !PORTAL_TOKEN || anyOverBudget()) return;
+  var menu = PORTAL_MENUS[ACTIVE_MENU_IDX];
+  if (!menu) return;
+  var outMeals = [];
+  var meals = arrOf(menu.meals);
+  for (var i=0;i<meals.length;i++){
+    var m = objOf(meals[i]) || {};
+    var b = mealBudgetOf(m);
+    if (b === null) continue;
+    var rows = FILL_CHOICES[fillKey(ACTIVE_MENU_IDX, i)] || [];
+    var outRows = [];
+    for (var j=0;j<rows.length;j++){
+      var r = rows[j];
+      var g = Math.round(Number(r.grams) || 0);
+      if (g <= 0 && !r.free) continue;
+      outRows.push({name:r.name, grams:r.free ? 0 : g, kcal:rowKcal(r), free:r.free === true});
+    }
+    outMeals.push({name:textOf(m.name) || "ארוחה", budget:b, rows:outRows});
+  }
+  var when = new Date().toISOString();
+  var btn = $("btnSaveChoices");
+  var note = $("fillSaveNote");
+  btn.disabled = true;
+  note.textContent = "שומר...";
+  note.className = "fill-save-note";
+  PORTAL_DB.collection("responses").doc(PORTAL_TOKEN).set({v:1, updatedAt:when, meals:outMeals}).then(function(){
+    SAVED_AT = when;
+    btn.disabled = false;
+    note.textContent = "נשמר ✓ — סיוון רואה את הבחירות שלך";
+    note.className = "fill-save-note ok";
+  }).catch(function(){
+    btn.disabled = false;
+    note.textContent = "השמירה נכשלה — בדקו חיבור לאינטרנט ונסו שוב";
+    note.className = "fill-save-note bad";
+  });
+}
+$("btnSaveChoices").addEventListener("click", saveChoices);
+
+/* ---------- מילוי עצמי: טעינת קטלוג ותשובות קודמות ---------- */
+function applyCatalog(snap){
+  CATALOG = [];
+  CATALOG_READY = false;
+  var data = (snap && snap.exists) ? objOf(snap.data()) : null;
+  var foods = data ? arrOf(data.foods) : [];
+  for (var i=0;i<foods.length;i++){
+    var f = objOf(foods[i]);
+    if (!f || !textOf(f.name)) continue;
+    var k = Number(f.kcal100);
+    CATALOG.push({name:textOf(f.name), kcal100:isFinite(k) ? k : 0, free:f.free === true});
+  }
+  CATALOG_READY = CATALOG.length > 0;
+}
+
+/* שחזור בחירות שמורות: התאמה לפי שם הארוחה בתפריטים המוצגים */
+function applyResponse(snap, shareData){
+  var data = (snap && snap.exists) ? objOf(snap.data()) : null;
+  if (!data) return;
+  SAVED_AT = textOf(data.updatedAt);
+  var saved = arrOf(data.meals);
+  var menus = arrOf(shareData && shareData.menus);
+  for (var mi=0; mi<menus.length; mi++){
+    var meals = arrOf(objOf(menus[mi]) && menus[mi].meals);
+    for (var i=0;i<meals.length;i++){
+      var meal = objOf(meals[i]) || {};
+      if (mealBudgetOf(meal) === null) continue;
+      for (var s=0;s<saved.length;s++){
+        var sm = objOf(saved[s]);
+        if (!sm || textOf(sm.name) !== textOf(meal.name)) continue;
+        var rows = [], rawRows = arrOf(sm.rows);
+        for (var j=0;j<rawRows.length;j++){
+          var r = objOf(rawRows[j]);
+          if (!r || !textOf(r.name)) continue;
+          var free = r.free === true;
+          var g = Number(r.grams);
+          if (!isFinite(g) || g < 0) g = 0;
+          if (g <= 0 && !free) continue;
+          /* kcal100 עדיף מהקטלוג העדכני; מסמך ישן בלי התאמה — נגזר מהשמור */
+          var k100 = 0, found = null;
+          for (var c=0;c<CATALOG.length;c++){
+            if (CATALOG[c].name === textOf(r.name)){ found = CATALOG[c]; break; }
+          }
+          if (found) k100 = found.kcal100;
+          else if (g > 0){
+            var kk = Number(r.kcal);
+            k100 = isFinite(kk) ? Math.round(kk * 100 / g) : 0;
+          }
+          rows.push({name:textOf(r.name), grams:g, kcal100:k100, free:free});
+        }
+        FILL_CHOICES[fillKey(mi, i)] = rows;
+        break;
+      }
+    }
+  }
+}
+
 /* פונקציית התצוגה היחידה — מקבלת מסמך שיתוף מוכן ומציירת את כל העמוד */
 function renderShare(data){
   var d = objOf(data);
@@ -716,9 +1076,25 @@ function boot(){
   if (!token || typeof firebase === "undefined" || !window.SIVAN_FIREBASE_CONFIG){ showError(); return; }
   try {
     firebase.initializeApp(window.SIVAN_FIREBASE_CONFIG);
-    firebase.firestore().collection("shares").doc(token).get().then(function(snap){
+    PORTAL_TOKEN = token;
+    PORTAL_DB = firebase.firestore();
+    PORTAL_DB.collection("shares").doc(token).get().then(function(snap){
       if (!snap || !snap.exists){ showError(); return; }
-      try { renderShare(snap.data()); } catch (e){ showError(); }
+      var data = snap.data();
+      if (!shareHasBudget(data)){
+        try { renderShare(data); } catch (e){ showError(); }
+        return;
+      }
+      /* יש ארוחות תקציב — טוענים קטלוג ובחירות קודמות לפני הציור;
+         כישלון בהם לא מפיל את העמוד, רק מציג בלי אזור הבחירה */
+      return Promise.all([
+        PORTAL_DB.collection("catalog").doc("main").get().then(null, function(){ return null; }),
+        PORTAL_DB.collection("responses").doc(token).get().then(null, function(){ return null; })
+      ]).then(function(res){
+        try { applyCatalog(res[0]); } catch (e){}
+        try { applyResponse(res[1], data); } catch (e){}
+        try { renderShare(data); } catch (e){ showError(); }
+      });
     }).catch(function(){ showError(); });
   } catch (e){ showError(); }
 }
