@@ -122,6 +122,8 @@ textarea{resize:vertical; min-height:64px; line-height:1.5}
 }
 .seg button + button{border-inline-start:1px solid var(--border-strong)}
 .seg button[aria-pressed="true"]{background:var(--primary); color:var(--on-primary)}
+/* בורר התצוגה בטאב המזונות — תוויות ארוכות, ולכן לפי רוחב הטקסט ובלי שבירת שורה */
+#foodsViewSeg button{flex:0 0 auto; white-space:nowrap; padding-inline:12px}
 .btn{
   appearance:none; font:inherit; font-size:14px; font-weight:700; cursor:pointer;
   border-radius:var(--radius-sm); padding:9px 14px; border:1px solid var(--primary);
@@ -219,8 +221,10 @@ th.sortable[aria-sort="descending"] .sort-ind::after{content:"▼"; width:auto}
 .smart-card li strong{color:var(--text)}
 
 /* ---------- builder ---------- */
-.meal{padding:0; overflow:hidden}
-.meal-head{display:flex; align-items:baseline; justify-content:space-between; gap:10px; padding:12px 14px; background:var(--surface-2); border-bottom:1px solid var(--border); flex-wrap:wrap}
+/* overflow:visible (ולא hidden) כדי שפאנל תוצאות החיפוש בשורה לא ייחתך —
+   הפינות המעוגלות של הכרטיס נשמרות דרך הכותרת ושורת הפעולות עצמן */
+.meal{padding:0; overflow:visible}
+.meal-head{display:flex; align-items:baseline; justify-content:space-between; gap:10px; padding:12px 14px; background:var(--surface-2); border-bottom:1px solid var(--border); flex-wrap:wrap; border-start-start-radius:var(--radius); border-start-end-radius:var(--radius)}
 .meal-head h3{font-size:14.5px}
 .meal-total{font-size:13px; color:var(--text-muted); font-weight:700; display:flex; gap:8px; align-items:baseline}
 .meal-total b{font-size:17px; color:var(--text)}
@@ -242,7 +246,7 @@ th.sortable[aria-sort="descending"] .sort-ind::after{content:"▼"; width:auto}
 .mrow-units:empty{display:none}
 .mrow-del{appearance:none; border:1px solid var(--border); background:var(--surface); color:var(--text-soft); border-radius:8px; width:30px; height:30px; font-size:16px; line-height:1; cursor:pointer; justify-self:start}
 .mrow-del:hover{border-color:var(--bad); color:var(--bad); background:var(--bad-bg)}
-.meal-actions{display:flex; flex-wrap:wrap; gap:6px; padding:10px 14px; background:var(--surface-2); border-top:1px solid var(--border)}
+.meal-actions{display:flex; flex-wrap:wrap; gap:6px; padding:10px 14px; background:var(--surface-2); border-top:1px solid var(--border); border-end-start-radius:var(--radius); border-end-end-radius:var(--radius)}
 .sum-head{display:flex; flex-wrap:wrap; align-items:center; gap:10px 14px; justify-content:space-between}
 .sum-total{display:flex; align-items:baseline; gap:8px}
 .sum-total b{font-size:34px; font-weight:800; letter-spacing:-.01em}
@@ -258,7 +262,45 @@ th.sortable[aria-sort="descending"] .sort-ind::after{content:"▼"; width:auto}
 .stat-chip{align-self:start; margin-top:3px}
 .meal-name{flex:1 1 150px; max-width:280px; font-size:14.5px; font-weight:800; padding:6px 9px}
 .meal-head .btn{flex:0 0 auto}
-.mrow select{min-width:0}
+/* ---------- בורר המזון עם חיפוש (combobox) ----------
+   מחליף את רשימת ה-select הארוכה בשורות הבונה: מקלידים חלק מהשם ומקבלים תוצאות */
+.food-pick{position:relative; min-width:0}
+.food-search{width:100%; padding-inline-end:32px}
+.food-clear{
+  position:absolute; inset-inline-end:5px; inset-block-start:50%; transform:translateY(-50%);
+  appearance:none; border:0; background:transparent; color:var(--text-soft); padding:0;
+  width:24px; height:24px; border-radius:6px; font-size:16px; line-height:1; cursor:pointer;
+}
+.food-clear:hover{background:var(--surface-3); color:var(--bad)}
+.food-clear[hidden]{display:none}
+.food-results{
+  position:absolute; inset-inline:0; inset-block-start:calc(100% + 4px); z-index:45;
+  max-width:100%; overflow:hidden;
+  background:var(--surface); border:1px solid var(--border-strong);
+  border-radius:var(--radius-sm); box-shadow:0 8px 24px rgba(0,0,0,.16);
+}
+.food-results[hidden]{display:none}
+/* רק רשימת התוצאות גוללת — כפתור "הוסף מזון חדש" נשאר מוצמד לתחתית הפאנל */
+.food-list{max-height:290px; overflow-y:auto; overflow-x:hidden}
+@media (max-width:719px){ .food-list{max-height:232px} }
+.food-group{padding:6px 10px; font-size:11px; font-weight:800; letter-spacing:.04em; color:var(--text-soft); background:var(--surface-2); border-bottom:1px solid var(--border)}
+.food-opt{padding:7px 10px; cursor:pointer; border-bottom:1px solid var(--border)}
+.food-opt b{display:block; font-size:13px; font-weight:700}
+.food-opt span{display:block; font-size:11px; color:var(--text-soft); margin-top:1px}
+.food-opt:hover, .food-opt.is-active{background:var(--primary-soft)}
+.food-note{padding:7px 10px; font-size:11.5px; color:var(--text-soft)}
+.food-add{
+  display:block; width:100%; text-align:start; appearance:none; cursor:pointer;
+  border:0; border-top:1px solid var(--border-strong); background:var(--surface-2);
+  color:var(--primary); font-size:12.5px; font-weight:700; padding:9px 10px;
+}
+.food-add:hover, .food-add.is-active{background:var(--primary-soft)}
+.food-form{display:flex; flex-direction:column; gap:7px; padding:10px}
+.food-form-grid{display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:7px}
+.food-field{display:block; min-width:0}
+.food-field span{display:block; font-size:11px; color:var(--text-soft); margin-bottom:2px}
+.food-field input, .food-field select{width:100%; padding:6px 8px; font-size:12.5px}
+.food-form-actions{display:flex; gap:6px; flex-wrap:wrap}
 .note-line{font-size:12px; color:var(--text-soft); border-top:1px dashed var(--border-strong); padding-top:8px}
 .saved-row{display:flex; gap:8px; flex-wrap:wrap; align-items:end}
 .saved-row .field{flex:1 1 190px}
@@ -721,12 +763,24 @@ th.sortable[aria-sort="descending"] .sort-ind::after{content:"▼"; width:auto}
       </div>
       <div class="field"><label for="foodSearch">חיפוש חופשי</label><input type="text" id="foodSearch" placeholder="שם מזון..."></div>
       <div class="row-flex" id="foodChips"></div>
+      <div class="row-flex">
+        <div class="seg" id="foodsViewSeg">
+          <button type="button" data-view="values" aria-pressed="true">ערכים ל-100 ג'</button>
+          <button type="button" data-view="portions" aria-pressed="false">תצוגת מנות</button>
+        </div>
+      </div>
       <p class="note-line" id="foodsBasisNote">הערכים ל-100 גרם, כפי שנאכל (מזון מבושל — במצב מבושל). עמודת המנה הביתית — להתמצאות.</p>
+      <p class="note-line hidden" id="foodsPortionNote">מנה: פחמימה 150 קק"ל · חלבון 300 · שומן 100 · ירק = 2 ירקות עד 100 קק"ל ביחד (חופשיים לא נספרים)</p>
       <div class="table-scroll">
         <table>
-          <thead><tr>
-            <th>מזון</th><th>קטגוריה</th><th>מנה ביתית</th><th class="n">קלוריות ל-100 ג'</th><th class="n">חלבון ל-100 ג'</th><th class="n">פחמימה ל-100 ג'</th><th class="n">שומן ל-100 ג'</th>
-          </tr></thead>
+          <thead>
+            <tr id="foodsHeadValues">
+              <th>מזון</th><th>קטגוריה</th><th>מנה ביתית</th><th class="n">קלוריות ל-100 ג'</th><th class="n">חלבון ל-100 ג'</th><th class="n">פחמימה ל-100 ג'</th><th class="n">שומן ל-100 ג'</th>
+            </tr>
+            <tr class="hidden" id="foodsHeadPortions">
+              <th>מזון</th><th>מנה אחת</th><th>ביחידות ביתיות</th><th class="n">קק"ל בפועל</th>
+            </tr>
+          </thead>
           <tbody id="foodsBody"></tbody>
         </table>
       </div>
@@ -1796,6 +1850,55 @@ function subscriptionStatus(subscription, todayISO){
     else text = "מסתיים בעוד " + left + " ימים";
   }
   return {end:end, daysLeft:left, level:level, text:text};
+}
+
+/* ===== שיטת המנות של סיוון =====
+   מנת פחמימה = 150 קק"ל · מנת חלבון = 300 קק"ל · מנת שומן = 100 קק"ל.
+   מנת ירק = 2 ירקות שביחד עד 100 קק"ל — ולכן לירק בודד מחשבים חצי מנה (50 קק"ל).
+   הסלטים המורכבים (vc1-vc6) הם כבר 2 ירקות ומעלה בצלחת אחת, ולכן הם מנה מלאה (100 קק"ל).
+   ירקות מסומנים free אינם נספרים כלל ("חופשי"), לביניים לא הוגדרה מנה,
+   "מוכן ובחוץ" נמדד ממילא ביחידות, ואבות המזון (generic) הם שורות מרשם ולא מזון. */
+var PORTION_TARGETS = {carb:150, protein:300, fat:100, vegHalf:50, vegFull:100};
+
+/* מזהי הירקות המורכבים — סלט/תערובת שכבר מכילה 2 ירקות ומעלה */
+var VEG_COMBO_ID_RE = /^vc/;
+
+/* יעד הקלוריות למנה אחת לפי קטגוריה (ירק בודד — חצי מנה, ירק מורכב — מנה מלאה);
+   קטגוריה בלי מנה מוגדרת או יעד פגום => null */
+function portionTargetKcal(cat, targets, id){
+  var t = (targets && typeof targets === "object" && !Array.isArray(targets)) ? targets : PORTION_TARGETS;
+  var v;
+  if (cat === "carb") v = t.carb;
+  else if (cat === "protein") v = t.protein;
+  else if (cat === "fat") v = t.fat;
+  else if (cat === "veg") v = (typeof id === "string" && VEG_COMBO_ID_RE.test(id)) ? t.vegFull : t.vegHalf;
+  else return null;
+  v = Number(v);
+  if (!isFinite(v) || v <= 0) return null;
+  return v;
+}
+
+/* גרמים למנה אחת, מעוגלים ל-5 ג' הקרובים (בירק — לחצי מנה).
+   null = אין מנה להצגה: ירק חופשי, אב מזון, ביניים/מוכן ובחוץ, או קלוריות לא תקינות.
+   רצפת 5 ג' מונעת "0 ג'" במזון קלורי קיצוני שהוזן ידנית */
+function portionGrams(food, targets){
+  if (!food || typeof food !== "object") return null;
+  if (food.free === true || food.generic === true) return null;
+  var target = portionTargetKcal(food.cat, targets, food.id);
+  if (target === null) return null;
+  var k = Number(food.kcal100);
+  if (!isFinite(k) || k <= 0) return null;
+  var g = Math.round(target / k * 100 / 5) * 5;
+  if (g < 5) g = 5;
+  return g;
+}
+
+/* המנה כפי שהיא מוצגת: הגרמים + הקלוריות שיוצאות מהם בפועל אחרי העיגול
+   (לא היעד התיאורטי — 15 ג' פיצוחים הם 89 קק"ל, וכך זה גם ייכתב) */
+function portionInfo(food, targets){
+  var g = portionGrams(food, targets);
+  if (g === null) return null;
+  return {grams:g, kcal:Math.round(Number(food.kcal100) * g / 100)};
 }
 
 var TRACKING_DEFAULT_COLUMNS = [
@@ -4387,57 +4490,345 @@ function twoStep(btn, label, confirmLabel, action){
   });
 }
 
-/* תבנית אחת של רשימת המזונות משוכפלת לכל שורה — קבוצת אבות המזון בראש, ואחריה 5 קבוצות לפי סדר הקטגוריות.
-   אבות המזון (generic) מופיעים רק בקבוצה שלהם — מסוננים מקבוצות הקטגוריות כדי שלא יופיעו פעמיים */
-function foodSelectTemplate(list){
-  var sel = document.createElement("select");
-  var first = document.createElement("option");
-  first.value = "";
-  first.textContent = "בחרי מזון…";
-  sel.appendChild(first);
-  var i, f, o;
-  var generics = document.createElement("optgroup");
-  generics.label = GENERIC_GROUP_LABEL;
-  for (i=0;i<list.length;i++){
-    f = list[i];
-    if (!f.generic) continue;
-    o = document.createElement("option");
-    o.value = f.id;
-    o.textContent = f.name;
-    generics.appendChild(o);
+/* ---------- בורר המזון עם חיפוש (combobox) ----------
+   החליף את ה-select הארוך של כל המאגר: מקלידים חלק מהשם ומקבלים עד 9 תוצאות.
+   ה-foodId של השורה נשאר מקור האמת ב-builderState — השדה מציג רק את שם המזון. */
+var FOOD_RESULT_LIMIT = 9;
+var FOOD_SEARCH_HINT = "הקלידו לחיפוש בכל המאגר...";
+var FOOD_ADD_LABEL = "+ הוסף מזון חדש למאגר";
+var foodPickSeq = 0;
+var openFoodPick = null;   /* {pick: element, close: function} — פאנל אחד פתוח בכל רגע */
+
+/* השוואה סלחנית: בלי רגישות לרישיות ובלי רווחים ("חזה עוף" נמצא גם ב-"חזהעוף") */
+function foodSearchKey(s){
+  return String((s === undefined || s === null) ? "" : s).toLowerCase().replace(/\s+/g, "");
+}
+function foodDisplayName(byId, foodId){
+  if (typeof foodId !== "string" || foodId === "") return "";
+  if (!byId || !Object.prototype.hasOwnProperty.call(byId, foodId)) return "";
+  return byId[foodId].name;
+}
+/* שורת המטא המעומעמת מתחת לשם: קטגוריה · מנה ביתית · קלוריות.
+   ב"מוכן ובחוץ" הקלוריות ליחידה שימושיות יותר מהערך ל-100 ג' */
+function foodMetaText(f){
+  var parts = [CAT_LABEL[f.cat] || f.cat];
+  var portion = (typeof f.portion === "string") ? f.portion : "";
+  if (portion !== "") parts.push(portion);
+  var g = Number(f.grams), kcal = Number(f.kcal100);
+  if (f.cat === "ready" && portion !== "" && isFinite(g) && g > 0){
+    parts.push(n(Math.round(kcal * g / 100)) + " קק\"ל / " + portion);
+  } else {
+    parts.push(n(kcal) + " קק\"ל ל-100 ג'");
   }
-  if (generics.childNodes.length) sel.appendChild(generics);
-  for (var ci=0; ci<BUILDER_CAT_ORDER.length; ci++){
-    var cat = BUILDER_CAT_ORDER[ci];
-    var group = document.createElement("optgroup");
-    group.label = CAT_LABEL[cat];
-    for (i=0;i<list.length;i++){
-      f = list[i];
-      if (f.cat !== cat || f.generic) continue;
-      o = document.createElement("option");
-      o.value = f.id;
-      o.textContent = f.name + (isCustomFoodId(f.id) ? " (מותאם)" : "");
-      group.appendChild(o);
+  if (isCustomFoodId(f.id)) parts.push("מותאם");
+  return parts.join(" · ");
+}
+function closeOpenFoodPick(){
+  if (!openFoodPick) return;
+  var fn = openFoodPick.close;
+  openFoodPick = null;
+  fn();
+}
+document.addEventListener("click", function(e){
+  if (openFoodPick && !openFoodPick.pick.contains(e.target)) closeOpenFoodPick();
+});
+
+/* בורר בודד לשורה אחת. onGrams נקרא רק כשהבחירה משלימה כמות ריקה ממשקל המנה הביתית */
+function buildFoodPick(foods, row, onGrams){
+  foodPickSeq = foodPickSeq + 1;
+  var listId = "foodResults" + foodPickSeq;
+  var pick = el("div","food-pick");
+  var items = [], active = -1, mode = "results";
+
+  var input = document.createElement("input");
+  input.type = "text";
+  input.className = "food-search";
+  input.autocomplete = "off";
+  input.placeholder = "חיפוש מזון...";
+  input.value = foodDisplayName(foods.byId, row.foodId);
+  input.setAttribute("role","combobox");
+  input.setAttribute("aria-expanded","false");
+  input.setAttribute("aria-autocomplete","list");
+  input.setAttribute("aria-controls", listId);
+  input.setAttribute("aria-label","חיפוש ובחירת מזון");
+  pick.appendChild(input);
+
+  var clear = el("button","food-clear","×");
+  clear.type = "button";
+  clear.setAttribute("aria-label","ניקוי בחירת המזון");
+  clear.hidden = (input.value === "");
+  pick.appendChild(clear);
+
+  var panel = el("div","food-results");
+  panel.hidden = true;
+  pick.appendChild(panel);
+
+  function setActive(i){
+    var k;
+    for (k=0;k<items.length;k++) items[k].node.classList.remove("is-active");
+    active = (i >= 0 && i < items.length) ? i : -1;
+    if (active < 0){ input.removeAttribute("aria-activedescendant"); return; }
+    var node = items[active].node;
+    node.classList.add("is-active");
+    input.setAttribute("aria-activedescendant", node.id);
+    if (node.scrollIntoView) node.scrollIntoView({block:"nearest"});
+  }
+  function move(step){
+    if (!items.length) return;
+    var next = (active < 0) ? (step > 0 ? 0 : items.length - 1) : (active + step);
+    if (next < 0) next = items.length - 1;
+    if (next >= items.length) next = 0;
+    setActive(next);
+  }
+  /* בסגירה השדה חוזר לשם המזון שנבחר בפועל — טקסט חיפוש שלא הבשיל לבחירה
+     ("קוטג" בלי ללחוץ על תוצאה) לא נשאר על המסך ומטעה */
+  function close(){
+    panel.hidden = true;
+    input.setAttribute("aria-expanded","false");
+    input.removeAttribute("aria-activedescendant");
+    var picked = foodDisplayName(foods.byId, row.foodId);
+    if (input.value !== picked) input.value = picked;
+    clear.hidden = (input.value === "");
+    if (openFoodPick && openFoodPick.pick === pick) openFoodPick = null;
+  }
+  function open(){
+    if (openFoodPick && openFoodPick.pick !== pick) closeOpenFoodPick();
+    renderResults();
+    panel.hidden = false;
+    input.setAttribute("aria-expanded","true");
+    openFoodPick = {pick: pick, close: close};
+  }
+  function choose(f){
+    row.foodId = f.id;
+    input.value = f.name;
+    clear.hidden = false;
+    /* בחירת מזון בשורה בלי כמות ממלאת את משקל המנה הביתית */
+    if (!(Number(row.grams) > 0)){
+      var g = Number(f.grams);
+      row.grams = (isFinite(g) && g > 0) ? g : 0;
+      if (onGrams) onGrams(row.grams);
     }
-    sel.appendChild(group);
+    close();
+    recalc();
   }
-  return sel;
+
+  function groupRow(label){
+    var g = el("div","food-group", label);
+    g.setAttribute("role","presentation");
+    return g;
+  }
+  function optionRow(f, idx){
+    var opt = el("div","food-opt");
+    opt.id = listId + "-o" + idx;
+    opt.setAttribute("role","option");
+    opt.setAttribute("aria-selected", (f.id === row.foodId) ? "true" : "false");
+    opt.appendChild(el("b", null, f.name));
+    opt.appendChild(el("span", null, foodMetaText(f)));
+    opt.addEventListener("mousedown", function(e){ e.preventDefault(); });
+    opt.addEventListener("click", function(){ choose(f); });
+    return opt;
+  }
+
+  function renderResults(){
+    mode = "results";
+    items = [];
+    active = -1;
+    input.removeAttribute("aria-activedescendant");
+    panel.innerHTML = "";
+
+    var list = el("div","food-list");
+    list.id = listId;
+    list.setAttribute("role","listbox");
+    list.setAttribute("aria-label","תוצאות חיפוש מזון");
+
+    var q = foodSearchKey(input.value), shown = [], i;
+    if (q === ""){
+      /* מסך פתיחה: אבות המזון בלבד — שאר המאגר גדול מדי מכדי להציג בלי חיפוש */
+      for (i=0;i<foods.list.length;i++){ if (foods.list[i].generic) shown.push(foods.list[i]); }
+      if (shown.length) list.appendChild(groupRow(GENERIC_GROUP_LABEL));
+    } else {
+      for (i=0;i<foods.list.length && shown.length < FOOD_RESULT_LIMIT;i++){
+        if (foodSearchKey(foods.list[i].name).indexOf(q) > -1) shown.push(foods.list[i]);
+      }
+    }
+    for (i=0;i<shown.length;i++){
+      var opt = optionRow(shown[i], i);
+      list.appendChild(opt);
+      items.push({kind:"food", food:shown[i], node:opt});
+    }
+    if (q === "") list.appendChild(el("div","food-note", FOOD_SEARCH_HINT));
+    else if (shown.length === 0) list.appendChild(el("div","food-note","לא נמצא מזון בשם הזה — אפשר להוסיף אותו למאגר"));
+    panel.appendChild(list);
+
+    var add = el("button","food-add", FOOD_ADD_LABEL);
+    add.type = "button";
+    add.id = listId + "-add";
+    add.addEventListener("mousedown", function(e){ e.preventDefault(); });
+    add.addEventListener("click", function(){ showQuickAdd(); });
+    panel.appendChild(add);
+    items.push({kind:"add", node:add});
+  }
+
+  /* טופס מהיר בתוך הפאנל — נשמר דרך saveCustomFood, בדיוק כמו הטופס בטאב מאגר המזונות */
+  function showQuickAdd(){
+    mode = "form";
+    items = [];
+    active = -1;
+    input.removeAttribute("aria-activedescendant");
+    panel.innerHTML = "";
+
+    var form = el("div","food-form");
+    var boxes = {};
+    var grid = el("div","food-form-grid");
+
+    boxes.name = document.createElement("input");
+    var nameLab = el("label","food-field");
+    nameLab.appendChild(el("span", null, "שם המזון"));
+    boxes.name.type = "text";
+    boxes.name.autocomplete = "off";
+    boxes.name.value = (input.value || "").trim();
+    nameLab.appendChild(boxes.name);
+    form.appendChild(nameLab);
+
+    var catLab = el("label","food-field");
+    catLab.appendChild(el("span", null, "קטגוריה"));
+    boxes.cat = document.createElement("select");
+    for (var ci=0; ci<BUILDER_CAT_ORDER.length; ci++){
+      var o = document.createElement("option");
+      o.value = BUILDER_CAT_ORDER[ci];
+      o.textContent = CAT_LABEL[BUILDER_CAT_ORDER[ci]];
+      boxes.cat.appendChild(o);
+    }
+    catLab.appendChild(boxes.cat);
+    form.appendChild(catLab);
+
+    for (var fi=0; fi<NEW_FOOD_FIELDS.length; fi++){
+      (function(def){
+        var lab = el("label","food-field");
+        lab.appendChild(el("span", null, def[2] + " ל-100 ג'"));
+        var box = document.createElement("input");
+        box.type = "number";
+        box.min = "0";
+        box.step = (def[1] === "kcal100") ? "1" : "0.1";
+        lab.appendChild(box);
+        grid.appendChild(lab);
+        boxes[def[1]] = box;
+      })(NEW_FOOD_FIELDS[fi]);
+    }
+    form.appendChild(grid);
+
+    var grid2 = el("div","food-form-grid");
+    var pLab = el("label","food-field");
+    pLab.appendChild(el("span", null, "מנה ביתית (רשות)"));
+    boxes.portion = document.createElement("input");
+    boxes.portion.type = "text";
+    boxes.portion.autocomplete = "off";
+    pLab.appendChild(boxes.portion);
+    grid2.appendChild(pLab);
+    var gLab = el("label","food-field");
+    gLab.appendChild(el("span", null, "גרמים למנה (רשות)"));
+    boxes.grams = document.createElement("input");
+    boxes.grams.type = "number";
+    boxes.grams.min = "1";
+    boxes.grams.step = "5";
+    gLab.appendChild(boxes.grams);
+    grid2.appendChild(gLab);
+    form.appendChild(grid2);
+
+    var actions = el("div","food-form-actions");
+    var save = el("button","btn btn-sm","שמור ובחר");
+    save.type = "button";
+    var cancel = el("button","btn btn-quiet btn-sm","ביטול");
+    cancel.type = "button";
+    actions.appendChild(save);
+    actions.appendChild(cancel);
+    form.appendChild(actions);
+    panel.appendChild(form);
+
+    save.addEventListener("click", function(){
+      var payload = {name: boxes.name.value, cat: boxes.cat.value, portion: boxes.portion.value, grams: boxes.grams.value};
+      for (var i=0;i<NEW_FOOD_FIELDS.length;i++) payload[NEW_FOOD_FIELDS[i][1]] = boxes[NEW_FOOD_FIELDS[i][1]].value;
+      var food = saveCustomFood(payload, function(key){
+        if (boxes[key] && boxes[key].focus) boxes[key].focus();
+      });
+      if (!food) return;
+      close();     /* לפני עדכון השורה — הסגירה מסתנכרנת מול המאגר שנטען בבנייה הקודמת */
+      row.foodId = food.id;
+      if (!(Number(row.grams) > 0)) row.grams = Number(food.grams) > 0 ? Number(food.grams) : 0;
+      renderFoods();
+      rebuild();   /* מרנדר את השורה מחדש — השם החדש מופיע בשדה */
+    });
+    cancel.addEventListener("click", function(){
+      renderResults();
+      input.focus();
+    });
+    boxes.name.focus();
+  }
+
+  input.addEventListener("focus", function(){
+    input.select();
+    open();
+  });
+  input.addEventListener("input", function(){
+    clear.hidden = (input.value === "");
+    if (panel.hidden) open();
+    else renderResults();
+  });
+  input.addEventListener("keydown", function(e){
+    if (e.key === "Escape"){
+      if (!panel.hidden){ e.preventDefault(); close(); }
+      return;
+    }
+    if (e.key === "ArrowDown" || e.key === "ArrowUp"){
+      e.preventDefault();
+      if (panel.hidden){ open(); return; }
+      if (mode === "results") move(e.key === "ArrowDown" ? 1 : -1);
+      return;
+    }
+    if (e.key === "Enter"){
+      if (panel.hidden || mode !== "results" || active < 0) return;
+      e.preventDefault();
+      var it = items[active];
+      if (it.kind === "add") showQuickAdd();
+      else choose(it.food);
+    }
+  });
+  /* יציאה מהשדה סוגרת את הפאנל — אבל לא כשטופס ההוספה המהירה פתוח,
+     אחרת מעבר לשדה הראשון בטופס היה מוחק את מה שהוקלד */
+  input.addEventListener("blur", function(){
+    setTimeout(function(){
+      if (mode === "form") return;
+      if (!pick.contains(document.activeElement)) close();
+    }, 0);
+  });
+  panel.addEventListener("keydown", function(e){
+    if (e.key === "Escape" && mode === "form"){ e.preventDefault(); renderResults(); input.focus(); }
+  });
+  clear.addEventListener("click", function(){
+    row.foodId = "";
+    input.value = "";
+    clear.hidden = true;
+    close();
+    recalc();
+    input.focus();
+  });
+
+  return pick;
 }
 
-function buildFoodRow(foods, template, meal, row){
+function buildFoodRow(foods, meal, row){
   var wrap = el("div","mrow");
 
   var cat = el("span","mrow-label","—");
   cat.setAttribute("data-row-cat","1");
   wrap.appendChild(cat);
 
-  var sel = template.cloneNode(true);
-  sel.setAttribute("aria-label","בחירת מזון");
-  sel.value = row.foodId || "";
-  wrap.appendChild(sel);
+  var gramsIn = document.createElement("input");
+  wrap.appendChild(buildFoodPick(foods, row, function(grams){
+    gramsIn.value = (grams > 0) ? String(grams) : "";
+  }));
 
   var qty = el("div","mrow-qty");
-  var gramsIn = document.createElement("input");
   gramsIn.type = "number";
   gramsIn.min = "0";
   gramsIn.step = "5";
@@ -4465,17 +4856,6 @@ function buildFoodRow(foods, template, meal, row){
   del.setAttribute("aria-label","הסרת השורה");
   wrap.appendChild(del);
 
-  /* בחירת מזון בשורה בלי כמות ממלאת את משקל המנה הביתית */
-  sel.addEventListener("change", function(){
-    row.foodId = sel.value;
-    var f = Object.prototype.hasOwnProperty.call(foods.byId, sel.value) ? foods.byId[sel.value] : null;
-    if (f && !(Number(row.grams) > 0)){
-      var g = Number(f.grams);
-      row.grams = (isFinite(g) && g > 0) ? g : 0;
-      gramsIn.value = (row.grams > 0) ? String(row.grams) : "";
-    }
-    recalc();
-  });
   gramsIn.addEventListener("input", function(){
     var v = Number(gramsIn.value);
     row.grams = (isFinite(v) && v > 0) ? v : 0;
@@ -4491,7 +4871,7 @@ function buildFoodRow(foods, template, meal, row){
   return wrap;
 }
 
-function buildMealCard(foods, template, meal){
+function buildMealCard(foods, meal){
   var card = el("article","meal card");
 
   var head = el("div","meal-head");
@@ -4538,7 +4918,7 @@ function buildMealCard(foods, template, meal){
   card.appendChild(head);
 
   var rowsWrap = el("div","meal-rows");
-  for (var i=0;i<meal.rows.length;i++) rowsWrap.appendChild(buildFoodRow(foods, template, meal, meal.rows[i]));
+  for (var i=0;i<meal.rows.length;i++) rowsWrap.appendChild(buildFoodRow(foods, meal, meal.rows[i]));
   card.appendChild(rowsWrap);
 
   var actions = el("div","meal-actions");
@@ -4561,9 +4941,8 @@ function rebuild(){
   brk.innerHTML = "";
   if (getActiveClient(null) !== null){
     var foods = activeFoods();
-    var template = foodSelectTemplate(foods.list);
     for (var i=0;i<builderState.meals.length;i++){
-      wrap.appendChild(buildMealCard(foods, template, builderState.meals[i]));
+      wrap.appendChild(buildMealCard(foods, builderState.meals[i]));
       var item = el("div","break-item");
       var lbl = el("span","bl", builderState.meals[i].name);
       lbl.setAttribute("data-break-name","1");
@@ -5171,6 +5550,8 @@ fillStepOptions("week", "1");
 
 /* ---------- foods tab ---------- */
 var foodFilter = "all";
+/* מצב התצוגה זמני בלבד (לא נשמר) — כל טעינה מתחילה ב"ערכים ל-100 ג'" */
+var foodsView = "values";
 (function initFoodChips(){
   var wrap = $("foodChips");
   var defs = [["all","הכול"],["carb","פחמימה"],["protein","חלבון"],["veg","ירק"],["fat","שומן"],["snack","ביניים"],["ready","מוכן ובחוץ"]];
@@ -5190,6 +5571,33 @@ var foodFilter = "all";
   }
 })();
 $("foodSearch").addEventListener("input", renderFoods);
+
+/* בורר התצוגה: אותה רשימה מסוננת, שתי קבוצות עמודות שונות */
+(function initFoodsViewSeg(){
+  var btns = $("foodsViewSeg").querySelectorAll("button");
+  for (var i=0;i<btns.length;i++){
+    (function(b){
+      b.addEventListener("click", function(){
+        foodsView = (b.getAttribute("data-view") === "portions") ? "portions" : "values";
+        syncFoodsViewSeg();
+        renderFoods();
+      });
+    })(btns[i]);
+  }
+  syncFoodsViewSeg();
+})();
+
+function syncFoodsViewSeg(){
+  var portions = (foodsView === "portions");
+  var btns = $("foodsViewSeg").querySelectorAll("button");
+  for (var i=0;i<btns.length;i++){
+    btns[i].setAttribute("aria-pressed", btns[i].getAttribute("data-view") === foodsView ? "true" : "false");
+  }
+  $("foodsHeadValues").classList.toggle("hidden", portions);
+  $("foodsHeadPortions").classList.toggle("hidden", !portions);
+  $("foodsBasisNote").classList.toggle("hidden", portions);
+  $("foodsPortionNote").classList.toggle("hidden", !portions);
+}
 
 /* תיאור המנה הביתית: "פרוסה (30 ג')" — ובלי מנה מוגדרת, מקף */
 function foodPortionText(f){
@@ -5212,6 +5620,50 @@ function deleteCustomFood(id){
   renderFoods();
   rebuild();
   toast(name ? ("המזון נמחק: " + name) : "המזון נמחק");
+}
+
+/* עמודות "ערכים ל-100 ג'" — הטבלה ההיסטורית */
+function fillValueCells(tr, f){
+  tr.appendChild(el("td", null, CAT_LABEL[f.cat] || f.cat));
+  tr.appendChild(el("td", null, foodPortionText(f)));
+  tr.appendChild(el("td","n", String(f.kcal100)));
+  tr.appendChild(el("td","n", f.protein100 + " ג'"));
+  tr.appendChild(el("td","n", f.carbs100 + " ג'"));
+  tr.appendChild(el("td","n", f.fat100 + " ג'"));
+}
+
+/* עמודות "תצוגת מנות" — שכבת התצוגה מחברת בין portionInfo (חישוב טהור) לבין unitHint (רמז יחידות).
+   ארבעה מצבי שורה: ירק חופשי, יחידה מוכנה, מנה מחושבת, ובלי מנה מוגדרת (ביניים) */
+function fillPortionCells(tr, f){
+  if (f.cat === "veg" && f.free === true){
+    var tdFree = el("td", null);
+    tdFree.colSpan = 3;
+    tdFree.appendChild(el("span","chip chip-ok","חופשי — לא נספר"));
+    tr.appendChild(tdFree);
+    return;
+  }
+  if (f.cat === "ready"){
+    var g = Number(f.grams);
+    var hasG = isFinite(g) && g > 0;
+    var unit = (typeof f.portion === "string" && f.portion !== "") ? f.portion : "יחידה";
+    var unitText = (UNIT_GRAM_RE.test(unit) || !hasG) ? unit : (unit + " · " + g + " ג'");
+    tr.appendChild(el("td", null, unitText));
+    tr.appendChild(el("td", null, (hasG ? unitHint(f, g) : "") || "—"));
+    tr.appendChild(el("td","n", hasG ? String(Math.round(Number(f.kcal100) * g / 100)) : "—"));
+    return;
+  }
+  var info = portionInfo(f, PORTION_TARGETS);
+  if (!info){
+    tr.appendChild(el("td", null, "—"));
+    tr.appendChild(el("td", null, "—"));
+    tr.appendChild(el("td","n","—"));
+    return;
+  }
+  var vegPrefix = "";
+  if (f.cat === "veg") vegPrefix = VEG_COMBO_ID_RE.test(f.id) ? "מנה מלאה: " : "חצי מנה: ";
+  tr.appendChild(el("td", null, vegPrefix + info.grams + " ג'"));
+  tr.appendChild(el("td", null, unitHint(f, info.grams) || "—"));
+  tr.appendChild(el("td","n", String(info.kcal)));
 }
 
 /* הטבלה נבנית מהמאגר הממוזג — מזון אישי מסומן בצ'יפ ואפשר למחוק אותו מכאן.
@@ -5246,12 +5698,8 @@ function renderFoods(){
       }
       td1.appendChild(nameBox);
       tr.appendChild(td1);
-      tr.appendChild(el("td", null, CAT_LABEL[f.cat] || f.cat));
-      tr.appendChild(el("td", null, foodPortionText(f)));
-      tr.appendChild(el("td","n", String(f.kcal100)));
-      tr.appendChild(el("td","n", f.protein100 + " ג'"));
-      tr.appendChild(el("td","n", f.carbs100 + " ג'"));
-      tr.appendChild(el("td","n", f.fat100 + " ג'"));
+      if (foodsView === "portions") fillPortionCells(tr, f);
+      else fillValueCells(tr, f);
       body.appendChild(tr);
     })(list[i]);
   }
@@ -5268,24 +5716,27 @@ var NEW_FOOD_FIELDS = [
   ["newFoodCarbs","carbs100","פחמימה"],
   ["newFoodFat","fat100","שומן"]
 ];
-function addCustomFood(){
-  var name = ($("newFoodName").value || "").trim();
-  if (name === ""){ toast("צריך שם למזון"); $("newFoodName").focus(); return; }
-  var cat = $("newFoodCat").value;
-  if (!Object.prototype.hasOwnProperty.call(CAT_LABEL, cat)){ toast("צריך לבחור קטגוריה"); $("newFoodCat").focus(); return; }
+/* מסלול השמירה היחיד — משותף לטופס המלא כאן ולטופס המהיר בבורר המזון שבבונה.
+   מקבל ערכים גולמיים (מחרוזות), מאמת, שומר ומחזיר את המזון שנוסף — או null אם משהו לא תקין.
+   onBadField מקבל את מפתח השדה הבעייתי ("name" / "cat" / "kcal100"...) כדי למקד אליו */
+function saveCustomFood(raw, onBadField){
+  function bad(key){ if (onBadField) onBadField(key); return null; }
+  var name = String((raw.name === undefined || raw.name === null) ? "" : raw.name).trim();
+  if (name === ""){ toast("צריך שם למזון"); return bad("name"); }
+  var cat = String((raw.cat === undefined || raw.cat === null) ? "" : raw.cat);
+  if (!Object.prototype.hasOwnProperty.call(CAT_LABEL, cat)){ toast("צריך לבחור קטגוריה"); return bad("cat"); }
   var vals = {}, i;
   for (i=0;i<NEW_FOOD_FIELDS.length;i++){
-    var box = $(NEW_FOOD_FIELDS[i][0]);
-    var raw = (box.value || "").trim();
-    var v = Number(raw);
-    if (raw === "" || !isFinite(v) || v < 0){
+    var key = NEW_FOOD_FIELDS[i][1];
+    var txt = String((raw[key] === undefined || raw[key] === null) ? "" : raw[key]).trim();
+    var v = Number(txt);
+    if (txt === "" || !isFinite(v) || v < 0){
       toast("ערך לא תקין: " + NEW_FOOD_FIELDS[i][2] + " ל-100 ג'");
-      box.focus();
-      return;
+      return bad(key);
     }
-    vals[NEW_FOOD_FIELDS[i][1]] = v;
+    vals[key] = v;
   }
-  var grams = Number($("newFoodGrams").value);
+  var grams = Number(raw.grams);
   var cf = readCustomFoods();
   var taken = activeFoods().byId;
   while (Object.prototype.hasOwnProperty.call(taken, "u" + cf.nextId)) cf.nextId = cf.nextId + 1;
@@ -5297,13 +5748,38 @@ function addCustomFood(){
     protein100: vals.protein100,
     carbs100: vals.carbs100,
     fat100: vals.fat100,
-    portion: ($("newFoodPortion").value || "").trim(),
+    portion: String((raw.portion === undefined || raw.portion === null) ? "" : raw.portion).trim(),
     grams: (isFinite(grams) && grams > 0) ? grams : 100,
     addedAt: new Date().toISOString()
   };
   cf.foods.push(food);
   cf.nextId = cf.nextId + 1;
-  if (!writeCustomFoods(cf)) return;
+  if (!writeCustomFoods(cf)) return null;
+
+  var mk = macroKcal(food.protein100, food.carbs100, food.fat100);
+  var off = Math.abs(mk - food.kcal100) > Math.max(25, food.kcal100 * 0.25);
+  toast(off
+    ? ("נוסף: " + name + " — לבדוק את הערכים, לפי המאקרו יוצא " + n(mk) + " קק\"ל")
+    : ("נוסף למאגר: " + name));
+  return food;
+}
+
+/* הטופס המלא בטאב מאגר המזונות — קורא ומנקה שדות, השמירה עצמה ב-saveCustomFood */
+var NEW_FOOD_BOX = {name:"newFoodName", cat:"newFoodCat", portion:"newFoodPortion", grams:"newFoodGrams"};
+function addCustomFood(){
+  var raw = {}, i;
+  for (var k in NEW_FOOD_BOX){
+    if (Object.prototype.hasOwnProperty.call(NEW_FOOD_BOX, k)) raw[k] = $(NEW_FOOD_BOX[k]).value;
+  }
+  for (i=0;i<NEW_FOOD_FIELDS.length;i++) raw[NEW_FOOD_FIELDS[i][1]] = $(NEW_FOOD_FIELDS[i][0]).value;
+
+  var food = saveCustomFood(raw, function(key){
+    if (Object.prototype.hasOwnProperty.call(NEW_FOOD_BOX, key)){ $(NEW_FOOD_BOX[key]).focus(); return; }
+    for (var j=0;j<NEW_FOOD_FIELDS.length;j++){
+      if (NEW_FOOD_FIELDS[j][1] === key) $(NEW_FOOD_FIELDS[j][0]).focus();
+    }
+  });
+  if (!food) return;
 
   $("newFoodName").value = "";
   for (i=0;i<NEW_FOOD_FIELDS.length;i++) $(NEW_FOOD_FIELDS[i][0]).value = "";
@@ -5311,12 +5787,6 @@ function addCustomFood(){
   $("newFoodGrams").value = "";
   renderFoods();
   rebuild();
-
-  var mk = macroKcal(food.protein100, food.carbs100, food.fat100);
-  var off = Math.abs(mk - food.kcal100) > Math.max(25, food.kcal100 * 0.25);
-  toast(off
-    ? ("נוסף: " + name + " — לבדוק את הערכים, לפי המאקרו יוצא " + n(mk) + " קק\"ל")
-    : ("נוסף למאגר: " + name));
 }
 $("btnAddFood").addEventListener("click", addCustomFood);
 
