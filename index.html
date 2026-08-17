@@ -160,6 +160,16 @@ textarea{resize:vertical; min-height:64px; line-height:1.5}
 }
 .pick-chip:hover{border-color:var(--primary); color:var(--text)}
 .pick-chip[aria-pressed="true"]{background:var(--primary); border-color:var(--primary); color:var(--on-primary)}
+/* כרטיס מתקפל — הכותרת תמיד גלויה, הגוף נפתח/נסגר (בקשת סיוון: פחות עומס במסך הלקוח) */
+details.card-fold{padding:0}
+details.card-fold > summary{cursor:pointer; padding:14px 16px; display:flex; align-items:center; justify-content:space-between; gap:10px; list-style:none}
+details.card-fold > summary::-webkit-details-marker{display:none}
+details.card-fold > summary::after{content:"▾"; font-size:15px; color:var(--text-soft); flex:0 0 auto; transition:transform .15s}
+details.card-fold[open] > summary::after{transform:rotate(180deg)}
+details.card-fold > summary:hover::after{color:var(--text)}
+details.card-fold > summary .card-title{margin:0; flex:1 1 auto}
+details.card-fold[open] > summary{border-bottom:1px solid var(--border)}
+.card-fold-body{padding:16px; display:flex; flex-direction:column; gap:14px}
 .adv{border:1px solid var(--border); border-radius:var(--radius-sm); background:var(--surface-2)}
 .adv > summary{cursor:pointer; padding:10px 12px; font-size:13px; font-weight:700; color:var(--text-muted); list-style-position:inside}
 .adv > summary:hover{color:var(--text)}
@@ -275,6 +285,10 @@ th.sortable[aria-sort="descending"] .sort-ind::after{content:"▼"; width:auto}
 .meal-budget-note{font-size:11.5px; color:var(--text-soft); font-weight:600; white-space:nowrap}
 .meal-budget-note:empty{display:none}
 .meal-total.over-budget b, .meal-total.over-budget .meal-budget-note{color:var(--bad)}
+/* הבלטת חריגה (בקשת סיוון): אלרט יומי מלא + כרטיס ארוחה חורגת עם מסגרת ורקע אדומים */
+.day-over-alert{border:1.5px solid var(--bad); background:var(--bad-bg); color:var(--bad); border-radius:var(--radius-sm); padding:10px 13px; font-size:14px; font-weight:800}
+.meal.meal-over{border-color:var(--bad); box-shadow:0 0 0 1px var(--bad), var(--shadow)}
+.meal.meal-over .meal-head{background:var(--bad-bg); border-bottom-color:var(--bad)}
 /* ---------- בורר המזון עם חיפוש (combobox) ----------
    מחליף את רשימת ה-select הארוכה בשורות הבונה: מקלידים חלק מהשם ומקבלים תוצאות */
 .food-pick{position:relative; min-width:0}
@@ -515,39 +529,45 @@ th.sortable[aria-sort="descending"] .sort-ind::after{content:"▼"; width:auto}
       </div>
     </div>
 
-    <div class="card stack hidden" id="clientIntakeCard">
-      <h2 class="card-title">שאלון היכרות</h2>
-      <p class="note-line">התשובות נשמרות אוטומטית</p>
-      <div class="intake-grid" id="intakeWrap"></div>
-    </div>
+    <details class="card card-fold hidden" id="clientIntakeCard">
+      <summary><h2 class="card-title">שאלון היכרות</h2></summary>
+      <div class="stack card-fold-body">
+        <p class="note-line">התשובות נשמרות אוטומטית</p>
+        <div class="intake-grid" id="intakeWrap"></div>
+      </div>
+    </details>
 
-    <div class="card stack hidden" id="clientSummaryCard">
-      <h2 class="card-title">סיכום נקודות חשובות</h2>
-      <div class="row-flex">
-        <button class="btn" id="btnGenSummary" type="button">צור סיכום</button>
+    <details class="card card-fold hidden" id="clientSummaryCard" open>
+      <summary><h2 class="card-title">סיכום נקודות חשובות</h2></summary>
+      <div class="stack card-fold-body">
+        <div class="row-flex">
+          <button class="btn" id="btnGenSummary" type="button">צור סיכום</button>
+        </div>
+        <div class="stack-sm" id="summaryWarnings"></div>
+        <ul class="summary-points" id="summaryPoints"></ul>
+        <div class="field">
+          <label for="summaryEdit">סיכום לעריכה</label>
+          <textarea id="summaryEdit" rows="6" placeholder="הסיכום ייווצר מהשאלון בלחיצה על צור סיכום — ואפשר לערוך אותו כאן חופשי"></textarea>
+        </div>
+        <p class="note-line">העריכה נשמרת אוטומטית; יצירת סיכום חדש תבקש אישור לפני שהיא דורסת טקסט ערוך</p>
       </div>
-      <div class="stack-sm" id="summaryWarnings"></div>
-      <ul class="summary-points" id="summaryPoints"></ul>
-      <div class="field">
-        <label for="summaryEdit">סיכום לעריכה</label>
-        <textarea id="summaryEdit" rows="6" placeholder="הסיכום ייווצר מהשאלון בלחיצה על צור סיכום — ואפשר לערוך אותו כאן חופשי"></textarea>
-      </div>
-      <p class="note-line">העריכה נשמרת אוטומטית; יצירת סיכום חדש תבקש אישור לפני שהיא דורסת טקסט ערוך</p>
-    </div>
+    </details>
 
-    <div class="card stack hidden" id="clientTargetsCard">
-      <h2 class="card-title">יעדים לתפריט</h2>
-      <p class="note-line">היעדים נקבעים ידנית — קלוריות ומאקרו בגרמים</p>
-      <div class="fields-grid">
-        <div class="field"><label for="targetKcalIn">קלוריות (קק"ל)</label><input type="number" id="targetKcalIn" min="0" max="8000" step="10"></div>
-        <div class="field"><label for="targetProteinIn">חלבון (ג')</label><input type="number" id="targetProteinIn" min="0" max="600" step="1"></div>
-        <div class="field"><label for="targetCarbsIn">פחמימה (ג')</label><input type="number" id="targetCarbsIn" min="0" max="900" step="1"></div>
-        <div class="field"><label for="targetFatIn">שומן (ג')</label><input type="number" id="targetFatIn" min="0" max="400" step="1"></div>
+    <details class="card card-fold hidden" id="clientTargetsCard" open>
+      <summary><h2 class="card-title">יעדים לתפריט</h2></summary>
+      <div class="stack card-fold-body">
+        <p class="note-line">היעדים נקבעים ידנית — קלוריות ומאקרו בגרמים</p>
+        <div class="fields-grid">
+          <div class="field"><label for="targetKcalIn">קלוריות (קק"ל)</label><input type="number" id="targetKcalIn" min="0" max="8000" step="10"></div>
+          <div class="field"><label for="targetProteinIn">חלבון (ג')</label><input type="number" id="targetProteinIn" min="0" max="600" step="1"></div>
+          <div class="field"><label for="targetCarbsIn">פחמימה (ג')</label><input type="number" id="targetCarbsIn" min="0" max="900" step="1"></div>
+          <div class="field"><label for="targetFatIn">שומן (ג')</label><input type="number" id="targetFatIn" min="0" max="400" step="1"></div>
+        </div>
+        <div class="row-flex">
+          <button class="btn" id="btnApplyTargets" type="button">קבע כיעד בבונה התפריט</button>
+        </div>
       </div>
-      <div class="row-flex">
-        <button class="btn" id="btnApplyTargets" type="button">קבע כיעד בבונה התפריט</button>
-      </div>
-    </div>
+    </details>
 
     <details class="adv hidden" id="clientHelperCard">
       <summary>מחשבון BMR/TDEE (עזר)</summary>
@@ -586,11 +606,14 @@ th.sortable[aria-sort="descending"] .sort-ind::after{content:"▼"; width:auto}
       </div>
     </details>
 
-    <div class="card stack hidden" id="clientShareCard">
-      <div>
-        <span class="eyebrow">שיתוף וייצוא</span>
-        <h2 class="card-title">שיתוף עם הלקוח/ה וקבצים להורדה</h2>
-      </div>
+    <details class="card card-fold hidden" id="clientShareCard" open>
+      <summary>
+        <div>
+          <span class="eyebrow">שיתוף וייצוא</span>
+          <h2 class="card-title">שיתוף עם הלקוח/ה וקבצים להורדה</h2>
+        </div>
+      </summary>
+      <div class="stack card-fold-body">
       <div class="row-flex" id="shareRow">
         <button class="btn" id="btnPublishShare" type="button">פרסם קישור אישי</button>
         <input type="text" id="shareLinkOut" dir="ltr" readonly placeholder="אין קישור פעיל">
@@ -611,7 +634,8 @@ th.sortable[aria-sort="descending"] .sort-ind::after{content:"▼"; width:auto}
         <button class="btn" id="btnExportXlsx" type="button">הורד אקסל תפריט</button>
         <button class="btn" id="btnExportPptx" type="button">הורד מצגת תהליך</button>
       </div>
-    </div>
+      </div>
+    </details>
   </section>
 
   <!-- ===== 3. בונה תפריט ===== -->
@@ -666,6 +690,7 @@ th.sortable[aria-sort="descending"] .sort-ind::after{content:"▼"; width:auto}
         <div class="bar-fill" id="sumBarFill" style="width:0%"></div>
         <div class="bar-over" id="sumBarOver" style="width:0%"></div>
       </div>
+      <div class="day-over-alert hidden" id="dayOverAlert" role="alert"></div>
       <div class="stat-grid stat-grid-4">
         <div class="stat" id="statKcal">
           <span class="stat-label">קלוריות</span>
@@ -5163,6 +5188,12 @@ function recalc(){
   $("sumBarFill").style.width = fillPct + "%";
   $("sumBarOver").style.width = overPct + "%";
   setChip($("sumChip"), $("sumChipText"), byKey.kcal);
+  var overAlert = $("dayOverAlert");
+  var dayOver = tKcal !== null && totals.kcal > tKcal;
+  if (overAlert){
+    overAlert.classList.toggle("hidden", !dayOver);
+    overAlert.textContent = dayOver ? ("חריגה של " + n(totals.kcal - Math.round(tKcal)) + " קק\"ל מהיעד היומי — כדאי להוריד כמויות או להחליף מזון") : "";
+  }
 
   var vals = {kcal: n(totals.kcal), protein: n(totals.protein) + " ג'", carbs: n(totals.carbs) + " ג'", fat: n(totals.fat) + " ג'"};
   for (i=0;i<MACRO_KEYS.length;i++){
@@ -5204,6 +5235,7 @@ function recalc(){
     var bs = mealBudgetStatus(per.kcal, meal.budget);
     if (budgetNote) budgetNote.textContent = bs ? ("מתוך תקציב " + n(bs.budget)) : "";
     if (totalWrap) totalWrap.classList.toggle("over-budget", !!(bs && bs.over));
+    cards[i].classList.toggle("meal-over", !!(bs && bs.over));
     var rowNums = cards[i].querySelectorAll("[data-row-kcal]");
     var rowCats = cards[i].querySelectorAll("[data-row-cat]");
     var rowUnits = cards[i].querySelectorAll("[data-row-units]");
