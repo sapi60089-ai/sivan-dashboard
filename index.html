@@ -355,6 +355,12 @@ th.sortable[aria-sort="descending"] .sort-ind::after{content:"▼"; width:auto}
 
 /* ---------- content cards ---------- */
 .ex-card{border:1px solid var(--border); border-radius:var(--radius); background:var(--surface); box-shadow:var(--shadow); overflow:hidden}
+/* כרטיסי תפריטים מוכנים מתקפלים (17.8): הכותרת היא summary, נפתחים בלחיצה */
+details.ex-fold > summary.ex-head{cursor:pointer; list-style:none}
+details.ex-fold > summary.ex-head::-webkit-details-marker{display:none}
+details.ex-fold > summary.ex-head::after{content:"▾"; font-size:15px; color:var(--text-soft); flex:0 0 auto; transition:transform .15s}
+details.ex-fold[open] > summary.ex-head::after{transform:rotate(180deg)}
+details.ex-fold > summary.ex-head:hover::after{color:var(--text)}
 .ex-head{padding:14px; background:var(--surface-2); border-bottom:1px solid var(--border); display:flex; flex-wrap:wrap; gap:10px; align-items:center; justify-content:space-between}
 .ex-head h3{font-size:15.5px}
 .ex-body{padding:14px; display:flex; flex-direction:column; gap:14px}
@@ -372,6 +378,7 @@ th.sortable[aria-sort="descending"] .sort-ind::after{content:"▼"; width:auto}
 .client-row{
   background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); box-shadow:var(--shadow);
   padding:12px 14px; display:flex; flex-wrap:wrap; gap:8px 14px; align-items:center; justify-content:space-between;
+  cursor:pointer; user-select:none;
 }
 .client-row.is-active{border-color:var(--primary)}
 .client-row-main{display:flex; flex-direction:column; gap:2px; min-width:0; flex:1 1 220px}
@@ -2574,12 +2581,15 @@ function readTemplates(){
       meals: normalizeMeals(t.meals)
     });
   }
-  return {version:1, templates:out};
+  /* hiddenExamples: מזהי דוגמאות מובנות שסיוון הסתירה (17.8) — מסתנכרן יחד עם התבניות */
+  var hidden = Array.isArray(src.hiddenExamples) ? src.hiddenExamples.filter(function(x){ return typeof x === "string"; }) : [];
+  return {version:1, templates:out, hiddenExamples:hidden};
 }
 function writeTemplates(store){
   var src = (store && typeof store === "object" && !Array.isArray(store)) ? store : {};
   var list = Array.isArray(src.templates) ? src.templates : [];
-  var okWrite = writeJSON(TEMPLATES_KEY, {version:1, templates:list}, "לא ניתן לשמור תפריטים מוכנים בדפדפן הזה");
+  var hidden = Array.isArray(src.hiddenExamples) ? src.hiddenExamples : [];
+  var okWrite = writeJSON(TEMPLATES_KEY, {version:1, templates:list, hiddenExamples:hidden}, "לא ניתן לשמור תפריטים מוכנים בדפדפן הזה");
   if (okWrite && !applyingRemote && cloudMode === "on"){ settingsDirty = true; schedulePush(); }
   return okWrite;
 }
@@ -3421,6 +3431,13 @@ function renderClients(){
     (function(c){
       var isActive = c.id === store.activeId;
       var row = el("div", "client-row" + (isActive ? " is-active" : ""));
+      /* דאבל-קליק בכל מקום בשורה פותח את עמוד הלקוח (בקשת סיוון 17.8) */
+      row.title = "לחיצה כפולה — פתיחת הגדרת הלקוח/ה";
+      row.addEventListener("dblclick", function(ev){
+        if (ev.target && ev.target.closest && ev.target.closest("button")) return;
+        setActiveClient(c.id);
+        showTab("client");
+      });
 
       var main = el("div","client-row-main");
       main.appendChild(el("div","client-row-name", c.name));
@@ -6537,11 +6554,14 @@ function statusChip(key, s){
 }
 
 function buildExampleCard(foods, ex){
-  var card = el("article","ex-card");
+  /* כרטיס מתקפל (בקשת סיוון 17.8): הכותרת תמיד גלויה, לחיצה פותחת את התפריט המלא */
+  var card = document.createElement("details");
+  card.className = "ex-card ex-fold";
   card.setAttribute("data-ex-id", ex.id);
   var totals = sumMenuMeals(foods.byId, ex.meals);
 
-  var head = el("div","ex-head");
+  var head = document.createElement("summary");
+  head.className = "ex-head";
   var headMain = el("div","ex-head-main");
   headMain.appendChild(el("h3", null, ex.title));
   headMain.appendChild(el("p","ex-meta", ex.client + " · " + ex.meta));
@@ -6609,6 +6629,10 @@ function buildExampleCard(foods, ex){
     if (loadMealsIntoBuilder(ex.meals, ex.title)) toast("נטען לבונה: " + ex.title);
   });
   actions.appendChild(load);
+  var hide = el("button","btn btn-quiet btn-sm","הסר מהרשימה");
+  hide.type = "button";
+  twoStep(hide, "הסר מהרשימה", "להסתיר את הדוגמה?", function(){ hideExample(ex.id); });
+  actions.appendChild(hide);
   body.appendChild(actions);
 
   body.appendChild(el("p","note-line","בבונה, הסטטוס נמדד מול היעדים של הלקוח/ה הפעיל/ה — לא מול יעדי הדוגמה."));
@@ -6617,13 +6641,15 @@ function buildExampleCard(foods, ex){
   return card;
 }
 
-/* כרטיס תפריט מוכן ששמרה סיוון מהבונה — גרסה מצומצמת של כרטיס דוגמה, עם מחיקה */
+/* כרטיס תפריט מוכן ששמרה סיוון מהבונה — מתקפל כמו הדוגמאות, עם מחיקה */
 function buildTemplateCard(foods, t){
-  var card = el("article","ex-card");
-  var head = el("div","ex-head");
-  var titleBox = el("div");
+  var card = document.createElement("details");
+  card.className = "ex-card ex-fold";
+  var head = document.createElement("summary");
+  head.className = "ex-head";
+  var titleBox = el("div","ex-head-main");
   titleBox.appendChild(el("h3", null, t.name));
-  titleBox.appendChild(el("p","lede","תפריט מוכן ששמרת מהבונה — זמין לכל לקוח/ה"));
+  titleBox.appendChild(el("p","ex-meta","תפריט מוכן ששמרת מהבונה — זמין לכל לקוח/ה"));
   head.appendChild(titleBox);
   var totals = sumMenuMeals(foods.byId, t.meals);
   head.appendChild(el("span","chip chip-neutral", n(totals.kcal) + " קק\"ל"));
@@ -6648,14 +6674,46 @@ function buildTemplateCard(foods, t){
   return card;
 }
 
-/* התפריטים המוכנים של סיוון קודם (דינמיים), ואז שלוש הדוגמאות הקבועות */
+/* הסתרה/שחזור של הדוגמאות המובנות (EXAMPLES קבוע בקוד — מסתירים לפי id) */
+function hideExample(id){
+  var store = readTemplates();
+  if (store.hiddenExamples.indexOf(id) === -1) store.hiddenExamples.push(id);
+  if (writeTemplates(store)){
+    renderExamples();
+    toast("הדוגמה הוסרה מהרשימה — אפשר לשחזר מלמטה");
+  }
+}
+function restoreExamples(){
+  var store = readTemplates();
+  store.hiddenExamples = [];
+  if (writeTemplates(store)){
+    renderExamples();
+    toast("הדוגמאות שוחזרו");
+  }
+}
+
+/* התפריטים המוכנים של סיוון קודם (דינמיים), ואז הדוגמאות הקבועות שלא הוסתרו */
 function renderExamples(){
   var wrap = $("examplesWrap");
   wrap.innerHTML = "";
   var foods = activeFoods();
   var store = readTemplates();
   for (var t=0;t<store.templates.length;t++) wrap.appendChild(buildTemplateCard(foods, store.templates[t]));
-  for (var i=0;i<EXAMPLES.length;i++) wrap.appendChild(buildExampleCard(foods, EXAMPLES[i]));
+  var hiddenCount = 0;
+  for (var i=0;i<EXAMPLES.length;i++){
+    if (store.hiddenExamples.indexOf(EXAMPLES[i].id) > -1){ hiddenCount++; continue; }
+    wrap.appendChild(buildExampleCard(foods, EXAMPLES[i]));
+  }
+  if (store.templates.length + (EXAMPLES.length - hiddenCount) === 0){
+    wrap.appendChild(el("p","lede","אין תפריטים מוכנים כרגע — שמרי תפריט מהבונה עם \"שמור כתפריט מוכן\"."));
+  }
+  if (hiddenCount > 0){
+    var restore = el("button","btn btn-ghost btn-sm", "שחזר " + hiddenCount + " דוגמאות שהוסתרו");
+    restore.type = "button";
+    restore.id = "btnRestoreExamples";
+    restore.addEventListener("click", restoreExamples);
+    wrap.appendChild(restore);
+  }
 }
 
 /* ---------- init ---------- */
