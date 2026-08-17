@@ -272,6 +272,13 @@ th.sortable[aria-sort="descending"] .sort-ind::after{content:"▼"; width:auto}
 .stat-chip{align-self:start; margin-top:3px}
 .meal-name{flex:1 1 150px; max-width:280px; font-size:14.5px; font-weight:800; padding:6px 9px}
 .meal-head .btn{flex:0 0 auto}
+/* מעקב ארוחות (טאב המעקב): שורה ליום, צ'יפ לכל ארוחה שמולאה */
+.mt-day{display:flex; gap:10px; align-items:flex-start; padding:9px 2px; border-bottom:1px solid var(--border)}
+.mt-day:last-child{border-bottom:0}
+.mt-date{flex:0 0 84px; font-weight:800; font-size:13px; white-space:nowrap}
+.mt-meals{display:flex; flex-wrap:wrap; gap:6px}
+.mt-meal{font-size:12.5px; font-weight:700; padding:3px 10px; border-radius:999px; border:1px solid var(--border); background:var(--surface-2); color:var(--text-muted); white-space:nowrap; cursor:default}
+.mt-meal.over{background:var(--bad-bg); color:var(--bad); border-color:var(--bad)}
 .choice-meal{border:1px solid var(--border); border-radius:10px; overflow:hidden}
 .choice-meal-head{display:flex; justify-content:space-between; align-items:baseline; gap:10px; padding:8px 12px; background:var(--surface-2); border-bottom:1px solid var(--border); font-size:13.5px}
 .choice-meal-total{font-size:12.5px; color:var(--text-muted); font-weight:700}
@@ -821,6 +828,18 @@ th.sortable[aria-sort="descending"] .sort-ind::after{content:"▼"; width:auto}
         <table id="trackTable"></table>
       </div>
       <p class="note-line">המילוי חופשי — מספר או טקסט קצר. תא שנמחק פשוט לא נשמר, ועמודות ברירת המחדל לא ניתנות להסרה.</p>
+    </div>
+
+    <div class="card stack hidden" id="mealsTrackCard">
+      <div>
+        <span class="eyebrow">מילוי עצמי</span>
+        <h2 class="card-title">מעקב ארוחות — מה מילא/ה הלקוח/ה</h2>
+      </div>
+      <p class="note-line">כל שמירה מהקישור האישי נרשמת כאן לפי יום — נפרד ממעקב המדדים שלמעלה.</p>
+      <div class="row-flex">
+        <button class="btn btn-ghost btn-sm" id="btnMealsTrackRefresh" type="button">רענן</button>
+      </div>
+      <div class="stack" id="mealsTrackBody"></div>
     </div>
   </section>
 
@@ -2645,6 +2664,7 @@ function watchClientResponse(token){
   responseUnsub = fbDb.collection("responses").doc(t).onSnapshot(function(snap){
     clientResponseCache = (snap && snap.exists) ? normalizeResponseDoc(snap.data()) : null;
     renderClientChoices();
+    refreshMealsTrack(true);   /* שמירה חדשה של הלקוח/ה מרעננת גם את היסטוריית הימים */
   }, function(){
     clientResponseCache = null;
     renderClientChoices();
@@ -5860,6 +5880,7 @@ function renderTrackingTab(){
   $("trackEmptyCard").classList.toggle("hidden", has);
   $("trackControlsCard").classList.toggle("hidden", !has);
   $("trackTableCard").classList.toggle("hidden", !t);
+  refreshMealsTrack(false);
   closeNewColRow();
 
   var table = $("trackTable");
@@ -5901,6 +5922,80 @@ $("trackNewColName").addEventListener("keydown", function(e){
   if (e.key === "Enter"){ e.preventDefault(); addTrackColumn(); }
 });
 fillStepOptions("week", "1");
+
+/* ---------- מעקב ארוחות: היסטוריית המילויים היומית של הלקוח/ה (responses/{token}/days) ---------- */
+var mealsTrackToken = null, mealsTrackDays = null, mealsTrackLoading = false;
+
+/* קריאה-בלבד למנהלת מחוברת עם קישור פעיל; שליפה רק כשהטוקן מתחלף או ברענון יזום */
+function refreshMealsTrack(force){
+  var card = $("mealsTrackCard");
+  if (!card) return;
+  var c = getActiveClient(null);
+  var token = (cloudMode === "on" && fbDb && c) ? shareTokenOf(c.id) : "";
+  if (token === ""){
+    card.classList.add("hidden");
+    mealsTrackToken = null;
+    mealsTrackDays = null;
+    return;
+  }
+  card.classList.remove("hidden");
+  if (!force && token === mealsTrackToken){ renderMealsTrack(); return; }
+  if (mealsTrackLoading) return;
+  mealsTrackLoading = true;
+  mealsTrackToken = token;
+  mealsTrackDays = null;
+  renderMealsTrack();
+  fbDb.collection("responses").doc(token).collection("days")
+    .orderBy(firebase.firestore.FieldPath.documentId(), "desc").limit(31).get()
+    .then(function(snap){
+      mealsTrackLoading = false;
+      var days = [];
+      if (snap && typeof snap.forEach === "function"){
+        snap.forEach(function(doc){
+          var norm = normalizeResponseDoc(doc.data ? doc.data() : null);
+          if (norm && norm.meals.length) days.push({day:doc.id, meals:norm.meals});
+        });
+      }
+      mealsTrackDays = days;
+      renderMealsTrack();
+    }, function(){
+      mealsTrackLoading = false;
+      mealsTrackDays = [];
+      renderMealsTrack();
+    });
+}
+
+function renderMealsTrack(){
+  var body = $("mealsTrackBody");
+  if (!body) return;
+  body.textContent = "";
+  if (mealsTrackDays === null){
+    body.appendChild(el("p","lede", mealsTrackLoading ? "טוען..." : "—"));
+    return;
+  }
+  if (mealsTrackDays.length === 0){
+    body.appendChild(el("p","lede","עדיין אין מילויים — ברגע שהלקוח/ה תשמור בחירות בקישור האישי, הן יופיעו כאן לפי יום."));
+    return;
+  }
+  for (var i=0;i<mealsTrackDays.length;i++){
+    var d = mealsTrackDays[i];
+    var row = el("div","mt-day");
+    row.appendChild(el("div","mt-date", isoDateText(d.day)));
+    var mealsBox = el("div","mt-meals");
+    for (var j=0;j<d.meals.length;j++){
+      var m = d.meals[j];
+      var bs = mealBudgetStatus(m.kcal, m.budget);
+      var txt = m.name + " · " + m.kcal.toLocaleString("he-IL") + (bs ? ("/" + bs.budget.toLocaleString("he-IL")) : "") + " קק\"ל";
+      var chip = el("span","mt-meal" + (bs && bs.over ? " over" : ""), txt);
+      chip.title = m.rows.map(function(r){ return r.free ? (r.name + " (חופשי)") : (r.name + " " + r.grams + " ג'"); }).join(" · ");
+      mealsBox.appendChild(chip);
+    }
+    row.appendChild(mealsBox);
+    body.appendChild(row);
+  }
+}
+
+$("btnMealsTrackRefresh").addEventListener("click", function(){ refreshMealsTrack(true); });
 
 /* ---------- foods tab ---------- */
 var foodFilter = "all";

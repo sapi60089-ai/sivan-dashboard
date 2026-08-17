@@ -960,7 +960,14 @@ function saveChoices(){
   btn.disabled = true;
   note.textContent = "שומר...";
   note.className = "fill-save-note";
-  PORTAL_DB.collection("responses").doc(PORTAL_TOKEN).set({v:1, updatedAt:when, meals:outMeals}).then(function(){
+  /* שתי כתיבות: המסמך הראשי (המצב האחרון) + מסמך היום — היסטוריה יומית למעקב הארוחות של סיוון.
+     תאריך היום לפי שעון מקומי — שמירה ב-00:30 בישראל לא תירשם על אתמול (UTC) */
+  var payload = {v:1, updatedAt:when, meals:outMeals};
+  var latestRef = PORTAL_DB.collection("responses").doc(PORTAL_TOKEN);
+  Promise.all([
+    latestRef.set(payload),
+    latestRef.collection("days").doc(localDayISO()).set(payload)
+  ]).then(function(){
     SAVED_AT = when;
     btn.disabled = false;
     note.textContent = "נשמר ✓ — סיוון רואה את הבחירות שלך";
@@ -970,6 +977,13 @@ function saveChoices(){
     note.textContent = "השמירה נכשלה — בדקו חיבור לאינטרנט ונסו שוב";
     note.className = "fill-save-note bad";
   });
+}
+
+/* תאריך היום לפי השעון המקומי של הלקוח/ה, בפורמט YYYY-MM-DD */
+function localDayISO(){
+  var d = new Date();
+  var m = d.getMonth() + 1, day = d.getDate();
+  return d.getFullYear() + "-" + (m < 10 ? "0" : "") + m + "-" + (day < 10 ? "0" : "") + day;
 }
 $("btnSaveChoices").addEventListener("click", saveChoices);
 
