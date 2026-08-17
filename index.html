@@ -416,6 +416,38 @@ th.sortable[aria-sort="descending"] .sort-ind::after{content:"▼"; width:auto}
 @media (prefers-reduced-motion: reduce){
   *,*::before,*::after{transition-duration:.001ms !important; animation-duration:.001ms !important}
 }
+
+/* ---------- ייצוא PDF: מסמך ההדפסה (#printDoc) — מוסתר במסך, היחיד שמודפס ---------- */
+.print-doc{display:none}
+@media print{
+  @page{margin:12mm}
+  .app > *:not(#printDoc){display:none !important}
+  .app{background:#fff !important; min-height:0}
+  .print-doc{display:block; color:#1A1A1A; font-size:13px; line-height:1.5}
+  .pd-head{border-bottom:3px solid #7A5230; padding-bottom:10px; margin-bottom:14px}
+  .pd-brand{font-size:12px; color:#7A5230; font-weight:700; letter-spacing:.08em}
+  .pd-title{font-size:26px; font-weight:800; color:#7A5230; margin:2px 0}
+  .pd-sub{font-size:14px}
+  .pd-targets{display:flex; gap:10px; margin:0 0 14px}
+  .pd-target{border:1px solid #D2BE97; border-radius:8px; padding:8px 12px; text-align:center; flex:1 1 0}
+  .pd-target b{display:block; font-size:18px; color:#7A5230}
+  .pd-target span{font-size:11px}
+  .pd-menu-name{font-size:18px; color:#7A5230; margin:12px 0 6px}
+  .pd-meal{break-inside:avoid; margin-bottom:10px}
+  .pd-meal-name{font-size:14px; background:#EFE0C8; color:#7A5230; padding:5px 9px; border-radius:6px 6px 0 0; margin:0}
+  .pd-table{width:100%; border-collapse:collapse; font-size:12.5px}
+  .pd-table th{background:#F6EFDF; text-align:start; padding:5px 9px; border:1px solid #E7DAC0; font-size:11px; color:#6E5E45}
+  .pd-table td{padding:5px 9px; border:1px solid #E7DAC0}
+  .pd-table tfoot td{font-weight:800; background:#F6EFDF}
+  .pd-num{white-space:nowrap}
+  .pd-total{margin:10px 0 4px; padding:9px 12px; border:1.5px solid #7A5230; border-radius:8px; display:flex; flex-wrap:wrap; gap:6px 14px; align-items:baseline; break-inside:avoid}
+  .pd-vs{font-weight:700}
+  .pd-notes{margin-top:12px; break-inside:avoid}
+  .pd-notes h3{color:#7A5230; font-size:14px; margin:0 0 4px}
+  .pd-notes ul{padding-inline-start:1.2em; font-size:12.5px; margin:4px 0}
+  .pd-warn{font-weight:700; margin:2px 0}
+  .pd-foot{margin-top:16px; border-top:1px dashed #D2BE97; padding-top:8px; font-size:11px; color:#555}
+}
 </style>
 </head>
 <body>
@@ -631,7 +663,7 @@ th.sortable[aria-sort="descending"] .sort-ind::after{content:"▼"; width:auto}
         <div class="stack" id="clientChoicesBody"></div>
       </div>
       <div class="row-flex">
-        <button class="btn" id="btnExportXlsx" type="button">הורד אקסל תפריט</button>
+        <button class="btn" id="btnExportPdf" type="button">הורד PDF תפריט</button>
         <button class="btn" id="btnExportPptx" type="button">הורד מצגת תהליך</button>
       </div>
       </div>
@@ -920,6 +952,9 @@ th.sortable[aria-sort="descending"] .sort-ind::after{content:"▼"; width:auto}
 </div>
 
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<!-- מסמך ההדפסה של ייצוא ה-PDF — מוסתר במסך, היחיד שמודפס -->
+<div class="print-doc" id="printDoc" aria-hidden="true"></div>
 
 <script src="vendor/firebase-app-compat.js"></script>
 <script src="vendor/firebase-auth-compat.js"></script>
@@ -4089,9 +4124,9 @@ function refreshShareCard(){
   $("btnCopyShareLink").classList.toggle("hidden", token === "");
   $("btnRevokeShare").classList.toggle("hidden", token === "");
   var noMenus = !c || c.menus.length === 0;
-  $("btnExportXlsx").disabled = noMenus;
-  if (noMenus) $("btnExportXlsx").setAttribute("title", "אין תפריט שמור");
-  else $("btnExportXlsx").removeAttribute("title");
+  $("btnExportPdf").disabled = noMenus;
+  if (noMenus) $("btnExportPdf").setAttribute("title", "אין תפריט שמור");
+  else $("btnExportPdf").removeAttribute("title");
 }
 
 /* העתקת הקישור: clipboard API, ובדפדפן שחוסם אותו — textarea + execCommand.
@@ -4178,150 +4213,130 @@ function menuTargetDeltas(totals, targets){
   return {cells:cells, reds:reds};
 }
 
-/* ===== ייצוא אקסל (xlsx-js-style) ===== */
+/* ===== ייצוא PDF — מסלול הדפסה: window.print() מדפיס את #printDoc בלבד (בדיאלוג: "שמירה כ-PDF") ===== */
 
-/* אקסל מצפה ל-ARGB בן 8 ספרות — צבעי הפלטה נשמרים ב-6 ומתורגמים כאן */
-function xRgb(hex){ return hex.length === 6 ? "FF" + hex : hex; }
+var PRINT_DISCLAIMER = "התפריט הוכן אישית עבורך על ידי סיוון — ייעוץ תזונה. הוא אינו מהווה ייעוץ רפואי; בכל שאלה רפואית יש לפנות לרופא/ה או לדיאטן/ית קליני/ת.";
 
-function xStyle(o){
-  var opts = o || {};
-  var st = {alignment:{horizontal:"right", vertical:"center"}, font:{name:"Arial"}};
-  if (opts.bold) st.font.bold = true;
-  if (opts.size) st.font.sz = opts.size;
-  if (opts.color) st.font.color = {rgb:xRgb(opts.color)};
-  if (opts.fill) st.fill = {patternType:"solid", fgColor:{rgb:xRgb(opts.fill)}};
-  if (opts.fmt) st.numFmt = opts.fmt;
-  return st;
+/* כמות לתדפיס: יחידה ביתית קודם והגרמים בסוגריים — לפי תבנית המסירה (ידע/05) */
+function printQtyText(byId, row){
+  var hint = unitHintFor(byId, row.foodId, row.grams);
+  var grams = n(Math.round(row.grams)) + " ג'";
+  return hint !== "" ? (hint + " (" + grams + ")") : grams;
 }
 
-function newSheet(){ return {rows:[], styles:[], merges:[]}; }
-
-function sheetRow(sb, cells, styles){
-  var r = sb.rows.length;
-  sb.rows.push(cells);
-  var list = styles || [];
-  for (var c=0;c<list.length;c++){
-    if (list[c]) sb.styles.push({r:r, c:c, s:list[c]});
+function printMealTable(byId, meal, per){
+  var table = document.createElement("table");
+  table.className = "pd-table";
+  var thead = document.createElement("thead");
+  var htr = document.createElement("tr");
+  var heads = ["מזון", "כמות", "קק\"ל"];
+  for (var h=0;h<heads.length;h++) htr.appendChild(el("th", h === 0 ? null : "pd-num", heads[h]));
+  thead.appendChild(htr);
+  table.appendChild(thead);
+  var tb = document.createElement("tbody");
+  for (var r=0;r<meal.rows.length;r++){
+    var row = meal.rows[r];
+    var m = foodMacros(byId, row.foodId, row.grams);
+    var tr = document.createElement("tr");
+    tr.appendChild(el("td", "pd-name", foodNameOf(byId, row.foodId)));
+    tr.appendChild(el("td", "pd-num", printQtyText(byId, row)));
+    tr.appendChild(el("td", "pd-num", n(m.kcal)));
+    tb.appendChild(tr);
   }
-  return r;
+  table.appendChild(tb);
+  var tf = document.createElement("tfoot");
+  var ftr = document.createElement("tr");
+  ftr.appendChild(el("td", null, "סה\"כ בארוחה"));
+  ftr.appendChild(el("td", "pd-num", ""));
+  ftr.appendChild(el("td", "pd-num", n(per.kcal)));
+  tf.appendChild(ftr);
+  table.appendChild(tf);
+  return table;
 }
 
-function sameStyles(style, count){
-  var out = [];
-  for (var i=0;i<count;i++) out.push(style);
-  return out;
-}
+function buildPrintDoc(client){
+  var root = $("printDoc");
+  root.textContent = "";
+  var byId = activeFoods().byId;
 
-function blankCells(){ return ["", "", "", "", "", ""]; }
+  var head = el("header", "pd-head");
+  head.appendChild(el("div", "pd-brand", "סיוון — ייעוץ תזונה"));
+  head.appendChild(el("h1", "pd-title", "תוכנית תזונה אישית"));
+  head.appendChild(el("div", "pd-sub", client.name + " · " + isoDateText(todayISO())));
+  root.appendChild(head);
 
-function buildSheet(sb){
-  var ws = XLSX.utils.aoa_to_sheet(sb.rows);
-  for (var i=0;i<sb.styles.length;i++){
-    var addr = XLSX.utils.encode_cell({r:sb.styles[i].r, c:sb.styles[i].c});
-    if (!ws[addr]) ws[addr] = {t:"s", v:""};
-    ws[addr].s = sb.styles[i].s;
-  }
-  ws["!cols"] = [{wch:30},{wch:8},{wch:9},{wch:11},{wch:12},{wch:10}];
-  if (sb.merges.length) ws["!merges"] = sb.merges;
-  return ws;
-}
-
-/* שם גיליון חוקי: בלי []:*?/\ , עד 31 תווים, ובלי כפילויות */
-function sheetNameSafe(name, used){
-  var raw = (typeof name === "string") ? name : "";
-  var clean = raw.replace(/[\[\]:*?\/\\]/g, " ").replace(/\s+/g, " ").trim();
-  if (clean === "") clean = "תפריט";
-  if (clean.length > 31) clean = clean.slice(0, 31).trim();
-  var out = clean, k = 2;
-  while (Object.prototype.hasOwnProperty.call(used, out)){
-    var suffix = " " + k;
-    var base = (clean.length + suffix.length > 31) ? clean.slice(0, 31 - suffix.length).trim() : clean;
-    out = base + suffix;
-    k++;
-  }
-  used[out] = true;
-  return out;
-}
-
-function xlsxSummarySheet(client){
-  var sb = newSheet();
-  sheetRow(sb, ["תוכנית תזונה — " + client.name, "", "", "", "", ""], [xStyle({bold:true, size:14, color:"7A5230"})]);
-  sb.merges.push({s:{r:0, c:0}, e:{r:0, c:5}});
-  sheetRow(sb, ["תאריך: " + isoDateText(todayISO()), "", "", "", "", ""], [xStyle({color:"2A1F14"})]);
-  sheetRow(sb, blankCells(), null);
-  sheetRow(sb, ["היעדים", "", "", "", "", ""], sameStyles(xStyle({bold:true, color:"7A5230", fill:"EFE0C8"}), 6));
-  for (var i=0;i<EXPORT_TARGET_ROWS.length;i++){
-    var v = client.targets[EXPORT_TARGET_ROWS[i][0]];
-    var has = typeof v === "number" && isFinite(v);
-    sheetRow(sb, [EXPORT_TARGET_ROWS[i][1], has ? v : "—", "", "", "", ""], [xStyle({}), xStyle({bold:true, color:"7A5230"})]);
-  }
-  return buildSheet(sb);
-}
-
-function xlsxMenuSheet(byId, client, menu){
-  var sb = newSheet();
-  var built = menuExportRows(byId, menu);
-  var mealStyle = xStyle({bold:true, color:"FFFFFF", fill:"7A5230"});
-  var headStyle = xStyle({bold:true, color:"7A5230", fill:"EFE0C8"});
-  var sumStyle = xStyle({bold:true, fill:"F6EFDF"});
-  var sumNumStyle = xStyle({bold:true, fill:"F6EFDF", fmt:"0"});
-  var gramStyle = xStyle({fmt:"0.##"});
-  var intStyle = xStyle({fmt:"0"});
-  var decStyle = xStyle({fmt:"0.0"});
-  for (var i=0;i<built.rows.length;i++){
-    var row = built.rows[i];
-    if (row.kind === "meal"){
-      var r = sheetRow(sb, row.cells, sameStyles(mealStyle, 6));
-      sb.merges.push({s:{r:r, c:0}, e:{r:r, c:5}});
-      sheetRow(sb, EXPORT_HEAD.slice(0), sameStyles(headStyle, 6));
-      continue;
-    }
-    if (row.kind === "sum"){
-      sheetRow(sb, row.cells, [sumStyle, sumStyle, sumNumStyle, sumNumStyle, sumNumStyle, sumNumStyle]);
-      continue;
-    }
-    sheetRow(sb, row.cells, [xStyle({}), gramStyle, intStyle, decStyle, decStyle, decStyle]);
-  }
-  sheetRow(sb, blankCells(), null);
-  var t = built.totals;
-  var totalStyle = xStyle({bold:true, color:"7A5230", fill:"EFE0C8"});
-  var totalNumStyle = xStyle({bold:true, color:"7A5230", fill:"EFE0C8", fmt:"0"});
-  sheetRow(sb, ["סה\"כ תפריט", "", t.kcal, t.protein, t.carbs, t.fat],
-    [totalStyle, totalStyle, totalNumStyle, totalNumStyle, totalNumStyle, totalNumStyle]);
   if (hasAnyTarget(client.targets)){
-    var d = menuTargetDeltas(t, client.targets);
-    var styles = [xStyle({bold:true}), xStyle({})];
-    for (var c=2;c<6;c++){
-      styles.push(xStyle({bold:true, color:d.reds[c] ? "A34A2B" : "2A1F14", fmt:"+#,##0;-#,##0;0"}));
+    var tWrap = el("section", "pd-targets");
+    for (var t=0;t<EXPORT_TARGET_ROWS.length;t++){
+      var v = client.targets[EXPORT_TARGET_ROWS[t][0]];
+      var boxT = el("div", "pd-target");
+      boxT.appendChild(el("b", "num", (typeof v === "number" && isFinite(v)) ? n(v) : "—"));
+      boxT.appendChild(el("span", null, EXPORT_TARGET_ROWS[t][1]));
+      tWrap.appendChild(boxT);
     }
-    sheetRow(sb, d.cells, styles);
+    root.appendChild(tWrap);
   }
-  return buildSheet(sb);
+
+  for (var i=0;i<client.menus.length;i++){
+    var menu = client.menus[i];
+    var sums = sumMenuMeals(byId, menu.meals);
+    var sec = el("section", "pd-menu");
+    sec.appendChild(el("h2", "pd-menu-name", client.menus.length > 1 ? menu.name : "התפריט שלך"));
+    for (var mIdx=0;mIdx<menu.meals.length;mIdx++){
+      var meal = menu.meals[mIdx];
+      if (meal.rows.length === 0) continue;
+      var box = el("div", "pd-meal");
+      box.appendChild(el("h3", "pd-meal-name", meal.name));
+      box.appendChild(printMealTable(byId, meal, sums.perMeal[mIdx] || {kcal:0}));
+      sec.appendChild(box);
+    }
+    var tot = el("div", "pd-total");
+    tot.appendChild(el("b", null, "סה\"כ יומי: " + n(sums.kcal) + " קק\"ל"));
+    tot.appendChild(el("span", null, "חלבון " + n(Math.round(sums.protein)) + " ג' · פחמימה " + n(Math.round(sums.carbs)) + " ג' · שומן " + n(Math.round(sums.fat)) + " ג'"));
+    if (client.targets && typeof client.targets.kcal === "number" && isFinite(client.targets.kcal)){
+      var diff = sums.kcal - Math.round(client.targets.kcal);
+      tot.appendChild(el("span", "pd-vs", diff === 0 ? "בדיוק על היעד" : (diff > 0 ? ("‎+" + n(diff) + " קק\"ל מעל היעד") : (n(-diff) + " קק\"ל מתחת ליעד"))));
+    }
+    sec.appendChild(tot);
+    root.appendChild(sec);
+  }
+
+  var sum = derivedSummary(client);
+  if (sum.warnings.length + sum.points.length > 0){
+    var notes = el("section", "pd-notes");
+    notes.appendChild(el("h3", null, "נקודות חשובות"));
+    for (var w=0;w<sum.warnings.length;w++) notes.appendChild(el("p", "pd-warn", "⚠ " + sum.warnings[w]));
+    if (sum.points.length){
+      var ul = document.createElement("ul");
+      for (var p=0;p<sum.points.length;p++) ul.appendChild(el("li", null, sum.points[p]));
+      notes.appendChild(ul);
+    }
+    root.appendChild(notes);
+  }
+
+  root.appendChild(el("footer", "pd-foot", PRINT_DISCLAIMER));
 }
 
-function exportClientXlsx(client){
-  if (typeof XLSX === "undefined" || !XLSX || !XLSX.utils){ toast(EXPORT_MISSING_MSG); return false; }
-  try {
-    var byId = activeFoods().byId;
-    var wb = XLSX.utils.book_new();
-    wb.Workbook = {Views:[{RTL:true}]};
-    XLSX.utils.book_append_sheet(wb, xlsxSummarySheet(client), "סיכום");
-    var used = {"סיכום":true};
-    for (var i=0;i<client.menus.length;i++){
-      XLSX.utils.book_append_sheet(wb, xlsxMenuSheet(byId, client, client.menus[i]), sheetNameSafe(client.menus[i].name, used));
-    }
-    XLSX.writeFile(wb, "תפריט-" + client.name + ".xlsx");
-  } catch(e){
-    toast("יצירת האקסל נכשלה");
-    return false;
-  }
-  toast("האקסל יורד…");
+/* כותרת העמוד קובעת את שם קובץ ה-PDF בדיאלוג ההדפסה — מוחזרת מיד אחרי */
+function exportClientPdf(client){
+  buildPrintDoc(client);
+  var prevTitle = document.title;
+  var restored = false;
+  var restore = function(){
+    if (restored) return;
+    restored = true;
+    document.title = prevTitle;
+  };
+  window.addEventListener("afterprint", restore);
+  document.title = "תפריט-" + client.name;
+  window.print();
+  setTimeout(restore, 3000);
   return true;
 }
 
 /* ===== ייצוא מצגת (PptxGenJS) ===== */
 
-var PPT_STEPS = ["שאלון היכרות", "סיכום אישי", "יעדים", "תפריט", "מעקב"];
+var PPT_STEPS = ["שאלון היכרות", "יעדים אישיים", "תפריט מותאם", "ליווי ומעקב", "תוצאות"];
 var PPT_TARGET_TILES = [["kcal","קלוריות (קק\"ל)"], ["protein","חלבון (ג')"], ["carbs","פחמימה (ג')"], ["fat","שומן (ג')"]];
 var PPT_ROWS_PER_SLIDE = 14;
 
@@ -4363,10 +4378,11 @@ function pptxCover(pptx, client){
   s.addText("הוכן על ידי סיוון — ייעוץ תזונה", pptOpts({x:0.8, y:6.3, w:11.2, h:0.5, fontSize:14, color:"7A5230"}));
 }
 
+/* "הדרך" — מפת המסלול קדימה (לשון עתיד: המצגת נמסרת בתחילת התהליך) */
 function pptxSteps(pptx){
   var s = pptx.addSlide();
   s.background = {color:"F8F2E7"};
-  pptTitle(s, "כך עבדנו יחד");
+  pptTitle(s, "הדרך שלך");
   for (var i=0;i<PPT_STEPS.length;i++){
     var x = 10.73 - i * 2.55;
     s.addText(PPT_STEPS[i], pptOpts({
@@ -4378,7 +4394,57 @@ function pptxSteps(pptx){
       s.addShape(pptx.ShapeType.rect, {x:x - 0.39, y:3.42, w:0.33, h:0.06, fill:{color:"7A5230"}, line:{color:"7A5230", width:1}});
     }
   }
-  s.addText("כל שלב נבנה עלייך — מהשאלון ועד המעקב השוטף", pptOpts({x:0.7, y:4.6, w:11.9, h:0.5, fontSize:14, color:"2A1F14"}));
+  s.addText("כל שלב נבנה עלייך — צעד אחר צעד, בקצב שלך", pptOpts({x:0.7, y:4.6, w:11.9, h:0.5, fontSize:14, color:"2A1F14"}));
+}
+
+/* שקף תבליטים כללי — משמש את "מה הולכים לעשות", "תהליך העבודה" ו"תוכנית אימונים" */
+function pptxBulletSlide(pptx, title, lines, footNote){
+  var s = pptx.addSlide();
+  s.background = {color:"F8F2E7"};
+  pptTitle(s, title);
+  var runs = [];
+  for (var i=0;i<lines.length;i++) runs.push({text:"• " + lines[i], options:pptLineOpts()});
+  s.addText(runs, pptOpts({x:0.7, y:1.7, w:11.9, h:4.4, fontSize:18, color:"2A1F14", valign:"top", lineSpacingMultiple:1.35}));
+  if (footNote){
+    s.addText(footNote, pptOpts({x:0.7, y:6.3, w:11.9, h:0.5, fontSize:13, color:"7A5230", bold:true}));
+  }
+}
+
+/* "מה הולכים לעשות" — נבנה מהיעדים של הלקוח/ה, בלשון עתיד */
+function pptxWhatNext(pptx, client){
+  var lines = [];
+  var t = client.targets || {};
+  if (typeof t.kcal === "number" && isFinite(t.kcal)){
+    lines.push("נעבוד לפי יעד יומי של " + n(Math.round(t.kcal)) + " קק\"ל, שנקבע במיוחד בשבילך");
+  }
+  if (typeof t.protein === "number" && isFinite(t.protein)){
+    lines.push("נדאג ל-" + n(Math.round(t.protein)) + " גרם חלבון ביום — הבסיס לשמירה על שריר ותחושת שובע");
+  }
+  lines.push("נבנה תפריט אישי מהמזונות שאת באמת אוהבת — בלי רעב ובלי איסורים גורפים");
+  lines.push("נעקוב אחרי ההתקדמות ונעדכן את התוכנית לפי מה שקורה בפועל");
+  lines.push("נבנה הרגלים שנשארים גם אחרי שהליווי מסתיים");
+  pptxBulletSlide(pptx, "מה הולכים לעשות", lines, "יעד גדול אחד — צעדים קטנים וקבועים");
+}
+
+/* "תהליך העבודה" — השגרה השוטפת בין הפגישות */
+function pptxProcess(pptx){
+  pptxBulletSlide(pptx, "תהליך העבודה", [
+    "בקישור האישי שלך מחכה התוכנית — התפריט, היעדים והמעקב, תמיד מעודכנים",
+    "בארוחות עם תקציב קלורי את בוחרת בעצמך מה לאכול — והבחירות מגיעות אליי אוטומטית",
+    "מדדים (משקל, היקפים) נרשמים בקביעות בטבלת המעקב",
+    "אחת לתקופה נעבור יחד על ההתקדמות ונכוון את התפריט והיעדים",
+    "יש שאלה באמצע הדרך? אני זמינה בוואטסאפ"
+  ], "עקביות מנצחת שלמות — גם שבוע לא מושלם מקדם אותך");
+}
+
+/* placeholder לתוכנית אימונים — עקרונות מ-ידע/03; תוכנית אישית תיבנה בהמשך */
+function pptxTraining(pptx){
+  pptxBulletSlide(pptx, "תוכנית אימונים — בהמשך", [
+    "אימוני התנגדות הם העוגן — הם ששומרים על השריר בזמן הירידה",
+    "נתחיל ממה שמתאים לרמה שלך: 2-4 אימונים בשבוע, בעומס שעולה בהדרגה",
+    "קרדיו וצעדים יומיים משלימים את התמונה — לפי המטרה והלו\"ז שלך",
+    "תוכנית אימונים אישית ומפורטת ניבנה יחד בשלב הבא של הליווי"
+  ], "תזונה ואימונים עובדים יחד — כל אחד מכפיל את התוצאה של השני");
 }
 
 /* התבליטים נכתבים כ-"• " ידני — bullet:true של pptxgen מתנגש עם פסקאות RTL.
@@ -4526,11 +4592,14 @@ function exportClientPptx(client){
     pptx.defineLayout({name:"W", width:13.33, height:7.5});
     pptx.layout = "W";
     pptxCover(pptx, client);
+    pptxWhatNext(pptx, client);
     pptxSteps(pptx);
+    pptxProcess(pptx);
     pptxSummary(pptx, client);
     pptxTargets(pptx, client);
     for (var i=0;i<client.menus.length;i++) pptxMenu(pptx, byId, client, client.menus[i]);
     pptxTracking(pptx, client);
+    pptxTraining(pptx);
     pptxClosing(pptx);
     pptx.writeFile({fileName:"תהליך-" + client.name + ".pptx"}).then(null, function(){ toast("יצירת המצגת נכשלה"); });
   } catch(e){
@@ -4554,11 +4623,11 @@ twoStep($("btnRevokeShare"), "בטל קישור", "לביטול — לחצי ש�
 });
 $("btnCopyShareLink").addEventListener("click", copyShareLink);
 
-$("btnExportXlsx").addEventListener("click", function(){
+$("btnExportPdf").addEventListener("click", function(){
   var c = getActiveClient(null);
   if (!c){ toast("אין לקוח/ה פעיל/ה"); return; }
   if (c.menus.length === 0){ toast("אין תפריט שמור לייצוא"); return; }
-  exportClientXlsx(c);
+  exportClientPdf(c);
 });
 $("btnExportPptx").addEventListener("click", function(){
   var c = getActiveClient(null);
