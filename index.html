@@ -333,14 +333,6 @@ th.sortable[aria-sort="descending"] .sort-ind::after{content:"▼"; width:auto}
 }
 
 /* ---------- content cards ---------- */
-.cat-grid{display:grid; grid-template-columns:1fr; gap:12px}
-@media (min-width:700px){ .cat-grid{grid-template-columns:repeat(2,minmax(0,1fr))} }
-.cat-card{border:1px solid var(--border); border-radius:var(--radius); background:var(--surface); padding:14px; display:flex; flex-direction:column; gap:10px; box-shadow:var(--shadow)}
-.cat-card h3{font-size:15px; color:var(--primary)}
-.kv{display:grid; grid-template-columns:auto 1fr; gap:4px 10px; font-size:13px}
-.kv dt{color:var(--text-soft); font-weight:700; font-size:11.5px; letter-spacing:.05em; align-self:center}
-.kv dd{margin:0; font-weight:600}
-.cat-card ul{font-size:12.5px; color:var(--text-muted); display:flex; flex-direction:column; gap:4px}
 .ex-card{border:1px solid var(--border); border-radius:var(--radius); background:var(--surface); box-shadow:var(--shadow); overflow:hidden}
 .ex-head{padding:14px; background:var(--surface-2); border-bottom:1px solid var(--border); display:flex; flex-wrap:wrap; gap:10px; align-items:center; justify-content:space-between}
 .ex-head h3{font-size:15.5px}
@@ -427,8 +419,7 @@ th.sortable[aria-sort="descending"] .sort-ind::after{content:"▼"; width:auto}
       <button class="tab-btn" role="tab" id="tabbtn-tracking" aria-controls="tab-tracking" aria-selected="false" data-tab="tracking" type="button">טבלת מעקב</button>
       <button class="tab-btn" role="tab" id="tabbtn-foods" aria-controls="tab-foods" aria-selected="false" data-tab="foods" type="button">מאגר מזונות</button>
       <button class="tab-btn" role="tab" id="tabbtn-products" aria-controls="tab-products" aria-selected="false" data-tab="products" type="button">מוצרים מהסופר</button>
-      <button class="tab-btn" role="tab" id="tabbtn-cats" aria-controls="tab-cats" aria-selected="false" data-tab="cats" type="button">קטגוריות ויעדים</button>
-      <button class="tab-btn" role="tab" id="tabbtn-examples" aria-controls="tab-examples" aria-selected="false" data-tab="examples" type="button">תפריטים לדוגמה</button>
+      <button class="tab-btn" role="tab" id="tabbtn-examples" aria-controls="tab-examples" aria-selected="false" data-tab="examples" type="button">תפריטים מוכנים ללקוח</button>
     </nav>
     <button class="chip chip-neutral" id="activeClientChip" type="button" title="מעבר לרשימת הלקוחות">אין לקוח פעיל</button>
     <button class="btn btn-ghost btn-sm" id="themeToggle" type="button">מצב כהה</button>
@@ -871,35 +862,14 @@ th.sortable[aria-sort="descending"] .sort-ind::after{content:"▼"; width:auto}
     <div class="stack" id="smartWrap"></div>
   </section>
 
-  <!-- ===== 7. קטגוריות ויעדים ===== -->
-  <section class="tab-panel" id="tab-cats" role="tabpanel" aria-labelledby="tabbtn-cats">
-    <div class="cat-grid" id="catGrid"></div>
-    <div class="card stack">
-      <h2 class="card-title">פריסטים לפי משקל — נשים</h2>
-      <p class="lede">בכל תא: יעד קלורי, ומתחתיו חלבון / פחמימה / שומן בגרמים.</p>
-      <div class="table-scroll"><table id="presetWomen"></table></div>
-    </div>
-    <div class="card stack">
-      <h2 class="card-title">פריסטים לפי משקל — גברים</h2>
-      <div class="table-scroll"><table id="presetMen"></table></div>
-      <p class="note-line">הפריסט הוא נקודת פתיחה ובדיקת שפיות — לא תחליף לחישוב אישי. אצל לקוחה עם גובה, גיל או רמת פעילות חריגים — חובה לחשב לפי הנוסחה.</p>
-    </div>
-    <div class="card stack">
-      <h2 class="card-title">חלוקת קלוריות בין ארוחות</h2>
-      <p class="lede">מספר הארוחות נקבע לפי שגרת היום של הלקוח/ה, ולא להפך. אלה טווחי פתיחה נוחים לחלוקת היעד היומי בין הארוחות.</p>
-      <div class="table-scroll"><table id="splitTable"></table></div>
-      <p class="note-line">הנחיה כללית בלבד — מותאם אישית לפי שעות היום והעדפות הלקוח/ה; מנת השומן היומית נכללת בתוך הארוחות.</p>
-    </div>
-  </section>
-
-  <!-- ===== 8. תפריטים לדוגמה ===== -->
+  <!-- ===== 7. תפריטים מוכנים ללקוח ===== -->
   <section class="tab-panel" id="tab-examples" role="tabpanel" aria-labelledby="tabbtn-examples">
     <div class="card stack">
       <div>
-        <span class="eyebrow">תפריטים לדוגמה</span>
-        <h2 class="card-title">שלושה תפריטים מלאים — בארוחות ובגרמים</h2>
+        <span class="eyebrow">תפריטים מוכנים ללקוח</span>
+        <h2 class="card-title">תפריטים מלאים — בארוחות ובגרמים</h2>
       </div>
-      <p class="lede">כל דוגמה בנויה בדיוק כמו תפריט בבונה: ארוחות, מזונות וכמויות בגרמים. "טען לבונה" מעתיק את התפריט ללקוח/ה הפעיל/ה — ומשם אפשר לערוך, לשמור ולהעתיק כטקסט.</p>
+      <p class="lede">כל תפריט בנוי בדיוק כמו תפריט בבונה: ארוחות, מזונות וכמויות בגרמים. "טען לבונה" מעתיק את התפריט ללקוח/ה הפעיל/ה — ומשם אפשר לערוך, לשמור ולהעתיק כטקסט.</p>
     </div>
     <div class="stack" id="examplesWrap"></div>
     <div class="card">
@@ -6166,120 +6136,6 @@ function renderSmart(){
   wrap.appendChild(card);
 }
 
-/* ---------- categories tab ---------- */
-var CAT_CARDS = [
-  {name:"ירידה במשקל", delta:"גירעון 15-25% (ברירת מחדל 15-20%) · 350-700 קק\"ל", rate:"0.5-1% ממשקל הגוף לשבוע",
-   dur:"12-16 שבועות", prot:"1.6-2.2 ג'/ק\"ג (פריסט 1.9)",
-   points:["אימוני התנגדות הם חובה — בלעדיהם עד 25-30% מהירידה תהיה מסת שריר.",
-           "הפסקת דיאטה כל 8-12 שבועות, 1-2 שבועות ב-TDEE מלא.",
-           "להסביר מראש שהמשקל יעלה לפעמים — מלח, מחזור, גליקוגן, עצירות.",
-           "יעד צעדים קבוע חזק יותר מהוספת קרדיו — NEAT צונח בגירעון."]},
-  {name:"חיטוב", delta:"גירעון 10-20% · 250-500 קק\"ל", rate:"0.4-0.7% ממשקל הגוף לשבוע",
-   dur:"8-12 שבועות (עמוק: עד 16)", prot:"נשים 1.8-2.4 | גברים 2.0-2.6 ג'/ק\"ג",
-   points:["חלבון גבוה הוא המשתנה מספר 1 — בלעדיו זו ירידה במשקל, לא חיטוב.",
-           "העומסים באימון הם מדד שמירת השריר הכי טוב בשטח.",
-           "לא מציפים בקרדיו: קודם קלוריות, אחר כך צעדים, ורק בסוף קרדיו.",
-           "תמונות והיקפים כל 3-4 שבועות — המשקל הוא המדד הכי גרוע כאן."]},
-  {name:"עליית מסה", delta:"עודף 10-20% (בינונית 10-15%) · 200-400 קק\"ל", rate:"0.25-0.5% ממשקל הגוף לשבוע",
-   dur:"12-20 שבועות", prot:"נשים 1.6-2.0 | גברים 1.6-2.2 ג'/ק\"ג (פריסט 2.0)",
-   points:["עודף בלי עומס מתקדם = שומן. יומן אימונים הוא חלק מהתוכנית.",
-           "פחמימות הן הדלק — זה לא הזמן ל-Low Carb.",
-           "חלק מהעלייה יהיה שומן; יחס 50:50 אצל בינונית זו תוצאה טובה.",
-           "נקודת יציאה: ~15-18% שומן (גבר) או ~25-28% (אישה)."]},
-  {name:"שימור / רקומפוזיציה", delta:"TDEE ±5% · ±100 קק\"ל", rate:"אין קצב במאזניים — היקפים, תמונות ושיאים",
-   dur:"ללא הגבלה — הקטגוריה הכי בת-קיימא", prot:"1.6-2.0 ג'/ק\"ג (פריסט 1.8)",
-   points:["עובד מצוין למתחילות, לחוזרות אחרי הפסקה ולמי שאחוזי השומן שלהן גבוהים.",
-           "המאזניים הם אויב כאן — לעבור להיקפים ותמונות.",
-           "3-6 חודשים לשינוי ויזואלי משמעותי. לתאם ציפיות מראש.",
-           "שימור אחרי דיאטה: Reverse Diet של 50-100 קק\"ל בשבוע עד ל-TDEE החדש."]}
-];
-function renderCats(){
-  var wrap = $("catGrid");
-  wrap.innerHTML = "";
-  for (var i=0;i<CAT_CARDS.length;i++){
-    var c = CAT_CARDS[i];
-    var card = el("div","cat-card");
-    card.appendChild(el("h3", null, c.name));
-    var dl = el("dl","kv");
-    var pairs = [["גירעון / עודף", c.delta],["קצב שינוי", c.rate],["משך מומלץ", c.dur],["חלבון", c.prot]];
-    for (var p=0;p<pairs.length;p++){
-      dl.appendChild(el("dt", null, pairs[p][0]));
-      dl.appendChild(el("dd", null, pairs[p][1]));
-    }
-    card.appendChild(dl);
-    var ul = document.createElement("ul");
-    for (var q=0;q<c.points.length;q++) ul.appendChild(el("li", null, c.points[q]));
-    card.appendChild(ul);
-    wrap.appendChild(card);
-  }
-}
-
-var PRESETS = {
-  women:{ weights:[60,65,70,75], rows:{
-    60:[["1,450","114 / 141 / 48"],["1,650","126 / 165 / 54"],["2,150","120 / 283 / 60"],["1,900","108 / 232 / 60"]],
-    65:[["1,550","124 / 147 / 52"],["1,750","137 / 168 / 59"],["2,250","130 / 286 / 65"],["2,000","117 / 237 / 65"]],
-    70:[["1,650","133 / 154 / 56"],["1,850","147 / 174 / 63"],["2,350","140 / 290 / 70"],["2,100","126 / 242 / 70"]],
-    75:[["1,750","143 / 160 / 60"],["1,950","158 / 177 / 68"],["2,450","150 / 294 / 75"],["2,200","135 / 246 / 75"]]
-  }},
-  men:{ weights:[75,82,90,95], rows:{
-    75:[["2,000","143 / 213 / 64"],["2,150","165 / 238 / 60"],["2,600","150 / 331 / 75"],["2,400","135 / 296 / 75"]],
-    82:[["2,150","156 / 224 / 70"],["2,300","180 / 247 / 66"],["2,800","164 / 352 / 82"],["2,550","148 / 305 / 82"]],
-    90:[["2,300","171 / 231 / 77"],["2,450","198 / 253 / 72"],["3,000","180 / 368 / 90"],["2,750","162 / 323 / 90"]],
-    95:[["2,400","181 / 237 / 81"],["2,550","209 / 258 / 76"],["3,100","190 / 371 / 95"],["2,850","171 / 328 / 95"]]
-  }}
-};
-function renderPreset(tableId, group){
-  var t = $(tableId);
-  var thead = document.createElement("thead");
-  var htr = document.createElement("tr");
-  var heads = ["משקל","ירידה במשקל","חיטוב","עליית מסה","שימור"];
-  for (var h=0;h<heads.length;h++){ var th = document.createElement("th"); th.textContent = heads[h]; htr.appendChild(th); }
-  thead.appendChild(htr); t.appendChild(thead);
-  var tb = document.createElement("tbody");
-  for (var w=0;w<group.weights.length;w++){
-    var kg = group.weights[w];
-    var tr = document.createElement("tr");
-    var td0 = el("td","t-name", kg + " ק\"ג");
-    tr.appendChild(td0);
-    var cells = group.rows[kg];
-    for (var c=0;c<cells.length;c++){
-      var td = el("td","n");
-      var strong = el("strong", null, cells[c][0] + " קק\"ל");
-      td.appendChild(strong);
-      td.appendChild(el("span","t-sub", cells[c][1]));
-      tr.appendChild(td);
-    }
-    tb.appendChild(tr);
-  }
-  t.appendChild(tb);
-}
-renderPreset("presetWomen", PRESETS.women);
-renderPreset("presetMen", PRESETS.men);
-/* חלוקת הקלוריות בין הארוחות — הנחיה כללית לפי מספר הארוחות, בלי מספרים פר-קטגוריה */
-var MEAL_SPLIT_ROWS = [
-  ["3 ארוחות", "30-35% מהיעד לכל ארוחה", "ארוחת ביניים אחת, 10-15%"],
-  ["4 ארוחות (ברירת המחדל)", "25-30% מהיעד לכל ארוחה", "אין — הארוחות מכסות את היום"],
-  ["5 ארוחות", "20-25% מהיעד לכל ארוחה", "אין — הארוחות מכסות את היום"]
-];
-function renderSplit(){
-  var t = $("splitTable");
-  t.innerHTML = "";
-  var thead = document.createElement("thead");
-  var htr = document.createElement("tr");
-  var heads = ["מבנה היום","חלק מהיעד היומי","ביניים"];
-  for (var h=0;h<heads.length;h++){ var th = document.createElement("th"); th.textContent = heads[h]; htr.appendChild(th); }
-  thead.appendChild(htr); t.appendChild(thead);
-  var tb = document.createElement("tbody");
-  for (var i=0;i<MEAL_SPLIT_ROWS.length;i++){
-    var tr = document.createElement("tr");
-    for (var j=0;j<MEAL_SPLIT_ROWS[i].length;j++){
-      tr.appendChild(el("td", j === 0 ? "t-name" : null, MEAL_SPLIT_ROWS[i][j]));
-    }
-    tb.appendChild(tr);
-  }
-  t.appendChild(tb);
-}
-
 /* ---------- examples tab ---------- */
 var MACRO_LABEL = {kcal:"קלוריות", protein:"חלבון", carbs:"פחמימה", fat:"שומן"};
 
@@ -6394,8 +6250,6 @@ function bootUI(){
   renderTrackingTab();
   renderFoods();
   renderProducts();
-  renderCats();
-  renderSplit();
   renderExamples();
   refreshActiveChip();
   refreshCloudUI();
