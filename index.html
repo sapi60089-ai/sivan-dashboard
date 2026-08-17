@@ -695,6 +695,7 @@ th.sortable[aria-sort="descending"] .sort-ind::after{content:"▼"; width:auto}
           <input type="text" id="menuNameIn" placeholder="שם התפריט — למשל: תפריט שבועי">
         </div>
         <button class="btn btn-sm" id="btnMenuSave" type="button">שמור תפריט</button>
+        <button class="btn btn-ghost btn-sm" id="btnMenuSaveTemplate" type="button" title="נשמר בטאב תפריטים מוכנים ללקוח — זמין לכל הלקוחות">שמור כתפריט מוכן</button>
         <button class="btn btn-ghost btn-sm" id="btnAddMeal" type="button">+ הוסף ארוחה</button>
       </div>
       <div class="row-flex">
@@ -2370,7 +2371,7 @@ var EXAMPLES = [
 /* ==== PURE-CALC-END ==== */
 
 /* ---------- שכבת אחסון: לקוחות, רובריקות מקדם ומזונות אישיים ---------- */
-var CLIENTS_KEY = "sivan-clients-v1", FACTORS_KEY = "sivan-factors-v1", CUSTOM_FOODS_KEY = "sivan-foods-custom-v1", LEGACY_MENUS_KEY = "sivan-menus-v1";
+var CLIENTS_KEY = "sivan-clients-v1", FACTORS_KEY = "sivan-factors-v1", CUSTOM_FOODS_KEY = "sivan-foods-custom-v1", LEGACY_MENUS_KEY = "sivan-menus-v1", TEMPLATES_KEY = "sivan-templates-v1";
 
 function readRaw(key){
   try { return localStorage.getItem(key); }
@@ -2420,6 +2421,33 @@ function writeCustomFoods(cf){
   var foods = Array.isArray(src.foods) ? src.foods : [];
   var next = (typeof src.nextId === "number" && isFinite(src.nextId) && src.nextId > 0) ? Math.floor(src.nextId) : (foods.length + 1);
   var okWrite = writeJSON(CUSTOM_FOODS_KEY, {version:1, nextId:next, foods:foods}, "לא ניתן לשמור מזונות אישיים בדפדפן הזה");
+  if (okWrite && !applyingRemote && cloudMode === "on"){ settingsDirty = true; schedulePush(); }
+  return okWrite;
+}
+
+/* תפריטים מוכנים ללקוח (תבניות גלובליות): {version:1, templates:[{id,name,meals}]} —
+   לא שייכים ללקוח מסוים ומסתנכרנים דרך settings/main, בדיוק כמו המזונות האישיים */
+function readTemplates(){
+  var raw = readJSON(TEMPLATES_KEY);
+  var src = (raw && typeof raw === "object" && !Array.isArray(raw)) ? raw : {};
+  var list = Array.isArray(src.templates) ? src.templates : [];
+  var out = [];
+  for (var i=0;i<list.length;i++){
+    var t = list[i];
+    if (!t || typeof t !== "object") continue;
+    if (typeof t.name !== "string" || t.name === "") continue;
+    out.push({
+      id: (typeof t.id === "string" && t.id !== "") ? t.id : "t" + (i + 1),
+      name: t.name,
+      meals: normalizeMeals(t.meals)
+    });
+  }
+  return {version:1, templates:out};
+}
+function writeTemplates(store){
+  var src = (store && typeof store === "object" && !Array.isArray(store)) ? store : {};
+  var list = Array.isArray(src.templates) ? src.templates : [];
+  var okWrite = writeJSON(TEMPLATES_KEY, {version:1, templates:list}, "לא ניתן לשמור תפריטים מוכנים בדפדפן הזה");
   if (okWrite && !applyingRemote && cloudMode === "on"){ settingsDirty = true; schedulePush(); }
   return okWrite;
 }
@@ -2755,6 +2783,7 @@ function mergeCloudIntoLocal(remote, settings, hasSettings){
     applyingRemote = true;
     if (settings && settings.factors) writeFactors(settings.factors);
     if (settings && settings.customFoods) writeCustomFoods(settings.customFoods);
+    if (settings && settings.templates) writeTemplates(settings.templates);
     applyingRemote = false;
   } else {
     settingsDirty = true;
@@ -2839,8 +2868,10 @@ function applySettingsSnapshot(doc){
   applyingRemote = true;
   if (data.factors) writeFactors(data.factors);
   if (data.customFoods){ writeCustomFoods(data.customFoods); }
+  if (data.templates){ writeTemplates(data.templates); }
   applyingRemote = false;
   if (data.customFoods) renderFoods();
+  if (data.templates) renderExamples();
   refreshCloudUI();
 }
 
@@ -2903,6 +2934,7 @@ function pushSettingsDoc(){
     version: 1,
     factors: readFactors(),
     customFoods: readCustomFoods(),
+    templates: readTemplates(),
     shareTokens: cachedShareTokens(),
     deleted: cachedDeleted()
   };
@@ -5558,8 +5590,45 @@ function loadMealsIntoBuilder(meals, name){
   return true;
 }
 
+/* שמירה כתפריט מוכן (תבנית גלובלית) — אותו שם דורס; המחיקה רק מטאב התפריטים המוכנים */
+function saveMenuAsTemplate(){
+  var name = ($("menuNameIn").value || "").trim();
+  if (name === ""){
+    toast("צריך שם לתפריט לפני שמירה כתפריט מוכן");
+    $("menuNameIn").focus();
+    return;
+  }
+  var meals = cleanMealsForSave();
+  var hasRow = false;
+  for (var i=0;i<meals.length;i++){ if (meals[i].rows.length){ hasRow = true; break; } }
+  if (!hasRow){ toast("אין מזונות בתפריט — אין מה לשמור"); return; }
+  var store = readTemplates();
+  var found = null;
+  for (var j=0;j<store.templates.length;j++){
+    if (store.templates[j].name === name){ found = store.templates[j]; break; }
+  }
+  if (found) found.meals = meals;
+  else store.templates.push({id:"t" + Date.now(), name:name, meals:meals});
+  if (writeTemplates(store)){
+    renderExamples();
+    toast(found ? ("התפריט המוכן עודכן: " + name) : ("נשמר כתפריט מוכן: " + name));
+  }
+}
+
+function deleteTemplate(id){
+  var store = readTemplates();
+  var keep = [];
+  for (var i=0;i<store.templates.length;i++){ if (store.templates[i].id !== id) keep.push(store.templates[i]); }
+  store.templates = keep;
+  if (writeTemplates(store)){
+    renderExamples();
+    toast("התפריט המוכן נמחק");
+  }
+}
+
 $("btnBuilderGoClients").addEventListener("click", function(){ showTab("clients"); });
 $("btnMenuSave").addEventListener("click", saveMenu);
+$("btnMenuSaveTemplate").addEventListener("click", saveMenuAsTemplate);
 $("btnMenuLoad").addEventListener("click", loadMenu);
 $("btnMenuCopy").addEventListener("click", copyMenuText);
 $("btnAddMeal").addEventListener("click", function(){
@@ -6330,10 +6399,44 @@ function buildExampleCard(foods, ex){
   return card;
 }
 
+/* כרטיס תפריט מוכן ששמרה סיוון מהבונה — גרסה מצומצמת של כרטיס דוגמה, עם מחיקה */
+function buildTemplateCard(foods, t){
+  var card = el("article","ex-card");
+  var head = el("div","ex-head");
+  var titleBox = el("div");
+  titleBox.appendChild(el("h3", null, t.name));
+  titleBox.appendChild(el("p","lede","תפריט מוכן ששמרת מהבונה — זמין לכל לקוח/ה"));
+  head.appendChild(titleBox);
+  var totals = sumMenuMeals(foods.byId, t.meals);
+  head.appendChild(el("span","chip chip-neutral", n(totals.kcal) + " קק\"ל"));
+  card.appendChild(head);
+
+  var body = el("div","ex-body stack");
+  body.appendChild(el("p","ex-total", t.meals.length + " ארוחות · חלבון " + n(totals.protein) + " ג' · פחמימה " + n(totals.carbs) + " ג' · שומן " + n(totals.fat) + " ג'"));
+  var actions = el("div","ex-actions");
+  var load = el("button","btn","טען לבונה");
+  load.type = "button";
+  load.setAttribute("data-template-load", t.id);
+  load.addEventListener("click", function(){
+    if (loadMealsIntoBuilder(t.meals, t.name)) toast("נטען לבונה: " + t.name);
+  });
+  actions.appendChild(load);
+  var del = el("button","btn btn-quiet btn-sm","מחק תפריט מוכן");
+  del.type = "button";
+  twoStep(del, "מחק תפריט מוכן", "לאשר מחיקה?", function(){ deleteTemplate(t.id); });
+  actions.appendChild(del);
+  body.appendChild(actions);
+  card.appendChild(body);
+  return card;
+}
+
+/* התפריטים המוכנים של סיוון קודם (דינמיים), ואז שלוש הדוגמאות הקבועות */
 function renderExamples(){
   var wrap = $("examplesWrap");
   wrap.innerHTML = "";
   var foods = activeFoods();
+  var store = readTemplates();
+  for (var t=0;t<store.templates.length;t++) wrap.appendChild(buildTemplateCard(foods, store.templates[t]));
   for (var i=0;i<EXAMPLES.length;i++) wrap.appendChild(buildExampleCard(foods, EXAMPLES[i]));
 }
 
