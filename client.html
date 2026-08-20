@@ -446,6 +446,14 @@ function rowKcal(row){
   return Math.round(k * g / 100);
 }
 
+/* מאקרו לשורה לפי ערך ה-100 ג' מהקטלוג — נשמר עם הבחירה כדי שסיוון תראה חלבון/פחמימה/שומן */
+function rowMacro(row, key100){
+  if (row.free) return 0;
+  var g = Number(row.grams), v = Number(row[key100]);
+  if (!isFinite(g) || g <= 0 || !isFinite(v)) return 0;
+  return Math.round(v * g / 10) / 10;
+}
+
 function choicesTotal(rows){
   var sum = 0;
   for (var i=0;i<rows.length;i++) sum += rowKcal(rows[i]);
@@ -589,7 +597,9 @@ function buildFillSection(meal, menuIdx, mealIdx){
         opt.appendChild(el("span", null, f.name));
         opt.appendChild(el("span","hint", f.free ? "חופשי" : (n(f.kcal100) + " קק\"ל ל-100 ג'")));
         opt.addEventListener("click", function(){
-          rows.push({name:f.name, grams:f.free ? 0 : 100, kcal100:Number(f.kcal100) || 0, free:f.free === true});
+          rows.push({name:f.name, grams:f.free ? 0 : 100, kcal100:Number(f.kcal100) || 0,
+                     protein100:Number(f.protein100) || 0, carbs100:Number(f.carbs100) || 0, fat100:Number(f.fat100) || 0,
+                     free:f.free === true});
           input.value = "";
           clear(results);
           renderRows();
@@ -950,7 +960,9 @@ function saveChoices(){
       var r = rows[j];
       var g = Math.round(Number(r.grams) || 0);
       if (g <= 0 && !r.free) continue;
-      outRows.push({name:r.name, grams:r.free ? 0 : g, kcal:rowKcal(r), free:r.free === true});
+      outRows.push({name:r.name, grams:r.free ? 0 : g, kcal:rowKcal(r),
+                    protein:rowMacro(r, "protein100"), carbs:rowMacro(r, "carbs100"), fat:rowMacro(r, "fat100"),
+                    free:r.free === true});
     }
     outMeals.push({name:textOf(m.name) || "ארוחה", budget:b, rows:outRows});
   }
@@ -997,7 +1009,9 @@ function applyCatalog(snap){
     var f = objOf(foods[i]);
     if (!f || !textOf(f.name)) continue;
     var k = Number(f.kcal100);
-    CATALOG.push({name:textOf(f.name), kcal100:isFinite(k) ? k : 0, free:f.free === true});
+    CATALOG.push({name:textOf(f.name), kcal100:isFinite(k) ? k : 0,
+                  protein100:Number(f.protein100) || 0, carbs100:Number(f.carbs100) || 0, fat100:Number(f.fat100) || 0,
+                  free:f.free === true});
   }
   CATALOG_READY = CATALOG.length > 0;
 }
@@ -1035,7 +1049,9 @@ function applyResponse(snap, shareData){
             var kk = Number(r.kcal);
             k100 = isFinite(kk) ? Math.round(kk * 100 / g) : 0;
           }
-          rows.push({name:textOf(r.name), grams:g, kcal100:k100, free:free});
+          rows.push({name:textOf(r.name), grams:g, kcal100:k100,
+                     protein100:found ? found.protein100 : 0, carbs100:found ? found.carbs100 : 0, fat100:found ? found.fat100 : 0,
+                     free:free});
         }
         FILL_CHOICES[fillKey(mi, i)] = rows;
         break;

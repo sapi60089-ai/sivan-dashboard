@@ -280,6 +280,11 @@ th.sortable[aria-sort="descending"] .sort-ind::after{content:"▼"; width:auto}
 .mt-meal{font-size:12.5px; font-weight:700; padding:3px 10px; border-radius:999px; border:1px solid var(--border); background:var(--surface-2); color:var(--text-muted); white-space:nowrap; cursor:default}
 .mt-meal.over{background:var(--bad-bg); color:var(--bad); border-color:var(--bad)}
 .choice-meal{border:1px solid var(--border); border-radius:10px; overflow:hidden}
+/* ארוחות הבחירות מתקפלות (18.8) */
+details.choice-fold > summary.choice-meal-head{cursor:pointer; list-style:none}
+details.choice-fold > summary.choice-meal-head::-webkit-details-marker{display:none}
+details.choice-fold > summary.choice-meal-head::after{content:"▾"; font-size:13px; color:var(--text-soft); transition:transform .15s}
+details.choice-fold[open] > summary.choice-meal-head::after{transform:rotate(180deg)}
 .choice-meal-head{display:flex; justify-content:space-between; align-items:baseline; gap:10px; padding:8px 12px; background:var(--surface-2); border-bottom:1px solid var(--border); font-size:13.5px}
 .choice-meal-total{font-size:12.5px; color:var(--text-muted); font-weight:700}
 .choice-meal-total.over{color:var(--bad)}
@@ -291,6 +296,12 @@ th.sortable[aria-sort="descending"] .sort-ind::after{content:"▼"; width:auto}
 .meal-budget-input{width:74px; padding:6px 9px}
 .meal-budget-note{font-size:11.5px; color:var(--text-soft); font-weight:600; white-space:nowrap}
 .meal-budget-note:empty{display:none}
+/* קיפול כרטיס ארוחה בבונה (18.8): הכותרת נשארת, השורות והפעולות מוסתרות */
+.meal-fold-btn{appearance:none; border:1px solid var(--border); background:var(--surface); color:var(--text-soft); border-radius:8px; width:30px; height:30px; font-size:14px; line-height:1; cursor:pointer; flex:0 0 auto; transition:transform .15s}
+.meal-fold-btn:hover{color:var(--text); border-color:var(--border-strong)}
+.meal.meal-collapsed .meal-fold-btn{transform:rotate(180deg)}
+.meal.meal-collapsed .meal-rows, .meal.meal-collapsed .meal-actions{display:none}
+.meal.meal-collapsed .meal-head{border-bottom:0; border-end-start-radius:var(--radius); border-end-end-radius:var(--radius)}
 .meal-total.over-budget b, .meal-total.over-budget .meal-budget-note{color:var(--bad)}
 /* הבלטת חריגה (בקשת סיוון): אלרט יומי מלא + כרטיס ארוחה חורגת עם מסגרת ורקע אדומים */
 .day-over-alert{border:1.5px solid var(--bad); background:var(--bad-bg); color:var(--bad); border-radius:var(--radius-sm); padding:10px 13px; font-size:14px; font-weight:800}
@@ -666,16 +677,8 @@ details.ex-fold > summary.ex-head:hover::after{color:var(--text)}
         <button class="btn btn-ghost btn-sm" id="btnCopyShareLink" type="button">העתק</button>
         <button class="btn btn-quiet btn-sm" id="btnRevokeShare" type="button">בטל קישור</button>
       </div>
-      <p class="note-line" id="shareAutoNote">כל שמירה מעדכנת אוטומטית את מה שהלקוח/ה רואה בקישור.</p>
+      <p class="note-line" id="shareAutoNote">כל שמירה מעדכנת אוטומטית את מה שהלקוח/ה רואה בקישור. הבחירות שהלקוח/ה ממלא/ת מוצגות בטאב "טבלת מעקב".</p>
       <p class="note-line hidden" id="shareLocalNote">שיתוף קישור זמין רק באתר החי (דרוש חיבור לענן).</p>
-      <div class="stack hidden" id="clientChoicesWrap">
-        <div>
-          <span class="eyebrow">מילוי עצמי</span>
-          <h3 class="card-title">הבחירות של הלקוח/ה</h3>
-        </div>
-        <p class="note-line" id="clientChoicesMeta"></p>
-        <div class="stack" id="clientChoicesBody"></div>
-      </div>
       <div class="row-flex">
         <button class="btn" id="btnExportPdf" type="button">הורד PDF תפריט</button>
         <button class="btn" id="btnExportPptx" type="button">הורד מצגת תהליך</button>
@@ -835,6 +838,21 @@ details.ex-fold > summary.ex-head:hover::after{color:var(--text)}
         <table id="trackTable"></table>
       </div>
       <p class="note-line">המילוי חופשי — מספר או טקסט קצר. תא שנמחק פשוט לא נשמר, ועמודות ברירת המחדל לא ניתנות להסרה.</p>
+    </div>
+
+    <div class="card stack hidden" id="clientChoicesWrap">
+      <div>
+        <span class="eyebrow">מילוי עצמי</span>
+        <h2 class="card-title">הבחירות של הלקוח/ה — סיכום יומי</h2>
+      </div>
+      <p class="note-line" id="clientChoicesMeta"></p>
+      <div class="stat-grid stat-grid-4" id="choicesStats">
+        <div class="stat"><span class="stat-label">קלוריות</span><span class="stat-value num" data-choice-val="kcal">—</span><span class="chip chip-neutral stat-chip" data-choice-chip="kcal"><span class="chip-dot"></span><span data-choice-text="kcal">—</span></span></div>
+        <div class="stat"><span class="stat-label">חלבון</span><span class="stat-value num" data-choice-val="protein">—</span><span class="chip chip-neutral stat-chip" data-choice-chip="protein"><span class="chip-dot"></span><span data-choice-text="protein">—</span></span></div>
+        <div class="stat"><span class="stat-label">פחמימה</span><span class="stat-value num" data-choice-val="carbs">—</span><span class="chip chip-neutral stat-chip" data-choice-chip="carbs"><span class="chip-dot"></span><span data-choice-text="carbs">—</span></span></div>
+        <div class="stat"><span class="stat-label">שומן</span><span class="stat-value num" data-choice-val="fat">—</span><span class="chip chip-neutral stat-chip" data-choice-chip="fat"><span class="chip-dot"></span><span data-choice-text="fat">—</span></span></div>
+      </div>
+      <div class="stack" id="clientChoicesBody"></div>
     </div>
 
     <div class="card stack hidden" id="mealsTrackCard">
@@ -1897,11 +1915,12 @@ function catalogFoods(list){
 function normalizeResponseDoc(raw){
   if (!raw || typeof raw !== "object" || Array.isArray(raw)) return null;
   var meals = [], src = Array.isArray(raw.meals) ? raw.meals : [];
+  var totKcal = 0, totProtein = 0, totCarbs = 0, totFat = 0, hasMacros = false;
   for (var i=0;i<src.length && i<24;i++){
     var m = src[i];
     if (!m || typeof m !== "object") continue;
     var rows = [], rsrc = Array.isArray(m.rows) ? m.rows : [];
-    var kcal = 0;
+    var kcal = 0, protein = 0, carbs = 0, fat = 0;
     for (var j=0;j<rsrc.length && j<60;j++){
       var r = rsrc[j];
       if (!r || typeof r !== "object") continue;
@@ -1912,20 +1931,33 @@ function normalizeResponseDoc(raw){
       if (k === null || k < 0) k = 0;
       var free = r.free === true;
       if (g === 0 && !free) continue;
-      rows.push({name:r.name, grams:Math.round(g), kcal:Math.round(k), free:free});
+      /* מאקרו פר שורה — נוסף 18.8; מסמכים ישנים בלי השדות מוצגים עם קק"ל בלבד */
+      var rp = numOrNull(r.protein), rc = numOrNull(r.carbs), rf = numOrNull(r.fat);
+      if (rp !== null || rc !== null || rf !== null) hasMacros = true;
+      rows.push({name:r.name, grams:Math.round(g), kcal:Math.round(k), free:free,
+                 protein:rp === null ? 0 : rp, carbs:rc === null ? 0 : rc, fat:rf === null ? 0 : rf});
       kcal += Math.round(k);
+      protein += rp === null ? 0 : rp;
+      carbs += rc === null ? 0 : rc;
+      fat += rf === null ? 0 : rf;
     }
     meals.push({
       name: (typeof m.name === "string" && m.name !== "") ? m.name : mealName(meals.length),
       budget: normalizeMealBudget(m.budget),
       rows: rows,
-      kcal: kcal
+      kcal: kcal,
+      protein: Math.round(protein * 10) / 10,
+      carbs: Math.round(carbs * 10) / 10,
+      fat: Math.round(fat * 10) / 10
     });
+    totKcal += kcal; totProtein += protein; totCarbs += carbs; totFat += fat;
   }
   return {
     v: 1,
     updatedAt: (typeof raw.updatedAt === "string") ? raw.updatedAt : "",
-    meals: meals
+    meals: meals,
+    hasMacros: hasMacros,
+    totals: {kcal:totKcal, protein:Math.round(totProtein), carbs:Math.round(totCarbs), fat:Math.round(totFat)}
   };
 }
 
@@ -2946,6 +2978,33 @@ function watchClientResponse(token){
   });
 }
 
+/* אריחי הסיכום היומי של הבחירות: ערך + צ'יפ מול יעדי הלקוח/ה (18.8) */
+function renderChoiceStats(resp){
+  var c = getActiveClient(null);
+  var targets = c ? c.targets : null;
+  var totals = resp.totals || {kcal:0, protein:0, carbs:0, fat:0};
+  var st = targetsStatus(totals, targets), byKey = {}, i;
+  for (i=0;i<st.length;i++) byKey[st[i].key] = st[i];
+  var vals = {
+    kcal: totals.kcal.toLocaleString("he-IL"),
+    protein: resp.hasMacros ? (totals.protein.toLocaleString("he-IL") + " ג'") : "—",
+    carbs: resp.hasMacros ? (totals.carbs.toLocaleString("he-IL") + " ג'") : "—",
+    fat: resp.hasMacros ? (totals.fat.toLocaleString("he-IL") + " ג'") : "—"
+  };
+  var keys = ["kcal","protein","carbs","fat"];
+  for (i=0;i<keys.length;i++){
+    var key = keys[i];
+    var valEl = document.querySelector('[data-choice-val="' + key + '"]');
+    if (valEl) valEl.textContent = vals[key];
+    var chip = document.querySelector('[data-choice-chip="' + key + '"]');
+    var txt = document.querySelector('[data-choice-text="' + key + '"]');
+    if (chip && txt){
+      if (key !== "kcal" && !resp.hasMacros) setChip(chip, txt, null);
+      else setChip(chip, txt, byKey[key]);
+    }
+  }
+}
+
 function renderClientChoices(){
   var wrap = $("clientChoicesWrap");
   if (!wrap) return;
@@ -2954,12 +3013,16 @@ function renderClientChoices(){
   wrap.classList.toggle("hidden", !has);
   if (!has) return;
   $("clientChoicesMeta").textContent = resp.updatedAt ? ("הלקוח/ה עדכנ/ה לאחרונה: " + clientDateText(resp.updatedAt)) : "";
+  renderChoiceStats(resp);
   var body = $("clientChoicesBody");
   body.textContent = "";
   for (var i=0;i<resp.meals.length;i++){
     var m = resp.meals[i];
-    var box = el("div","choice-meal");
-    var head = el("div","choice-meal-head");
+    /* ארוחה מתקפלת (בקשת סיוון 18.8): הכותרת תמיד גלויה, השורות נפתחות בלחיצה */
+    var box = document.createElement("details");
+    box.className = "choice-meal choice-fold";
+    var head = document.createElement("summary");
+    head.className = "choice-meal-head";
     head.appendChild(el("b", null, m.name));
     var bs = mealBudgetStatus(m.kcal, m.budget);
     var totalTxt = m.kcal.toLocaleString("he-IL") + " קק\"ל" + (bs ? (" מתוך " + bs.budget.toLocaleString("he-IL")) : "");
@@ -5456,8 +5519,19 @@ function buildFoodRow(foods, meal, row){
 
 function buildMealCard(foods, meal){
   var card = el("article","meal card");
+  /* קיפול ארוחה (בקשת סיוון 18.8): המצב חי בזיכרון על אובייקט הארוחה — לא נשמר לאחסון
+     (cleanMealsForSave/normalizeMeals בונים אובייקט חדש עם name/rows/budget בלבד) */
+  if (meal.uiCollapsed) card.classList.add("meal-collapsed");
 
   var head = el("div","meal-head");
+  var fold = el("button","meal-fold-btn","▾");
+  fold.type = "button";
+  fold.setAttribute("aria-label","קיפול/פתיחת הארוחה");
+  fold.addEventListener("click", function(){
+    meal.uiCollapsed = !meal.uiCollapsed;
+    card.classList.toggle("meal-collapsed", meal.uiCollapsed === true);
+  });
+  head.appendChild(fold);
   var nameIn = document.createElement("input");
   nameIn.type = "text";
   nameIn.className = "meal-name";
@@ -6162,6 +6236,7 @@ function renderTrackingTab(){
   $("trackEmptyCard").classList.toggle("hidden", has);
   $("trackControlsCard").classList.toggle("hidden", !has);
   $("trackTableCard").classList.toggle("hidden", !t);
+  watchClientResponse((cloudMode === "on" && c) ? shareTokenOf(c.id) : "");
   refreshMealsTrack(false);
   closeNewColRow();
 
