@@ -292,6 +292,22 @@ td.n,th.n{text-align:end; white-space:nowrap}
 #btnSaveChoices{flex:1 1 220px; border-radius:999px; padding:14px 20px; font-size:15.5px; font-weight:700}
 .fill-opt:hover{background:var(--surface-2)}
 .fill-row-qty input,.fill-search input{border-color:var(--border)}
+
+/* בר הטאבים התחתון (21.8) — כמו באפליקציה: זכוכית, טאב פעיל = גלולה כהה */
+.bottom-nav{position:fixed; inset-inline:0; inset-block-end:0; z-index:55; display:flex; gap:4px; padding:9px 12px calc(10px + env(safe-area-inset-bottom)); background:var(--bg); background:color-mix(in srgb, var(--bg) 90%, transparent); backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px); border-top:1px solid var(--border)}
+.bottom-nav button{flex:1; appearance:none; border:0; background:transparent; font:inherit; font-size:13px; font-weight:600; color:var(--text-soft); padding:11px 0; border-radius:999px; cursor:pointer; white-space:nowrap}
+.bottom-nav button[aria-selected="true"]{background:var(--primary-deep); color:var(--on-deep)}
+.has-nav .wrap{padding-bottom:calc(96px + env(safe-area-inset-bottom))}
+.has-nav .foot{margin-bottom:calc(58px + env(safe-area-inset-bottom))}
+/* מסך פעיל: כרטיסים ששייכים לטאב אחר מוסתרים (בנפרד מ-.hidden של זמינות-נתונים) */
+.view-hidden{display:none !important}
+/* כרטיס-גיבור בבית */
+#homeCtaCard{background:var(--hero); color:var(--on-hero)}
+#homeCtaCard .eyebrow{color:rgba(255,255,255,.8)}
+#homeCtaCard .card-title{color:var(--on-hero)}
+#homeCtaCard .lede{color:rgba(255,255,255,.85)}
+#homeCtaCard .btn{background:#FFFFFF; color:#5C4229}
+#homeCtaCard .btn:hover{background:#FFF8EC}
 /* ==== SAND-SERIF-END ==== */
 </style>
 </head>
@@ -328,7 +344,7 @@ td.n,th.n{text-align:end; white-space:nowrap}
 
   <div class="stack hidden" id="contentWrap">
 
-    <section class="card stack" id="greetCard">
+    <section class="card stack" id="greetCard" data-view="home">
       <div>
         <span class="eyebrow">התוכנית שלי</span>
         <h2 class="card-title" id="greetTitle">שלום 👋</h2>
@@ -336,7 +352,19 @@ td.n,th.n{text-align:end; white-space:nowrap}
       <p class="note-line hidden" id="updatedLine"></p>
     </section>
 
-    <section class="card stack hidden" id="targetsCard">
+    <!-- כרטיס-גיבור בבית (21.8): הפעולה היומית — מילוי מה שאכלת -->
+    <section class="card stack hidden" id="homeCtaCard" data-view="home">
+      <div>
+        <span class="eyebrow">היום</span>
+        <h2 class="card-title">מה אכלת היום?</h2>
+      </div>
+      <p class="lede" id="homeCtaLede">מסמנים בכל ארוחה מה אכלת — וסיוון רואה מיד.</p>
+      <div class="row-flex">
+        <button class="btn" id="btnGoFill" type="button">למילוי התפריט ←</button>
+      </div>
+    </section>
+
+    <section class="card stack hidden" id="targetsCard" data-view="targets">
       <div>
         <span class="eyebrow">יעדים יומיים</span>
         <h2 class="card-title">היעדים שלך</h2>
@@ -365,7 +393,7 @@ td.n,th.n{text-align:end; white-space:nowrap}
       </div>
     </section>
 
-    <section class="card stack hidden" id="menusCard">
+    <section class="card stack hidden" id="menusCard" data-view="menu">
       <div>
         <span class="eyebrow">תפריט</span>
         <h2 class="card-title">התפריט שלך</h2>
@@ -381,7 +409,7 @@ td.n,th.n{text-align:end; white-space:nowrap}
       </div>
     </section>
 
-    <section class="card stack hidden" id="trackCard">
+    <section class="card stack hidden" id="trackCard" data-view="track">
       <div>
         <span class="eyebrow">מעקב</span>
         <h2 class="card-title">המעקב שלך</h2>
@@ -391,7 +419,7 @@ td.n,th.n{text-align:end; white-space:nowrap}
       </div>
     </section>
 
-    <section class="card stack hidden" id="summaryCard">
+    <section class="card stack hidden" id="summaryCard" data-view="home">
       <div>
         <span class="eyebrow">סיכום</span>
         <h2 class="card-title">נקודות חשובות</h2>
@@ -403,6 +431,14 @@ td.n,th.n{text-align:end; white-space:nowrap}
   </div>
 
 </main>
+
+<!-- בר טאבים תחתון (21.8, לפי עיצוב Sand & Serif): הבית · יעדים · תפריט · מעקב -->
+<nav class="bottom-nav hidden" id="portalNav" aria-label="ניווט">
+  <button type="button" data-view="home" aria-selected="true">הבית</button>
+  <button type="button" data-view="targets" aria-selected="false">יעדים</button>
+  <button type="button" data-view="menu" aria-selected="false">תפריט</button>
+  <button type="button" data-view="track" aria-selected="false">מעקב</button>
+</nav>
 
 <footer class="foot">
   <div class="foot-inner">
@@ -473,6 +509,55 @@ function chipLevelClass(level){
   if (level === "bad") return "chip-bad";
   return "chip-neutral";
 }
+
+/* ---------- טאבי הפורטל (21.8) ----------
+   ארבעה מסכים כמו באפליקציה: הבית (לקוחה+סיכום) · יעדים · תפריט+מילוי · מעקב.
+   ההסתרה ב-.view-hidden — נפרדת מ-.hidden ששומר על שערי זמינות-הנתונים */
+var PORTAL_VIEW = "home";
+
+function showView(v){
+  PORTAL_VIEW = v;
+  var secs = document.querySelectorAll("section[data-view]");
+  for (var i=0;i<secs.length;i++){
+    secs[i].classList.toggle("view-hidden", secs[i].getAttribute("data-view") !== v);
+  }
+  var btns = document.querySelectorAll("#portalNav button");
+  for (var j=0;j<btns.length;j++){
+    btns[j].setAttribute("aria-selected", btns[j].getAttribute("data-view") === v ? "true" : "false");
+  }
+  window.scrollTo(0, 0);
+}
+
+/* אחרי כל רינדור: מציג את הבר, מסתיר טאבים בלי תוכן (אין מעקב/אין יעדים) */
+function refreshPortalNav(){
+  var nav = $("portalNav");
+  if (!nav) return;
+  var btns = nav.querySelectorAll("button");
+  var currentVisible = false;
+  for (var i=0;i<btns.length;i++){
+    var v = btns[i].getAttribute("data-view");
+    var any = false;
+    var secs = document.querySelectorAll("section[data-view='" + v + "']");
+    for (var s=0;s<secs.length;s++){
+      if (!secs[s].classList.contains("hidden")){ any = true; break; }
+    }
+    btns[i].classList.toggle("hidden", !any);
+    if (any && v === PORTAL_VIEW) currentVisible = true;
+  }
+  show(nav, true);
+  var app = document.querySelector(".app");
+  if (app) app.classList.add("has-nav");
+  showView(currentVisible ? PORTAL_VIEW : "home");
+}
+
+(function initPortalNav(){
+  var btns = document.querySelectorAll("#portalNav button");
+  for (var i=0;i<btns.length;i++){
+    (function(b){ b.addEventListener("click", function(){ showView(b.getAttribute("data-view")); }); })(btns[i]);
+  }
+  var go = $("btnGoFill");
+  if (go) go.addEventListener("click", function(){ showView("menu"); });
+})();
 
 /* ---------- מצבי עמוד ---------- */
 /* QA 20.8.2026: מבחינים בין קישור לא תקין לבין בעיית רשת — "הקישור שגוי" ללקוחה
@@ -600,11 +685,12 @@ function buildFillSection(meal, menuIdx, mealIdx){
 
   var box = el("div","fill");
   var head = el("div","fill-head");
-  head.appendChild(el("span","fill-title","הבחירה שלך לארוחה זו"));
+  /* 21.8: המילוי זמין בכל ארוחה — עם תקציב זו "בחירה בתקציב", בלי תקציב זה יומן "מה אכלת" */
+  head.appendChild(el("span","fill-title", budget !== null ? "הבחירה שלך לארוחה זו" : "מה אכלת בארוחה הזו?"));
   var total = el("span","fill-total");
   var totalNum = el("b","num","0");
   total.appendChild(totalNum);
-  total.appendChild(el("span", null, " מתוך " + n(budget) + " קק\"ל"));
+  total.appendChild(el("span", null, budget !== null ? (" מתוך " + n(budget) + " קק\"ל") : " קק\"ל"));
   head.appendChild(total);
   box.appendChild(head);
 
@@ -631,7 +717,7 @@ function buildFillSection(meal, menuIdx, mealIdx){
   function refreshTotal(){
     var sum = choicesTotal(rows);
     totalNum.textContent = n(sum);
-    var over = sum > budget;
+    var over = budget !== null && sum > budget;
     total.classList.toggle("over", over);
     show(alertBox, over);
     refreshSaveBar();
@@ -770,10 +856,8 @@ function mealCard(meal, menuIdx, mealIdx){
   scroll.appendChild(table);
   card.appendChild(scroll);
 
-  /* ארוחה עם תקציב + קטלוג טעון → אזור הבחירה העצמית */
-  if (CATALOG_READY && mealBudgetOf(m) !== null){
-    card.appendChild(buildFillSection(m, menuIdx, mealIdx));
-  }
+  /* 21.8: אזור המילוי בכל ארוחה (כשהקטלוג טעון) — לא רק בארוחות עם תקציב */
+  if (CATALOG_READY) card.appendChild(buildFillSection(m, menuIdx, mealIdx));
   return card;
 }
 
@@ -984,19 +1068,16 @@ function renderSummary(summary){
   show(card, true);
 }
 
-/* ---------- מילוי עצמי: שמירה ---------- */
-function menuHasBudget(menu){
-  var meals = arrOf(menu && menu.meals);
-  for (var i=0;i<meals.length;i++){
-    if (mealBudgetOf(objOf(meals[i]))) return true;
-  }
-  return false;
+/* ---------- מילוי עצמי: שמירה ----------
+   21.8: המילוי זמין בכל ארוחה — השערים בודקים "יש ארוחות" ולא "יש תקציב" */
+function menuHasMeals(menu){
+  return arrOf(menu && menu.meals).length > 0;
 }
 
-function shareHasBudget(data){
+function shareHasMeals(data){
   var menus = arrOf(data && data.menus);
   for (var i=0;i<menus.length;i++){
-    if (menuHasBudget(objOf(menus[i]))) return true;
+    if (menuHasMeals(objOf(menus[i]))) return true;
   }
   return false;
 }
@@ -1020,7 +1101,7 @@ function refreshSaveBar(){
   var bar = $("fillSaveBar");
   if (!bar) return;
   var menu = PORTAL_MENUS[ACTIVE_MENU_IDX];
-  var active = CATALOG_READY && menu && menuHasBudget(menu);
+  var active = CATALOG_READY && menu && menuHasMeals(menu);
   show(bar, active);
   if (!active) return;
   var over = anyOverBudget();
@@ -1077,8 +1158,7 @@ function saveChoices(){
     var meals = arrOf(menu && menu.meals);
     for (var i=0;i<meals.length;i++){
       var m = objOf(meals[i]) || {};
-      var b = mealBudgetOf(m);
-      if (b === null) continue;
+      var b = mealBudgetOf(m);   /* null = ארוחה בלי תקציב — נשמרת גם היא (21.8) */
       var rows = FILL_CHOICES[fillKey(mi, i)] || [];
       var outRows = [];
       for (var j=0;j<rows.length;j++){
@@ -1169,7 +1249,6 @@ function applyResponse(snap, shareData){
     var meals = arrOf(menuObj.meals);
     for (var i=0;i<meals.length;i++){
       var meal = objOf(meals[i]) || {};
-      if (mealBudgetOf(meal) === null) continue;
       for (var s=0;s<saved.length;s++){
         var sm = objOf(saved[s]);
         if (!sm || textOf(sm.name) !== textOf(meal.name)) continue;
@@ -1218,8 +1297,10 @@ function renderShare(data){
   renderTracking(d.tracking);
   renderSummary(d.summary);
   updateStaleNote();
-  /* קטלוג שנכשל בטעינה כשיש ארוחות תקציב — אומרים ללקוחה במקום להעלים את האזור */
-  show($("catalogFailNote"), shareHasBudget(d) && !CATALOG_READY);
+  /* קטלוג שנכשל בטעינה כשיש ארוחות — אומרים ללקוחה במקום להעלים את אזור המילוי */
+  show($("catalogFailNote"), shareHasMeals(d) && !CATALOG_READY);
+  show($("homeCtaCard"), PORTAL_MENUS.length > 0 && CATALOG_READY);
+  refreshPortalNav();
 }
 
 /* ---------- ערכת נושא (הכתיבה היחידה בעמוד) ---------- */
@@ -1261,12 +1342,12 @@ function boot(){
     PORTAL_DB.collection("shares").doc(token).get().then(function(snap){
       if (!snap || !snap.exists){ showError(); return; }   /* המסמך באמת לא קיים — קישור שגוי/בוטל */
       var data = snap.data();
-      if (!shareHasBudget(data)){
+      if (!shareHasMeals(data)){
         try { renderShare(data); } catch (e){ showError(); }
         return;
       }
-      /* יש ארוחות תקציב — טוענים קטלוג ובחירות קודמות לפני הציור;
-         כישלון בהם לא מפיל את העמוד, רק מציג בלי אזור הבחירה */
+      /* יש ארוחות — טוענים קטלוג ובחירות קודמות לפני הציור;
+         כישלון בהם לא מפיל את העמוד, רק מציג בלי אזור המילוי */
       return Promise.all([
         PORTAL_DB.collection("catalog").doc("main").get().then(null, function(){ return null; }),
         PORTAL_DB.collection("responses").doc(token).get().then(null, function(){ return null; })
