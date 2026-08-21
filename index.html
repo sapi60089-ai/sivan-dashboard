@@ -399,6 +399,12 @@ details.ex-fold > summary.ex-head:hover::after{color:var(--text)}
 .alert{border:1px solid var(--warn); background:var(--warn-bg); color:var(--warn); border-radius:var(--radius-sm); padding:9px 12px; font-size:13px; font-weight:600}
 .alert-bad{border-color:var(--bad); background:var(--bad-bg); color:var(--bad)}
 
+/* ---------- מסך הבוקר ---------- */
+#morningBody .row-flex{align-items:center; gap:6px}
+#morningBody .lbl{flex:0 0 auto}
+#morningBody button.chip{appearance:none; cursor:pointer; font:inherit; transition:filter .15s}
+#morningBody button.chip:hover{filter:brightness(0.94)}
+
 /* ---------- ניהול לקוחות ---------- */
 #activeClientChip{display:inline-block; appearance:none; font:inherit; font-size:12.5px; font-weight:700; cursor:pointer; max-width:220px; overflow:hidden; text-overflow:ellipsis}
 #activeClientChip:hover{border-color:var(--primary); color:var(--primary)}
@@ -526,6 +532,20 @@ details.ex-fold > summary.ex-head:hover::after{color:var(--text)}
 
   <!-- ===== 1. לקוחות ===== -->
   <section class="tab-panel is-active" id="tab-clients" role="tabpanel" aria-labelledby="tabbtn-clients">
+
+    <!-- מסך הבוקר (20.8.2026): תמונת מצב יומית — מוצג רק בחיבור לענן -->
+    <div class="card stack hidden" id="morningCard">
+      <div>
+        <span class="eyebrow">מסך בוקר</span>
+        <h2 class="card-title">מה קרה אצל הלקוחות ☀️</h2>
+      </div>
+      <p class="note-line" id="morningMeta"></p>
+      <div class="stack-sm" id="morningBody"></div>
+      <div class="row-flex">
+        <button class="btn btn-ghost btn-sm" id="btnMorningRefresh" type="button">רענן</button>
+      </div>
+    </div>
+
     <div class="card stack">
       <div>
         <span class="eyebrow">ניהול לקוחות</span>
@@ -2438,6 +2458,40 @@ function subscriptionStatus(subscription, todayISO){
   return {end:end, daysLeft:left, level:level, text:text};
 }
 
+/* ===== מסך הבוקר (20.8.2026) =====
+   תמונת המצב היומית של כל הלקוחות בטאב הלקוחות. הסיווג טהור: שכבת ה-UI מכינה
+   מפת מילוי פר-לקוח מהענן ({lastDay: יום השמירה האחרון לפי שעון מקומי,
+   overMeals: מספר ארוחות חורגות}) — וכאן רק ממיינים לקבוצות תצוגה */
+function morningSummary(clients, fillById, tokensById, todayISO, yesterdayISO){
+  var out = {filledToday:[], filledYesterday:[], notFilled:[], overBudget:[], subsEnding:[], noMenu:[], noLink:[]};
+  var list = Array.isArray(clients) ? clients : [];
+  var fills = (fillById && typeof fillById === "object" && !Array.isArray(fillById)) ? fillById : {};
+  var tokens = (tokensById && typeof tokensById === "object" && !Array.isArray(tokensById)) ? tokensById : {};
+  for (var i=0;i<list.length;i++){
+    var c = list[i];
+    if (!c || typeof c !== "object" || typeof c.id !== "string") continue;
+    var entry = {id:c.id, name:(typeof c.name === "string") ? c.name : ""};
+    var hasLink = Object.prototype.hasOwnProperty.call(tokens, c.id) &&
+                  typeof tokens[c.id] === "string" && tokens[c.id] !== "";
+    if (!Array.isArray(c.menus) || c.menus.length === 0) out.noMenu.push(entry);
+    if (!hasLink) out.noLink.push(entry);
+    var st = subscriptionStatus(c.subscription, todayISO);
+    if (st && (st.level === "warn" || st.level === "bad")) out.subsEnding.push({id:c.id, name:entry.name, text:st.text});
+    if (hasLink){
+      var f = Object.prototype.hasOwnProperty.call(fills, c.id) ? fills[c.id] : null;
+      var day = (f && typeof f.lastDay === "string") ? f.lastDay : "";
+      if (day !== "" && day === todayISO) out.filledToday.push(entry);
+      else if (day !== "" && day === yesterdayISO) out.filledYesterday.push(entry);
+      else out.notFilled.push(entry);
+      if (f && typeof f.overMeals === "number" && f.overMeals > 0 &&
+          (day === todayISO || day === yesterdayISO)){
+        out.overBudget.push({id:c.id, name:entry.name, over:f.overMeals});
+      }
+    }
+  }
+  return out;
+}
+
 /* ===== שיטת המנות של סיוון =====
    מנת פחמימה = 150 קק"ל · מנת חלבון = 300 קק"ל · מנת שומן = 100 קק"ל.
    מנת ירק = 2 ירקות שביחד עד 100 קק"ל — ולכן לירק בודד מחשבים חצי מנה (50 קק"ל).
@@ -3837,6 +3891,7 @@ function renderClients(){
   wrap.innerHTML = "";
   var store = readClientsStore();
   $("clientSearchRow").classList.toggle("hidden", store.clients.length === 0);
+  fetchMorning(false);   /* מסך הבוקר חי בראש הטאב — נטען פעם בסשן, מתרענן בכפתור */
 
   if (store.clients.length === 0){
     var empty = el("div","card stack");
@@ -6750,6 +6805,105 @@ function renderMealsTrack(){
 }
 
 $("btnMealsTrackRefresh").addEventListener("click", function(){ refreshMealsTrack(true); });
+
+/* ---------- מסך הבוקר (20.8.2026) ----------
+   קריאה אחת פר-לקוח/ה עם קישור (responses/{token}) בכניסה לענן או ברענון ידני;
+   התוצאה נשמרת בזיכרון לסשן, והסיווג עצמו טהור (morningSummary ב-PURE-CALC) */
+var morningFills = null, morningLoading = false;
+
+/* היום המקומי של חותמת UTC — כמו בפורטל (שמירה ב-01:00 לא נחשבת "אתמול") */
+function localDayOfISO(ts){
+  var d = new Date(String(ts || ""));
+  if (isNaN(d.getTime())) return "";
+  var m = d.getMonth() + 1, day = d.getDate();
+  return d.getFullYear() + "-" + (m < 10 ? "0" : "") + m + "-" + (day < 10 ? "0" : "") + day;
+}
+
+function fetchMorning(force){
+  var card = $("morningCard");
+  if (!card) return;
+  if (cloudMode !== "on" || !fbDb){
+    card.classList.add("hidden");
+    morningFills = null;
+    return;
+  }
+  var store = readClientsStore();
+  if (store.clients.length === 0){ card.classList.add("hidden"); return; }
+  card.classList.remove("hidden");
+  if (morningFills !== null && !force){ renderMorning(); return; }
+  if (morningLoading) return;
+  morningLoading = true;
+  renderMorning();
+  var jobs = [];
+  for (var ci=0;ci<store.clients.length;ci++){
+    (function(c){
+      var token = shareTokenOf(c.id);
+      if (token === "") return;
+      jobs.push(fbDb.collection("responses").doc(token).get().then(function(snap){
+        var norm = (snap && snap.exists) ? normalizeResponseDoc(snap.data()) : null;
+        if (!norm) return null;
+        var over = 0;
+        for (var m=0;m<norm.meals.length;m++){
+          var bs = mealBudgetStatus(norm.meals[m].kcal, norm.meals[m].budget);
+          if (bs && bs.over) over++;
+        }
+        return {id:c.id, lastDay:localDayOfISO(norm.updatedAt), overMeals:over};
+      }, function(){ return null; }));
+    })(store.clients[ci]);
+  }
+  Promise.all(jobs).then(function(res){
+    morningLoading = false;
+    var fills = {};
+    for (var i=0;i<res.length;i++){ if (res[i]) fills[res[i].id] = res[i]; }
+    morningFills = fills;
+    renderMorning();
+  });
+}
+
+/* שורת קבוצה: תווית + צ'יפ לחיץ לכל לקוח/ה (לחיצה פותחת את הכרטיס) */
+function morningChipRow(wrap, label, items, cls, textFn){
+  if (!items.length) return;
+  var row = el("div","row-flex");
+  row.appendChild(el("span","lbl", label));
+  for (var i=0;i<items.length;i++){
+    (function(it){
+      var chip = el("button","chip " + cls, textFn ? textFn(it) : it.name);
+      chip.type = "button";
+      chip.addEventListener("click", function(){
+        setActiveClient(it.id);
+        showTab("client");
+      });
+      row.appendChild(chip);
+    })(items[i]);
+  }
+  wrap.appendChild(row);
+}
+
+function renderMorning(){
+  var body = $("morningBody"), meta = $("morningMeta");
+  if (!body || !meta) return;
+  body.textContent = "";
+  if (morningLoading && morningFills === null){
+    meta.textContent = "טוען את המילויים מהענן...";
+    return;
+  }
+  var store = readClientsStore();
+  var today = todayISO();
+  var sum = morningSummary(store.clients, morningFills || {}, cachedShareTokens(), today, addDaysISO(today, -1));
+  meta.textContent = "נכון ל-" + isoDateText(today) + " · לחיצה על שם פותחת את הלקוח/ה";
+  morningChipRow(body, "מילאו היום:", sum.filledToday, "chip-ok");
+  morningChipRow(body, "מילאו אתמול:", sum.filledYesterday, "chip-neutral");
+  morningChipRow(body, "עוד לא מילאו:", sum.notFilled, "chip-warn");
+  morningChipRow(body, "חרגו מהתקציב:", sum.overBudget, "chip-bad", function(it){
+    return it.name + " (" + it.over + (it.over === 1 ? " ארוחה" : " ארוחות") + ")";
+  });
+  morningChipRow(body, "מנוי מסתיים:", sum.subsEnding, "chip-warn", function(it){ return it.name + " — " + it.text; });
+  morningChipRow(body, "בלי תפריט:", sum.noMenu, "chip-neutral");
+  morningChipRow(body, "בלי קישור:", sum.noLink, "chip-neutral");
+  if (!body.firstChild) body.appendChild(el("p","lede","שקט מוחלט — אין מה לטפל בו כרגע 🌞"));
+}
+
+$("btnMorningRefresh").addEventListener("click", function(){ fetchMorning(true); });
 
 /* ---------- foods tab ---------- */
 var foodFilter = "all";
