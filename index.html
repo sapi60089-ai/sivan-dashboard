@@ -77,7 +77,18 @@
 .brand-mark::after{content:""; position:absolute; inset:7px; border-radius:3px; background:var(--surface); opacity:.85}
 .brand strong{display:block; font-size:15px; letter-spacing:.01em}
 .brand-sub{display:block; font-size:11px; color:var(--text-soft); letter-spacing:.06em}
-.tabs{display:flex; flex-wrap:nowrap; gap:4px; overflow-x:auto; flex:1 1 auto; scrollbar-width:thin; padding-bottom:2px}
+.tabs{display:flex; flex-wrap:nowrap; gap:8px; overflow-x:auto; flex:1 1 auto; scrollbar-width:thin; padding-bottom:2px; align-items:center}
+.tab-group{display:flex; gap:4px; flex:0 0 auto}
+.tab-sep{width:1px; align-self:stretch; background:var(--border-strong); flex:0 0 auto; margin-inline:2px}
+/* במובייל: הקבוצות נשברות לשורות — כל 7 הטאבים גלויים תמיד, בלי גלילה אופקית נסתרת.
+   הכותרת לא דביקה במסך צר (ביקורת 20.8) — אחרת היא תופסת ~40% מגובה המסך בקביעות */
+@media (max-width:719px){
+  .topbar{position:static}
+  .tabs{flex-wrap:wrap; overflow-x:visible}
+  .tab-group{flex-wrap:wrap; flex:1 1 100%}
+  .tab-sep{flex:1 1 100%; width:auto; height:1px; margin:1px 0}
+  .tab-btn{font-size:13px; padding:6px 10px}
+}
 #cloudBtn{max-width:190px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
 .tab-btn{
   appearance:none; border:1px solid transparent; background:transparent; color:var(--text-muted);
@@ -207,6 +218,11 @@ td.n,th.n{text-align:end; white-space:nowrap}
 tfoot td{padding:9px 10px; font-weight:800; background:var(--surface-2); border-top:1px solid var(--border-strong)}
 .t-name{font-weight:600}
 .t-sub{display:block; font-size:11.5px; color:var(--text-soft); font-weight:400}
+/* טבלאות המאגרים במובייל (QA 20.8.2026): עמודת השם נשארת צמודה בזמן גלילה אופקית,
+   כדי שלא מאבדים את שם השורה כשמסתכלים על עמודות הערכים */
+.sticky-first tbody tr:not(.prod-detail) td:first-child, .sticky-first thead th:first-child{position:sticky; inset-inline-start:0; background:var(--surface); z-index:1}
+.sticky-first thead th:first-child{z-index:2; background:var(--surface-2)}
+.sticky-first tbody tr:hover td:first-child{background:var(--surface-2)}
 th.sortable{cursor:pointer; user-select:none; white-space:nowrap}
 th.sortable:hover{color:var(--primary)}
 th.sortable[aria-sort]{color:var(--primary)}
@@ -484,13 +500,20 @@ details.ex-fold > summary.ex-head:hover::after{color:var(--text)}
       <div><strong>הדשבורד של סיוון</strong><span class="brand-sub">מערכת בניית תפריטים</span></div>
     </div>
     <nav class="tabs" role="tablist" aria-label="ניווט ראשי">
-      <button class="tab-btn" role="tab" id="tabbtn-clients" aria-controls="tab-clients" aria-selected="true" data-tab="clients" type="button">לקוחות</button>
-      <button class="tab-btn" role="tab" id="tabbtn-client" aria-controls="tab-client" aria-selected="false" data-tab="client" type="button">הגדרת לקוח</button>
-      <button class="tab-btn" role="tab" id="tabbtn-builder" aria-controls="tab-builder" aria-selected="false" data-tab="builder" type="button">בונה תפריט</button>
-      <button class="tab-btn" role="tab" id="tabbtn-tracking" aria-controls="tab-tracking" aria-selected="false" data-tab="tracking" type="button">טבלת מעקב</button>
-      <button class="tab-btn" role="tab" id="tabbtn-foods" aria-controls="tab-foods" aria-selected="false" data-tab="foods" type="button">מאגר מזונות</button>
-      <button class="tab-btn" role="tab" id="tabbtn-products" aria-controls="tab-products" aria-selected="false" data-tab="products" type="button">מוצרים מהסופר</button>
-      <button class="tab-btn" role="tab" id="tabbtn-examples" aria-controls="tab-examples" aria-selected="false" data-tab="examples" type="button">תפריטים מוכנים ללקוח</button>
+      <!-- שתי קבוצות (QA 20.8.2026): "עבודה" — הטאבים שמשתנים לפי הלקוחה, ו"ידע" — המאגרים הקבועים.
+           במובייל הקבוצות נשברות לשתי שורות כך שכל שבעת הטאבים תמיד גלויים -->
+      <div class="tab-group" role="presentation">
+        <button class="tab-btn" role="tab" id="tabbtn-clients" aria-controls="tab-clients" aria-selected="true" data-tab="clients" type="button">לקוחות</button>
+        <button class="tab-btn" role="tab" id="tabbtn-client" aria-controls="tab-client" aria-selected="false" data-tab="client" type="button">הגדרת לקוח</button>
+        <button class="tab-btn" role="tab" id="tabbtn-builder" aria-controls="tab-builder" aria-selected="false" data-tab="builder" type="button">בונה תפריט</button>
+        <button class="tab-btn" role="tab" id="tabbtn-tracking" aria-controls="tab-tracking" aria-selected="false" data-tab="tracking" type="button">טבלת מעקב</button>
+      </div>
+      <span class="tab-sep" aria-hidden="true"></span>
+      <div class="tab-group" role="presentation">
+        <button class="tab-btn" role="tab" id="tabbtn-foods" aria-controls="tab-foods" aria-selected="false" data-tab="foods" type="button">מאגר מזונות</button>
+        <button class="tab-btn" role="tab" id="tabbtn-products" aria-controls="tab-products" aria-selected="false" data-tab="products" type="button">מוצרים מהסופר</button>
+        <button class="tab-btn" role="tab" id="tabbtn-examples" aria-controls="tab-examples" aria-selected="false" data-tab="examples" type="button">תפריטים מוכנים ללקוח</button>
+      </div>
     </nav>
     <button class="chip chip-neutral" id="activeClientChip" type="button" title="מעבר לרשימת הלקוחות">אין לקוח פעיל</button>
     <button class="btn btn-ghost btn-sm" id="themeToggle" type="button">מצב כהה</button>
@@ -524,6 +547,13 @@ details.ex-fold > summary.ex-head:hover::after{color:var(--text)}
         <div class="field" style="flex:1 1 260px">
           <label for="clientSearchIn">חיפוש</label>
           <input type="text" id="clientSearchIn" placeholder="חיפוש לקוח/ה...">
+        </div>
+        <div class="field" style="flex:0 1 170px">
+          <label for="clientSortSel">מיון</label>
+          <select id="clientSortSel">
+            <option value="name">לפי שם (א-ב)</option>
+            <option value="updated">לפי עדכון אחרון</option>
+          </select>
         </div>
       </div>
     </div>
@@ -562,7 +592,7 @@ details.ex-fold > summary.ex-head:hover::after{color:var(--text)}
           </div>
         </div>
       </div>
-      <p class="note-line">משמש רק את מחשבון העזר שבתחתית העמוד</p>
+      <p class="note-line">המין משפיע רק על חישוב היעד הקלורי במחשבון העזר</p>
       <div class="stack-sm">
         <span class="lbl">מנוי</span>
         <div class="fields-grid">
@@ -675,6 +705,7 @@ details.ex-fold > summary.ex-head:hover::after{color:var(--text)}
         <button class="btn" id="btnPublishShare" type="button">פרסם קישור אישי</button>
         <input type="text" id="shareLinkOut" dir="ltr" readonly placeholder="אין קישור פעיל">
         <button class="btn btn-ghost btn-sm" id="btnCopyShareLink" type="button">העתק</button>
+        <a class="btn btn-sm hidden" id="btnWhatsShare" target="_blank" rel="noopener noreferrer">שליחה בוואטסאפ</a>
         <button class="btn btn-quiet btn-sm" id="btnRevokeShare" type="button">בטל קישור</button>
       </div>
       <p class="note-line" id="shareAutoNote">כל שמירה מעדכנת אוטומטית את מה שהלקוח/ה רואה בקישור. הבחירות שהלקוח/ה ממלא/ת מוצגות בטאב "טבלת מעקב".</p>
@@ -714,7 +745,9 @@ details.ex-fold > summary.ex-head:hover::after{color:var(--text)}
         <button class="btn btn-sm" id="btnMenuSave" type="button">שמור תפריט</button>
         <button class="btn btn-ghost btn-sm" id="btnMenuSaveTemplate" type="button" title="נשמר בטאב תפריטים מוכנים ללקוח — זמין לכל הלקוחות">שמור כתפריט מוכן</button>
         <button class="btn btn-ghost btn-sm" id="btnAddMeal" type="button">+ הוסף ארוחה</button>
+        <button class="btn btn-ghost btn-sm" id="btnBuilderPdf" type="button">הורד PDF</button>
       </div>
+      <p class="note-line">"שמור תפריט" — נשמר אצל הלקוח/ה הנוכחי/ת בלבד · "שמור כתפריט מוכן" — נשמר כתבנית לכל הלקוחות (בטאב "תפריטים מוכנים ללקוח")</p>
       <div class="row-flex">
         <div class="field" style="flex:1 1 240px">
           <label for="menuList">תפריטים שמורים</label>
@@ -725,7 +758,7 @@ details.ex-fold > summary.ex-head:hover::after{color:var(--text)}
         <button class="btn btn-quiet btn-sm" id="btnMenuCopy" type="button">העתק כטקסט</button>
         <button class="btn btn-quiet btn-sm" id="btnMenuReset" type="button">איפוס</button>
       </div>
-      <p class="note-line">הכמויות בגרמים. בחירת מזון בשורה ריקה ממלאת אוטומטית את משקל המנה הביתית — ואפשר לשנות אותו חופשי.</p>
+      <p class="note-line">הכמויות בגרמים. בחירת מזון בשורה ריקה ממלאת אוטומטית את משקל המנה הביתית — ואפשר לשנות אותו חופשי. "תקציב ללקוח" בכותרת ארוחה = כמה קק"ל הלקוח/ה בוחר/ת לבד בקישור האישי (ריק = ארוחה קבועה). כל שינוי כאן נשמר אוטומטית כטיוטה.</p>
     </div>
 
     <div class="card stack hidden" id="daySummary">
@@ -784,6 +817,34 @@ details.ex-fold > summary.ex-head:hover::after{color:var(--text)}
       </div>
     </div>
 
+    <!-- QA 20.8.2026: הבחירות החיות של הלקוח/ה עלו לראש הטאב — זה מה שסיוון בודקת כל בוקר -->
+    <div class="card stack hidden" id="clientChoicesWrap">
+      <div>
+        <span class="eyebrow">מילוי עצמי</span>
+        <h2 class="card-title">הבחירות של הלקוח/ה — סיכום יומי</h2>
+      </div>
+      <p class="note-line" id="clientChoicesMeta"></p>
+      <div class="stat-grid stat-grid-4" id="choicesStats">
+        <div class="stat"><span class="stat-label">קלוריות</span><span class="stat-value num" data-choice-val="kcal">—</span><span class="chip chip-neutral stat-chip" data-choice-chip="kcal"><span class="chip-dot"></span><span data-choice-text="kcal">—</span></span></div>
+        <div class="stat"><span class="stat-label">חלבון</span><span class="stat-value num" data-choice-val="protein">—</span><span class="chip chip-neutral stat-chip" data-choice-chip="protein"><span class="chip-dot"></span><span data-choice-text="protein">—</span></span></div>
+        <div class="stat"><span class="stat-label">פחמימה</span><span class="stat-value num" data-choice-val="carbs">—</span><span class="chip chip-neutral stat-chip" data-choice-chip="carbs"><span class="chip-dot"></span><span data-choice-text="carbs">—</span></span></div>
+        <div class="stat"><span class="stat-label">שומן</span><span class="stat-value num" data-choice-val="fat">—</span><span class="chip chip-neutral stat-chip" data-choice-chip="fat"><span class="chip-dot"></span><span data-choice-text="fat">—</span></span></div>
+      </div>
+      <div class="stack" id="clientChoicesBody"></div>
+    </div>
+
+    <div class="card stack hidden" id="mealsTrackCard">
+      <div>
+        <span class="eyebrow">מילוי עצמי</span>
+        <h2 class="card-title">מעקב ארוחות — מה מילא/ה הלקוח/ה</h2>
+      </div>
+      <p class="note-line">כל שמירה מהקישור האישי נרשמת כאן לפי יום — נפרד ממעקב המדדים שלמטה.</p>
+      <div class="row-flex">
+        <button class="btn btn-ghost btn-sm" id="btnMealsTrackRefresh" type="button">רענן</button>
+      </div>
+      <div class="stack" id="mealsTrackBody"></div>
+    </div>
+
     <div class="card stack hidden" id="trackControlsCard">
       <div>
         <span class="eyebrow">מעקב</span>
@@ -840,32 +901,6 @@ details.ex-fold > summary.ex-head:hover::after{color:var(--text)}
       <p class="note-line">המילוי חופשי — מספר או טקסט קצר. תא שנמחק פשוט לא נשמר, ועמודות ברירת המחדל לא ניתנות להסרה.</p>
     </div>
 
-    <div class="card stack hidden" id="clientChoicesWrap">
-      <div>
-        <span class="eyebrow">מילוי עצמי</span>
-        <h2 class="card-title">הבחירות של הלקוח/ה — סיכום יומי</h2>
-      </div>
-      <p class="note-line" id="clientChoicesMeta"></p>
-      <div class="stat-grid stat-grid-4" id="choicesStats">
-        <div class="stat"><span class="stat-label">קלוריות</span><span class="stat-value num" data-choice-val="kcal">—</span><span class="chip chip-neutral stat-chip" data-choice-chip="kcal"><span class="chip-dot"></span><span data-choice-text="kcal">—</span></span></div>
-        <div class="stat"><span class="stat-label">חלבון</span><span class="stat-value num" data-choice-val="protein">—</span><span class="chip chip-neutral stat-chip" data-choice-chip="protein"><span class="chip-dot"></span><span data-choice-text="protein">—</span></span></div>
-        <div class="stat"><span class="stat-label">פחמימה</span><span class="stat-value num" data-choice-val="carbs">—</span><span class="chip chip-neutral stat-chip" data-choice-chip="carbs"><span class="chip-dot"></span><span data-choice-text="carbs">—</span></span></div>
-        <div class="stat"><span class="stat-label">שומן</span><span class="stat-value num" data-choice-val="fat">—</span><span class="chip chip-neutral stat-chip" data-choice-chip="fat"><span class="chip-dot"></span><span data-choice-text="fat">—</span></span></div>
-      </div>
-      <div class="stack" id="clientChoicesBody"></div>
-    </div>
-
-    <div class="card stack hidden" id="mealsTrackCard">
-      <div>
-        <span class="eyebrow">מילוי עצמי</span>
-        <h2 class="card-title">מעקב ארוחות — מה מילא/ה הלקוח/ה</h2>
-      </div>
-      <p class="note-line">כל שמירה מהקישור האישי נרשמת כאן לפי יום — נפרד ממעקב המדדים שלמעלה.</p>
-      <div class="row-flex">
-        <button class="btn btn-ghost btn-sm" id="btnMealsTrackRefresh" type="button">רענן</button>
-      </div>
-      <div class="stack" id="mealsTrackBody"></div>
-    </div>
   </section>
 
   <!-- ===== 5. מאגר מזונות ===== -->
@@ -885,11 +920,15 @@ details.ex-fold > summary.ex-head:hover::after{color:var(--text)}
       </div>
       <p class="note-line" id="foodsBasisNote">הערכים ל-100 גרם, כפי שנאכל (מזון מבושל — במצב מבושל). עמודת המנה הביתית — להתמצאות.</p>
       <p class="note-line hidden" id="foodsPortionNote">מנה: פחמימה 150 קק"ל · חלבון 300 · שומן 100 · ירק = 2 ירקות עד 100 קק"ל ביחד (חופשיים לא נספרים)</p>
-      <div class="table-scroll">
+      <div class="table-scroll sticky-first">
         <table>
           <thead>
             <tr id="foodsHeadValues">
-              <th>מזון</th><th>קטגוריה</th><th>מנה ביתית</th><th class="n">קלוריות ל-100 ג'</th><th class="n">חלבון ל-100 ג'</th><th class="n">פחמימה ל-100 ג'</th><th class="n">שומן ל-100 ג'</th>
+              <th>מזון</th><th>קטגוריה</th><th>מנה ביתית</th>
+              <th class="n sortable" data-food-sort="kcal100" tabindex="0" role="button" aria-label="מיון לפי קלוריות">קלוריות ל-100 ג'<span class="sort-ind"></span></th>
+              <th class="n sortable" data-food-sort="protein100" tabindex="0" role="button" aria-label="מיון לפי חלבון">חלבון ל-100 ג'<span class="sort-ind"></span></th>
+              <th class="n sortable" data-food-sort="carbs100" tabindex="0" role="button" aria-label="מיון לפי פחמימה">פחמימה ל-100 ג'<span class="sort-ind"></span></th>
+              <th class="n sortable" data-food-sort="fat100" tabindex="0" role="button" aria-label="מיון לפי שומן">שומן ל-100 ג'<span class="sort-ind"></span></th>
             </tr>
             <tr class="hidden" id="foodsHeadPortions">
               <th>מזון</th><th>מנה אחת</th><th>ביחידות ביתיות</th><th class="n">קק"ל בפועל</th>
@@ -906,7 +945,7 @@ details.ex-fold > summary.ex-head:hover::after{color:var(--text)}
         <span class="eyebrow">מאגר אישי</span>
         <h2 class="card-title">הוסף מזון</h2>
       </div>
-      <p class="lede">מזון שנוסף כאן נשמר בדפדפן הזה, מסומן בטבלה כ"מותאם" ומופיע בבונה התפריט לצד מזונות המאגר. כל הערכים ל-100 גרם, כפי שנאכל.</p>
+      <p class="lede">מזון שנוסף כאן מסומן בטבלה כ"מותאם" ומופיע בבונה התפריט לצד מזונות המאגר; בחיבור לענן הוא מסתנכרן גם לשאר המכשירים. כל הערכים ל-100 גרם, כפי שנאכל.</p>
       <div class="fields-grid">
         <div class="field"><label for="newFoodName">שם המזון</label><input type="text" id="newFoodName" placeholder="לדוגמה: אורז מלא"></div>
         <div class="field">
@@ -944,7 +983,7 @@ details.ex-fold > summary.ex-head:hover::after{color:var(--text)}
       <div class="field"><label for="prodSearch">חיפוש לפי שם מוצר או מותג</label><input type="text" id="prodSearch" placeholder="קוטג', תנובה, טונה..."></div>
       <div class="row-flex" id="prodChips"></div>
       <p class="hint">עמודת "קלוריות (100 ג')" היא עמודת ההשוואה בין מוצרים. עמודת "קלוריות למנה" היא המספר שנכנס לתפריט. לחיצה על כותרת מספרית ממיינת.</p>
-      <div class="table-scroll">
+      <div class="table-scroll sticky-first">
         <table id="prodTable">
           <thead><tr>
             <th>מוצר</th>
@@ -1017,11 +1056,9 @@ details.ex-fold > summary.ex-head:hover::after{color:var(--text)}
 
 /* FOODS_DATA_START */
 var FOODS = [
-/* --- אבות מזון (כמות חופשית) --- */
 {id:"g1",name:"פחמימה — כמות חופשית",cat:"carb",portion:"לבחירת הלקוח/ה",grams:40,kcal100:400,protein100:0,carbs100:100,fat100:0,generic:true},
 {id:"g2",name:"חלבון — כמות חופשית",cat:"protein",portion:"לבחירת הלקוח/ה",grams:30,kcal100:400,protein100:100,carbs100:0,fat100:0,generic:true},
 {id:"g3",name:"שומן — כמות חופשית",cat:"fat",portion:"לבחירת הלקוח/ה",grams:10,kcal100:900,protein100:0,carbs100:0,fat100:100,generic:true},
-/* --- פחמימות (עמילניים) --- */
 {id:"c1",name:"לחם מלא",cat:"carb",portion:"פרוסה",grams:30,kcal100:250,protein100:10,carbs100:43.3,fat100:3.3},
 {id:"c2",name:"לחם לבן",cat:"carb",portion:"פרוסה",grams:30,kcal100:256.7,protein100:8.3,carbs100:50,fat100:2.7},
 {id:"c3",name:"פיתה כוסמין",cat:"carb",portion:"פיתה קטנה",grams:34,kcal100:253,protein100:9,carbs100:49,fat100:2},
@@ -1057,7 +1094,6 @@ var FOODS = [
 {id:"c34",name:"איטריות אורז",cat:"carb",portion:"כוס",grams:150,kcal100:125,protein100:1.8,carbs100:27,fat100:0.3},
 {id:"c35",name:"איטריות שעועית",cat:"carb",portion:"כוס",grams:150,kcal100:90,protein100:0.3,carbs100:21.5,fat100:0.1},
 {id:"c36",name:"בורגול",cat:"carb",portion:"כוס",grams:140,kcal100:83,protein100:3.1,carbs100:18.6,fat100:0.2},
-/* --- חלבונים --- */
 {id:"p1",name:"חזה עוף מבושל/צלוי (ללא עור)",cat:"protein",portion:"100 גרם",grams:100,kcal100:156,protein100:31,carbs100:0,fat100:3.5},
 {id:"p2",name:"שוק/ירך עוף מבושל (ללא עור)",cat:"protein",portion:"100 גרם",grams:100,kcal100:194,protein100:26,carbs100:0,fat100:10},
 {id:"p3",name:"הודו טחון רזה מבושל",cat:"protein",portion:"100 גרם",grams:100,kcal100:180,protein100:27,carbs100:0,fat100:8},
@@ -1090,7 +1126,6 @@ var FOODS = [
 {id:"p31",name:"משקה חלבון",cat:"protein",portion:"בקבוק",grams:250,kcal100:55,protein100:10,carbs100:2.5,fat100:0.5},
 {id:"p32",name:"גבינה בולגרית",cat:"protein",portion:"30 גרם",grams:30,kcal100:250,protein100:17,carbs100:2,fat100:20},
 {id:"p33",name:"גבינה פטה",cat:"protein",portion:"30 גרם",grams:30,kcal100:264,protein100:14,carbs100:4,fat100:21},
-/* --- ירקות (ל-100 גרם) --- */
 {id:"v1",name:"מלפפון",cat:"veg",portion:"כ-1 יח' בינונית",grams:100,kcal100:15,protein100:0.7,carbs100:3.6,fat100:0.1},
 {id:"v2",name:"עגבנייה",cat:"veg",portion:"כ-1 יח' בינונית",grams:100,kcal100:18,protein100:0.9,carbs100:3.9,fat100:0.2},
 {id:"v3",name:"עגבניות שרי",cat:"veg",portion:"כ-8-10 יח'",grams:100,kcal100:18,protein100:0.9,carbs100:3.9,fat100:0.2},
@@ -1115,7 +1150,6 @@ var FOODS = [
 {id:"v22",name:"שעועית ירוקה מאודה",cat:"veg",portion:"כ-1 כוס",grams:100,kcal100:31,protein100:1.8,carbs100:7,fat100:0.2},
 {id:"v23",name:"אפונה ירוקה",cat:"veg",portion:"כ-2/3 כוס",grams:100,kcal100:81,protein100:5.4,carbs100:14,fat100:0.4},
 {id:"v24",name:"קולורבי",cat:"veg",portion:"כ-2/3 יח'",grams:100,kcal100:27,protein100:1.7,carbs100:6.2,fat100:0.1},
-/* --- ירקות חופשיים נוספים (רשימת הלקוחה, משוב #4) --- */
 {id:"v25",name:"עשבי תיבול (פטרוזיליה, כוסברה, שמיר, נענע)",cat:"veg",portion:"חופן",grams:15,kcal100:40,protein100:3,carbs100:6,fat100:0.5,free:true},
 {id:"v26",name:"מלפפון חמוץ",cat:"veg",portion:"יחידה",grams:30,kcal100:12,protein100:0.5,carbs100:2.2,fat100:0.1,free:true},
 {id:"v27",name:"תירס גמדי",cat:"veg",portion:"5 יחידות",grams:60,kcal100:26,protein100:1.8,carbs100:4.5,fat100:0.3,free:true},
@@ -1125,16 +1159,14 @@ var FOODS = [
 {id:"v31",name:"שום",cat:"veg",portion:"שן",grams:5,kcal100:149,protein100:6.4,carbs100:33,fat100:0.5,free:true},
 {id:"v32",name:"לימון",cat:"veg",portion:"יחידה",grams:60,kcal100:29,protein100:1.1,carbs100:9,fat100:0.3,free:true},
 {id:"v33",name:"בצל ירוק",cat:"veg",portion:"כ-4 גבעולים",grams:30,kcal100:32,protein100:1.8,carbs100:7.3,fat100:0.2,free:true},
-/* --- ירקות משולבים (מחושבים מהמאגר, 07 §4.3) --- */
 {id:"vc1",name:"סלט ישראלי (מלפפון + עגבנייה)",cat:"veg",portion:"מנה 200 ג'",grams:200,kcal100:16.5,protein100:0.8,carbs100:3.8,fat100:0.2},
 {id:"vc2",name:"סלט (חסה, עגבנייה, מלפפון, פלפל)",cat:"veg",portion:"מנה 250 ג'",grams:250,kcal100:19.6,protein100:1,carbs100:4.1,fat100:0.2},
 {id:"vc3",name:"סלט (חסה, עגבנייה, מלפפון)",cat:"veg",portion:"מנה 250 ג'",grams:250,kcal100:16.4,protein100:0.9,carbs100:3.6,fat100:0.2},
 {id:"vc4",name:"סלט גדול (חסה, עגבנייה, מלפפון, פלפל)",cat:"veg",portion:"מנה 300 ג'",grams:300,kcal100:19.3,protein100:1,carbs100:4,fat100:0.2},
 {id:"vc5",name:"ברוקולי מאודה + קישוא",cat:"veg",portion:"מנה 250 ג'",grams:250,kcal100:28,protein100:1.9,carbs100:5.4,fat100:0.4},
 {id:"vc6",name:"ירקות מוקפצים (קישוא, פלפל, פטריות)",cat:"veg",portion:"מנה 340 ג'",grams:340,kcal100:22.6,protein100:1.7,carbs100:4,fat100:0.3},
-/* --- שומנים --- */
-{id:"f1",name:"שמן זית",cat:"fat",portion:"כף",grams:14,kcal100:900,protein100:0,carbs100:0,fat100:100},
-{id:"f2",name:"שמן זית",cat:"fat",portion:"כפית (= מנת שומן אחת)",grams:5,kcal100:900,protein100:0,carbs100:0,fat100:100},
+{id:"f1",name:"שמן זית (כף)",cat:"fat",portion:"כף",grams:14,kcal100:900,protein100:0,carbs100:0,fat100:100},
+{id:"f2",name:"שמן זית (כפית)",cat:"fat",portion:"כפית (= מנת שומן אחת)",grams:5,kcal100:900,protein100:0,carbs100:0,fat100:100},
 {id:"f3",name:"שמן קנולה",cat:"fat",portion:"כף",grams:14,kcal100:900,protein100:0,carbs100:0,fat100:100},
 {id:"f4",name:"טחינה גולמית (100%)",cat:"fat",portion:"כף גדושה",grams:15,kcal100:626.7,protein100:16.7,carbs100:20,fat100:53.3},
 {id:"f5",name:"אבוקדו",cat:"fat",portion:"רבע יחידה",grams:50,kcal100:176,protein100:2,carbs100:8,fat100:15},
@@ -1147,7 +1179,6 @@ var FOODS = [
 {id:"f16",name:"שמנת מתוקה 38%",cat:"fat",portion:"2 כפות",grams:30,kcal100:350,protein100:2,carbs100:3,fat100:38},
 {id:"f17",name:"שבבי קוקוס טחון",cat:"fat",portion:"2 כפות",grams:15,kcal100:666.7,protein100:6.7,carbs100:24,fat100:65},
 {id:"f18",name:"שמן קוקוס",cat:"fat",portion:"כפית (= מנת שומן אחת)",grams:5,kcal100:900,protein100:0,carbs100:0,fat100:100},
-/* --- ארוחות ביניים --- */
 {id:"s1",name:"תפוח",cat:"snack",portion:"יחידה בינונית",grams:150,kcal100:53.3,protein100:0.3,carbs100:14,fat100:0.2},
 {id:"s2",name:"בננה",cat:"snack",portion:"יחידה בינונית",grams:120,kcal100:89.2,protein100:1.1,carbs100:22.5,fat100:0.3},
 {id:"s3",name:"תפוז",cat:"snack",portion:"יחידה בינונית",grams:150,kcal100:46.7,protein100:0.9,carbs100:11.3,fat100:0.1},
@@ -1168,7 +1199,6 @@ var FOODS = [
 {id:"s18",name:"מקלות גזר ומלפפון + חומוס",cat:"snack",portion:"מנה",grams:180,kcal100:50.6,protein100:2.2,carbs100:6.7,fat100:1.7},
 {id:"s19",name:"פופקורן טבעי (מוקפץ אוויר)",cat:"snack",portion:"2 כוסות",grams:16,kcal100:375,protein100:10.6,carbs100:75,fat100:3.8},
 {id:"s20",name:"שוקולד מריר 70%+",cat:"snack",portion:"2 קוביות",grams:15,kcal100:513.3,protein100:6.7,carbs100:46.7,fat100:33.3},
-/* --- מוכן ובחוץ --- */
 {id:"r1",name:"שיפוד קבב",cat:"ready",portion:"שיפוד",grams:80,kcal100:300,protein100:17,carbs100:3,fat100:24},
 {id:"r2",name:"שיפוד פרגית",cat:"ready",portion:"שיפוד",grams:100,kcal100:220,protein100:25,carbs100:0.5,fat100:13},
 {id:"r3",name:"שיפוד חזה עוף",cat:"ready",portion:"שיפוד",grams:90,kcal100:160,protein100:30,carbs100:0.5,fat100:4},
@@ -1184,8 +1214,6 @@ var FOODS = [
 {id:"r13",name:"בורקס גבינה",cat:"ready",portion:"יחידה",grams:100,kcal100:380,protein100:8,carbs100:38,fat100:22},
 {id:"r14",name:"המבורגר בקר",cat:"ready",portion:"יחידה",grams:150,kcal100:250,protein100:18,carbs100:3,fat100:19},
 {id:"r15",name:"שווארמה עוף",cat:"ready",portion:"100 גרם",grams:100,kcal100:190,protein100:22,carbs100:2,fat100:11},
-/* --- הרחבת המאגר 17.8.2026 — כל אבות המזון, מקור (source) לכל פריט --- */
-/* — חלבונים (40) — */
 {id:"p34",name:"גבינה צפתית 5%",cat:"protein",portion:"פרוסה",grams:30,kcal100:117,protein100:12,carbs100:6,fat100:5,source:"https://www.foodsdictionary.co.il/Products/26/%D7%A6%D7%A4%D7%AA%D7%99%D7%AA%205%25"},
 {id:"p35",name:"גבינת חלומי",cat:"protein",portion:"פרוסה",grams:30,kcal100:304,protein100:21,carbs100:1,fat100:24,source:"https://www.foodsdictionary.co.il/Products/26/%D7%97%D7%9C%D7%95%D7%9E%D7%99"},
 {id:"p36",name:"לאבנה 5%",cat:"protein",portion:"כף גדושה",grams:30,kcal100:87,protein100:8.5,carbs100:2,fat100:5,source:"https://www.foodsdictionary.co.il/Products/26/%D7%92%D7%91%D7%99%D7%A0%D7%AA%20%D7%9C%D7%90%D7%91%D7%A0%D7%94%205%25%20%D7%A9%D7%95%D7%9E%D7%9F"},
@@ -1225,7 +1253,6 @@ var FOODS = [
 {id:"p71",name:"מטיאס הרינג",cat:"protein",portion:"חתיכה",grams:30,kcal100:262,protein100:14.19,carbs100:9.64,fat100:18,source:"https://fdc.nal.usda.gov/food-details/175118/nutrients"},
 {id:"p72",name:"לשון בקר",cat:"protein",portion:"פרוסה",grams:40,kcal100:284,protein100:19.29,carbs100:0,fat100:22.3,source:"https://fdc.nal.usda.gov/food-details/170598/nutrients"},
 {id:"p73",name:"אסאדו",cat:"protein",portion:"מנה",grams:150,kcal100:471,protein100:21.57,carbs100:0,fat100:41.98,source:"https://fdc.nal.usda.gov/food-details/168613/nutrients"},
-/* — פחמימות (17) — */
 {id:"c37",name:"לחם שיפון",cat:"carb",portion:"פרוסה",grams:32,kcal100:259,protein100:8.5,carbs100:48.3,fat100:3.3,source:"https://fdc.nal.usda.gov/food-details/172684/nutrients"},
 {id:"c38",name:"קרקרים מלוחים",cat:"carb",portion:"5 יחידות",grams:15,kcal100:418,protein100:9.46,carbs100:74,fat100:8.64,source:"https://fdc.nal.usda.gov/food-details/172746/nutrients"},
 {id:"c39",name:"כוסמת",cat:"carb",portion:"כוס",grams:168,kcal100:92,protein100:3.38,carbs100:19.9,fat100:0.62,source:"https://fdc.nal.usda.gov/food-details/170686/nutrients"},
@@ -1242,7 +1269,6 @@ var FOODS = [
 {id:"c50",name:"אטריות ביצים",cat:"carb",portion:"כוס",grams:160,kcal100:108,protein100:3.9,carbs100:22,fat100:0.6,source:"https://www.foodsdictionary.co.il/Products/382/%D7%90%D7%98%D7%A8%D7%99%D7%95%D7%AA%20%D7%91%D7%99%D7%A6%D7%99%D7%9D%20%D7%93%D7%A7%D7%95%D7%AA"},
 {id:"c52",name:"בייגל אמריקאי קל",cat:"carb",portion:"יחידה",grams:75,kcal100:215,protein100:11.2,carbs100:34.5,fat100:1.2,source:"https://www.foodsdictionary.co.il/Products/937/%D7%9B%D7%A8%D7%9E%D7%9C%D7%99%D7%9D%20%D7%91%D7%99%D7%99%D7%92%D7%9C%20-%20%D7%91%D7%99%D7%99%D7%92%D7%9C%20%D7%90%D7%9E%D7%A8%D7%99%D7%A7%D7%90%D7%99%20%D7%90%D7%9E%D7%99%D7%AA%D7%99%20%D7%A7%D7%9C"},
 {id:"c53",name:"צנימים",cat:"carb",portion:"2 יחידות",grams:30,kcal100:407,protein100:13.5,carbs100:72.3,fat100:7.2,source:"https://www.foodsdictionary.co.il/Products/1/%D7%A6%D7%A0%D7%99%D7%9E%D7%99%D7%9D"},
-/* — שומנים וגרעינים (16) — */
 {id:"f19",name:"שקדים",cat:"fat",portion:"חופן",grams:30,kcal100:579,protein100:21.2,carbs100:21.6,fat100:49.9,source:"https://fdc.nal.usda.gov/food-details/170567/nutrients"},
 {id:"f20",name:"אגוזי מלך",cat:"fat",portion:"חופן",grams:30,kcal100:654,protein100:15.2,carbs100:13.7,fat100:65.2,source:"https://fdc.nal.usda.gov/food-details/170187/nutrients"},
 {id:"f21",name:"קשיו טבעי",cat:"fat",portion:"חופן",grams:30,kcal100:553,protein100:18.2,carbs100:30.2,fat100:43.8,source:"https://fdc.nal.usda.gov/food-details/170162/nutrients"},
@@ -1259,7 +1285,6 @@ var FOODS = [
 {id:"f32",name:"זרעי צ'יה",cat:"fat",portion:"כף",grams:12,kcal100:486,protein100:16.5,carbs100:42.1,fat100:30.7,source:"https://fdc.nal.usda.gov/food-details/170554/nutrients"},
 {id:"f33",name:"זרעי פשתן טחונים",cat:"fat",portion:"כף",grams:7,kcal100:534,protein100:18.3,carbs100:28.9,fat100:42.2,source:"https://fdc.nal.usda.gov/food-details/169414/nutrients"},
 {id:"f34",name:"טחינה מוכנה",cat:"fat",portion:"כף",grams:15,kcal100:248,protein100:8.5,carbs100:2.3,fat100:22,source:"https://www.foodsdictionary.co.il/Products/6/%D7%90%D7%97%D7%9C%D7%94%20-%20%D7%98%D7%97%D7%99%D7%A0%D7%94%20%D7%9E%D7%A9%D7%95%D7%91%D7%97%D7%AA"},
-/* — ביניים, פירות ושתייה (28) — */
 {id:"s21",name:"קולה",cat:"snack",portion:"פחית (330 מ\"ל)",grams:330,kcal100:42,protein100:0,carbs100:10.6,fat100:0,source:"https://www.foodsdictionary.co.il/Products/31/%D7%A7%D7%95%D7%A7%D7%94-%D7%A7%D7%95%D7%9C%D7%94"},
 {id:"s22",name:"קולה זירו",cat:"snack",portion:"פחית (330 מ\"ל)",grams:330,kcal100:0,protein100:0,carbs100:0,fat100:0,source:"https://www.foodsdictionary.co.il/Products/31/%D7%A7%D7%95%D7%A7%D7%94%20%D7%A7%D7%95%D7%9C%D7%94%20zero"},
 {id:"s23",name:"מיץ תפוזים טבעי",cat:"snack",portion:"כוס (250 מ\"ל)",grams:250,kcal100:45,protein100:0.7,carbs100:10.4,fat100:0.2,source:"https://fdc.nal.usda.gov/fdc-app.html#/food-details/169098/nutrients"},
@@ -1288,7 +1313,6 @@ var FOODS = [
 {id:"s46",name:"תאנים טריות",cat:"snack",portion:"יחידה",grams:50,kcal100:74,protein100:0.75,carbs100:19.18,fat100:0.3,source:"https://fdc.nal.usda.gov/fdc-app.html#/food-details/173021/nutrients"},
 {id:"s47",name:"נקטרינה",cat:"snack",portion:"יחידה בינונית",grams:142,kcal100:44,protein100:1.06,carbs100:10.55,fat100:0.32,source:"https://fdc.nal.usda.gov/fdc-app.html#/food-details/169914/nutrients"},
 {id:"s48",name:"פפאיה",cat:"snack",portion:"כוס קוביות",grams:145,kcal100:43,protein100:0.47,carbs100:10.82,fat100:0.26,source:"https://fdc.nal.usda.gov/fdc-app.html#/food-details/169926/nutrients"},
-/* — מוכן ובחוץ (8) — */
 {id:"r16",name:"טוסט גבינה",cat:"ready",portion:"יחידה",grams:140,kcal100:211,protein100:8.49,carbs100:26,fat100:8.01,source:"https://www.foodsdictionary.co.il/Recipes/264"},
 {id:"r17",name:"מלוואח",cat:"ready",portion:"יחידה",grams:117,kcal100:339,protein100:6,carbs100:40,fat100:17.2,source:"https://www.foodsdictionary.co.il/Products/62/%D7%9E%D7%9C%D7%95%D7%95%D7%97"},
 {id:"r18",name:"ג'חנון",cat:"ready",portion:"יחידה",grams:110,kcal100:385,protein100:6,carbs100:40.6,fat100:22.2,source:"https://www.foodsdictionary.co.il/Products/242/%D7%92%60%D7%97%D7%A0%D7%95%D7%9F%20%D7%AA%D7%99%D7%9E%D7%A0%D7%99%20%D7%9E%D7%A7%D7%95%D7%A8%D7%99"},
@@ -1297,7 +1321,6 @@ var FOODS = [
 {id:"r21",name:"בורקס תפוחי אדמה",cat:"ready",portion:"יחידה",grams:100,kcal100:313,protein100:5.4,carbs100:30,fat100:19,source:"https://www.foodsdictionary.co.il/Products/242/%D7%91%D7%95%D7%A8%D7%A7%D7%A1%20%D7%AA%D7%A4%D7%95%D7%97%D7%99%20%D7%90%D7%93%D7%9E%D7%94"},
 {id:"r22",name:"מרק עוף ביתי",cat:"ready",portion:"קערה",grams:250,kcal100:75,protein100:6.14,carbs100:4,fat100:3.68,source:"https://www.foodsdictionary.co.il/Recipes/8725"},
 {id:"r23",name:"פסטה ברוטב עגבניות",cat:"ready",portion:"צלחת",grams:250,kcal100:139,protein100:4.12,carbs100:27,fat100:2.1,source:"https://www.foodsdictionary.co.il/Recipes/6867"},
-/* --- ממתקים, חטיפים וגרעינים גנריים — בקשת סיוון 17.8 ערב --- */
 {id:"s49",name:"שוקולד חלב",cat:"snack",portion:"2 קוביות (כ-15 גרם)",grams:15,kcal100:535,protein100:7.65,carbs100:59.4,fat100:29.66,source:"https://fdc.nal.usda.gov/food-details/2710328/nutrients"},
 {id:"s50",name:"שוקולד לבן",cat:"snack",portion:"2 קוביות (כ-15 גרם)",grams:15,kcal100:539,protein100:5.87,carbs100:59.2,fat100:32.1,source:"https://fdc.nal.usda.gov/food-details/167571/nutrients"},
 {id:"s51",name:"וופל במילוי שוקולד",cat:"snack",portion:"יחידה (חטיף וופל, כ-25 גרם)",grams:25,kcal100:515,protein100:6,carbs100:61,fat100:27,source:"https://fdc.nal.usda.gov/food-search?query=wafer%20chocolate%20coated"},
@@ -1607,21 +1630,21 @@ var PRODUCTS = [
 {"name":"עלית אייס קפה נמס","brand":"עלית","category":"משקאות","portion_desc":"בקבוק","portion_grams":250,"kcal100":66,"protein100":1.5,"carbs100":10.5,"fat100":2,"kcal_portion":165,"protein_portion":3.8,"carbs_portion":26.3,"fat_portion":5,"source":"https://il.openfoodfacts.org/product/7290110574864"},
 {"name":"שוקו טרה","brand":"טרה","category":"משקאות","portion_desc":"קופסה","portion_grams":200,"kcal100":46,"protein100":3.3,"carbs100":4.7,"fat100":1.5,"kcal_portion":92,"protein_portion":6.6,"carbs_portion":9.4,"fat_portion":3,"source":"https://world.openfoodfacts.org/product/7290102398577"},
 {"name":"יטבתה מילקשייק שוקו","brand":"יטבתה","category":"משקאות","portion_desc":"בקבוק","portion_grams":200,"kcal100":73,"protein100":3.8,"carbs100":9.9,"fat100":2,"kcal_portion":146,"protein_portion":7.6,"carbs_portion":19.8,"fat_portion":4,"source":"https://il.openfoodfacts.org/product/7290110559038"},
-{"name":"יוגורט GO חלבון טבעי","brand":"תנובה (GO by Yoplait)","category":"מוצרי חלבון מועשרים (PRO / PROTEIN)","portion_desc":"גביע","portion_grams":200,"kcal100":72,"protein100":10,"carbs100":3.5,"fat100":2,"kcal_portion":144,"protein_portion":20,"carbs_portion":7,"fat_portion":4,"source":"https://www.foodsdictionary.co.il/Products/5/GO+by+Yoplait+בטעם+טבעי+-+20+גרם+חלבון+בגביע,+2%25+שומן"},
-{"name":"יוגורט GO אוורירי בטעם וניל","brand":"תנובה (GO by Yoplait)","category":"מוצרי חלבון מועשרים (PRO / PROTEIN)","portion_desc":"גביע","portion_grams":200,"kcal100":61,"protein100":10,"carbs100":3.1,"fat100":1,"kcal_portion":122,"protein_portion":20,"carbs_portion":6.2,"fat_portion":2,"source":"https://www.tnuva.co.il/products/יוגורט-גו-במרקם-אוורירי-בטעם-וניל/"},
-{"name":"יוגורט דנונה PRO 20 בטעם וניל","brand":"דנונה (שטראוס)","category":"מוצרי חלבון מועשרים (PRO / PROTEIN)","portion_desc":"גביע","portion_grams":200,"kcal100":70,"protein100":10,"carbs100":3.4,"fat100":1.5,"kcal_portion":140,"protein_portion":20,"carbs_portion":6.8,"fat_portion":3,"source":"https://www.foodsdictionary.co.il/Products/6/דנונה+PRO+עשיר+בחלבון+20+גרם+חלבון+בגביע+-+1.5%25+שומן"},
-{"name":"יוגורט Skyr קרמי","brand":"דנונה","category":"מוצרי חלבון מועשרים (PRO / PROTEIN)","portion_desc":"גביע","portion_grams":150,"kcal100":75,"protein100":8.2,"carbs100":4,"fat100":2.9,"kcal_portion":113,"protein_portion":12.3,"carbs_portion":6,"fat_portion":4.4,"source":"https://www.fuder.co.il/foods-cat/יוגורט/"},
-{"name":"יוגורט פרוטאין וניל 0% שומן","brand":"מולר (Muller)","category":"מוצרי חלבון מועשרים (PRO / PROTEIN)","portion_desc":"גביע","portion_grams":200,"kcal100":70,"protein100":12.5,"carbs100":6.3,"fat100":0,"kcal_portion":140,"protein_portion":25,"carbs_portion":12.6,"fat_portion":0,"source":"https://www.fuder.co.il/foods/יוגורט-protein-25-בטעם-וניל-0-muller-2/"},
+{"name":"יוגורט GO חלבון טבעי","brand":"תנובה (GO by Yoplait)","category":"מוצרי חלבון מועשרים (PRO / PROTEIN)","portion_desc":"גביע","portion_grams":200,"kcal100":72,"protein100":10,"carbs100":3.5,"fat100":2,"kcal_portion":144,"protein_portion":20,"carbs_portion":7,"fat_portion":4,"source":"https://www.foodsdictionary.co.il/Products/5/GO+by+Yoplait+%D7%91%D7%98%D7%A2%D7%9D+%D7%98%D7%91%D7%A2%D7%99+-+20+%D7%92%D7%A8%D7%9D+%D7%97%D7%9C%D7%91%D7%95%D7%9F+%D7%91%D7%92%D7%91%D7%99%D7%A2,+2%25+%D7%A9%D7%95%D7%9E%D7%9F"},
+{"name":"יוגורט GO אוורירי בטעם וניל","brand":"תנובה (GO by Yoplait)","category":"מוצרי חלבון מועשרים (PRO / PROTEIN)","portion_desc":"גביע","portion_grams":200,"kcal100":61,"protein100":10,"carbs100":3.1,"fat100":1,"kcal_portion":122,"protein_portion":20,"carbs_portion":6.2,"fat_portion":2,"source":"https://www.tnuva.co.il/products/%D7%99%D7%95%D7%92%D7%95%D7%A8%D7%98-%D7%92%D7%95-%D7%91%D7%9E%D7%A8%D7%A7%D7%9D-%D7%90%D7%95%D7%95%D7%A8%D7%99%D7%A8%D7%99-%D7%91%D7%98%D7%A2%D7%9D-%D7%95%D7%A0%D7%99%D7%9C/"},
+{"name":"יוגורט דנונה PRO 20 בטעם וניל","brand":"דנונה (שטראוס)","category":"מוצרי חלבון מועשרים (PRO / PROTEIN)","portion_desc":"גביע","portion_grams":200,"kcal100":70,"protein100":10,"carbs100":3.4,"fat100":1.5,"kcal_portion":140,"protein_portion":20,"carbs_portion":6.8,"fat_portion":3,"source":"https://www.foodsdictionary.co.il/Products/6/%D7%93%D7%A0%D7%95%D7%A0%D7%94+PRO+%D7%A2%D7%A9%D7%99%D7%A8+%D7%91%D7%97%D7%9C%D7%91%D7%95%D7%9F+20+%D7%92%D7%A8%D7%9D+%D7%97%D7%9C%D7%91%D7%95%D7%9F+%D7%91%D7%92%D7%91%D7%99%D7%A2+-+1.5%25+%D7%A9%D7%95%D7%9E%D7%9F"},
+{"name":"יוגורט Skyr קרמי","brand":"דנונה","category":"מוצרי חלבון מועשרים (PRO / PROTEIN)","portion_desc":"גביע","portion_grams":150,"kcal100":75,"protein100":8.2,"carbs100":4,"fat100":2.9,"kcal_portion":113,"protein_portion":12.3,"carbs_portion":6,"fat_portion":4.4,"source":"https://www.fuder.co.il/foods-cat/%D7%99%D7%95%D7%92%D7%95%D7%A8%D7%98/"},
+{"name":"יוגורט פרוטאין וניל 0% שומן","brand":"מולר (Muller)","category":"מוצרי חלבון מועשרים (PRO / PROTEIN)","portion_desc":"גביע","portion_grams":200,"kcal100":70,"protein100":12.5,"carbs100":6.3,"fat100":0,"kcal_portion":140,"protein_portion":25,"carbs_portion":12.6,"fat_portion":0,"source":"https://www.fuder.co.il/foods/%D7%99%D7%95%D7%92%D7%95%D7%A8%D7%98-protein-25-%D7%91%D7%98%D7%A2%D7%9D-%D7%95%D7%A0%D7%99%D7%9C-0-muller-2/"},
 {"name":"משקה חלבון פרוטאין וניל 0% שומן","brand":"מולר (Muller)","category":"מוצרי חלבון מועשרים (PRO / PROTEIN)","portion_desc":"בקבוק","portion_grams":350,"kcal100":40,"protein100":7.15,"carbs100":2.9,"fat100":0,"kcal_portion":140,"protein_portion":25,"carbs_portion":10.2,"fat_portion":0,"source":"https://www.muller-israel.co.il/Protein-Yogurt/"},
-{"name":"משקה חלבון PRO 25 בטעם וניל","brand":"יטבתה (שטראוס)","category":"מוצרי חלבון מועשרים (PRO / PROTEIN)","portion_desc":"בקבוק","portion_grams":350,"kcal100":65,"protein100":7.2,"carbs100":5.4,"fat100":1.5,"kcal_portion":228,"protein_portion":25.2,"carbs_portion":18.9,"fat_portion":5.3,"source":"https://www.foodsdictionary.co.il/Products/32/PRO+-+משקה+חלב+בטעם+וניל+1.5%25+שומן+25+גרם+חלבון+בבקבוק"},
-{"name":"מעדן חלב PRO בטעם וניל מועשר בחלבון","brand":"שטראוס","category":"מוצרי חלבון מועשרים (PRO / PROTEIN)","portion_desc":"גביע","portion_grams":150,"kcal100":98,"protein100":7.7,"carbs100":12.1,"fat100":2.1,"kcal_portion":147,"protein_portion":11.6,"carbs_portion":18.2,"fat_portion":3.2,"source":"https://www.fuder.co.il/foods-cat/חלב/"},
+{"name":"משקה חלבון PRO 25 בטעם וניל","brand":"יטבתה (שטראוס)","category":"מוצרי חלבון מועשרים (PRO / PROTEIN)","portion_desc":"בקבוק","portion_grams":350,"kcal100":65,"protein100":7.2,"carbs100":5.4,"fat100":1.5,"kcal_portion":228,"protein_portion":25.2,"carbs_portion":18.9,"fat_portion":5.3,"source":"https://www.foodsdictionary.co.il/Products/32/PRO+-+%D7%9E%D7%A9%D7%A7%D7%94+%D7%97%D7%9C%D7%91+%D7%91%D7%98%D7%A2%D7%9D+%D7%95%D7%A0%D7%99%D7%9C+1.5%25+%D7%A9%D7%95%D7%9E%D7%9F+25+%D7%92%D7%A8%D7%9D+%D7%97%D7%9C%D7%91%D7%95%D7%9F+%D7%91%D7%91%D7%A7%D7%91%D7%95%D7%A7"},
+{"name":"מעדן חלב PRO בטעם וניל מועשר בחלבון","brand":"שטראוס","category":"מוצרי חלבון מועשרים (PRO / PROTEIN)","portion_desc":"גביע","portion_grams":150,"kcal100":98,"protein100":7.7,"carbs100":12.1,"fat100":2.1,"kcal_portion":147,"protein_portion":11.6,"carbs_portion":18.2,"fat_portion":3.2,"source":"https://www.fuder.co.il/foods-cat/%D7%97%D7%9C%D7%91/"},
 {"name":"חטיף חלבון וניל קראנץ'","brand":"טודיי (Today)","category":"מוצרי חלבון מועשרים (PRO / PROTEIN)","portion_desc":"חטיף","portion_grams":51,"kcal100":365,"protein100":36,"carbs100":37,"fat100":8.1,"kcal_portion":186,"protein_portion":18.4,"carbs_portion":18.9,"fat_portion":4.1,"source":"https://www.shufersal.co.il/online/he/p/P_7290121166850"},
-{"name":"חטיף חלבון בננה שוקולד","brand":"טודיי (Today)","category":"מוצרי חלבון מועשרים (PRO / PROTEIN)","portion_desc":"חטיף","portion_grams":51,"kcal100":362,"protein100":36,"carbs100":31,"fat100":10.4,"kcal_portion":185,"protein_portion":18.4,"carbs_portion":15.8,"fat_portion":5.3,"source":"https://www.shufersal.co.il/online/he/קטגוריות/מתחמים-מיוחדים-/מעושר-בחלבון/מעושר-בחלבון/חטיפי-חלבון/c/A360103"},
+{"name":"חטיף חלבון בננה שוקולד","brand":"טודיי (Today)","category":"מוצרי חלבון מועשרים (PRO / PROTEIN)","portion_desc":"חטיף","portion_grams":51,"kcal100":362,"protein100":36,"carbs100":31,"fat100":10.4,"kcal_portion":185,"protein_portion":18.4,"carbs_portion":15.8,"fat_portion":5.3,"source":"https://www.shufersal.co.il/online/he/%D7%A7%D7%98%D7%92%D7%95%D7%A8%D7%99%D7%95%D7%AA/%D7%9E%D7%AA%D7%97%D7%9E%D7%99%D7%9D-%D7%9E%D7%99%D7%95%D7%97%D7%93%D7%99%D7%9D-/%D7%9E%D7%A2%D7%95%D7%A9%D7%A8-%D7%91%D7%97%D7%9C%D7%91%D7%95%D7%9F/%D7%9E%D7%A2%D7%95%D7%A9%D7%A8-%D7%91%D7%97%D7%9C%D7%91%D7%95%D7%9F/%D7%97%D7%98%D7%99%D7%A4%D7%99-%D7%97%D7%9C%D7%91%D7%95%D7%9F/c/A360103"},
 {"name":"חטיף MAX 100 עם בוטנים וקרמל","brand":"ניו נוטרישן (MAX)","category":"מוצרי חלבון מועשרים (PRO / PROTEIN)","portion_desc":"חטיף","portion_grams":50,"kcal100":397,"protein100":29.9,"carbs100":41.1,"fat100":12.6,"kcal_portion":199,"protein_portion":15,"carbs_portion":20.6,"fat_portion":6.3,"source":"https://www.foodsdictionary.co.il/manufacturers"},
-{"name":"לחם פרו מועשר בחלבון","brand":"אגמי","category":"מוצרי חלבון מועשרים (PRO / PROTEIN)","portion_desc":"פרוסה","portion_grams":22,"kcal100":245,"protein100":28,"carbs100":8.6,"fat100":8.5,"kcal_portion":54,"protein_portion":6.2,"carbs_portion":1.9,"fat_portion":1.9,"source":"https://www.fuder.co.il/foods/אגמי-pro-לחם-מיוחד-מועשר-בחלבון/"},
-{"name":"אבקת חלבון Whey בטעם וניל","brand":"All In","category":"מוצרי חלבון מועשרים (PRO / PROTEIN)","portion_desc":"כף מדידה","portion_grams":30,"kcal100":387,"protein100":77,"carbs100":9.4,"fat100":4.6,"kcal_portion":116,"protein_portion":23.1,"carbs_portion":2.8,"fat_portion":1.4,"source":"https://www.fuder.co.il/foods/allin-אבקת-חלבון-whey-בטעם-וניל/"},
+{"name":"לחם פרו מועשר בחלבון","brand":"אגמי","category":"מוצרי חלבון מועשרים (PRO / PROTEIN)","portion_desc":"פרוסה","portion_grams":22,"kcal100":245,"protein100":28,"carbs100":8.6,"fat100":8.5,"kcal_portion":54,"protein_portion":6.2,"carbs_portion":1.9,"fat_portion":1.9,"source":"https://www.fuder.co.il/foods/%D7%90%D7%92%D7%9E%D7%99-pro-%D7%9C%D7%97%D7%9D-%D7%9E%D7%99%D7%95%D7%97%D7%93-%D7%9E%D7%95%D7%A2%D7%A9%D7%A8-%D7%91%D7%97%D7%9C%D7%91%D7%95%D7%9F/"},
+{"name":"אבקת חלבון Whey בטעם וניל","brand":"All In","category":"מוצרי חלבון מועשרים (PRO / PROTEIN)","portion_desc":"כף מדידה","portion_grams":30,"kcal100":387,"protein100":77,"carbs100":9.4,"fat100":4.6,"kcal_portion":116,"protein_portion":23.1,"carbs_portion":2.8,"fat_portion":1.4,"source":"https://www.fuder.co.il/foods/allin-%D7%90%D7%91%D7%A7%D7%AA-%D7%97%D7%9C%D7%91%D7%95%D7%9F-whey-%D7%91%D7%98%D7%A2%D7%9D-%D7%95%D7%A0%D7%99%D7%9C/"},
 {"name":"קוטג' 1% שומן","brand":"תנובה","category":"מוצרי חלבון מועשרים (PRO / PROTEIN)","portion_desc":"גביע","portion_grams":250,"kcal100":62,"protein100":11.5,"carbs100":1.8,"fat100":1,"kcal_portion":155,"protein_portion":28.8,"carbs_portion":4.5,"fat_portion":2.5,"source":"https://www.tnuva.co.il/products/"},
-{"name":"משקה PRO 20 בטעם תות","brand":"דנונה (שטראוס)","category":"מוצרי חלבון מועשרים (PRO / PROTEIN)","portion_desc":"בקבוק","portion_grams":350,"kcal100":64,"protein100":7.8,"carbs100":5.1,"fat100":1,"kcal_portion":224,"protein_portion":27.3,"carbs_portion":17.8,"fat_portion":3.5,"source":"https://www.fuder.co.il/foods-cat/חלב/"}
+{"name":"משקה PRO 20 בטעם תות","brand":"דנונה (שטראוס)","category":"מוצרי חלבון מועשרים (PRO / PROTEIN)","portion_desc":"בקבוק","portion_grams":350,"kcal100":64,"protein100":7.8,"carbs100":5.1,"fat100":1,"kcal_portion":224,"protein_portion":27.3,"carbs_portion":17.8,"fat_portion":3.5,"source":"https://www.fuder.co.il/foods-cat/%D7%97%D7%9C%D7%91/"}
 ];
 /* PRODUCTS_DATA_END */
 
@@ -1685,14 +1708,15 @@ var SMART_CHOICES = {
   ]
 };
 
-/* סינון ומיון של מוצרי הסופר */
+/* סינון ומיון של מוצרי הסופר — החיפוש דרך searchMatches (סלחני לרישיות,
+   רווחים ריקים ומרובה מילים; QA 20.8.2026) */
 function filterProducts(list, query, category){
   var q = (query || "").trim();
   var out = [];
   for (var i=0;i<list.length;i++){
     var p = list[i];
     if (category && category !== "all" && p.category !== category) continue;
-    if (q && p.name.indexOf(q) === -1 && p.brand.indexOf(q) === -1) continue;
+    if (q && !searchMatches(p.name + " " + p.brand, q)) continue;
     out.push(p);
   }
   return out;
@@ -1843,12 +1867,15 @@ function sumMenuMeals(byId, meals){
   var p = 0, c = 0, f = 0;
   for (var i=0;i<list.length;i++){
     var t = sumMealRows(byId, (list[i] && list[i].rows) || []);
-    out.perMeal.push({kcal:t.kcal, protein:Math.round(t.protein), carbs:Math.round(t.carbs), fat:Math.round(t.fat)});
-    out.kcal += t.kcal; p += t.protein; c += t.carbs; f += t.fat;
+    /* הסה"כ היומי נגזר מהערכים המעוגלים של הארוחות — כך חיבור ידני של שורות
+       הארוחות תמיד "מסתדר" עם השורה התחתונה (ידע/05 §4.1) */
+    var pm = {kcal:t.kcal, protein:Math.round(t.protein), carbs:Math.round(t.carbs), fat:Math.round(t.fat)};
+    out.perMeal.push(pm);
+    out.kcal += t.kcal; p += pm.protein; c += pm.carbs; f += pm.fat;
   }
-  out.protein = Math.round(p);
-  out.carbs = Math.round(c);
-  out.fat = Math.round(f);
+  out.protein = p;
+  out.carbs = c;
+  out.fat = f;
   return out;
 }
 
@@ -1931,8 +1958,12 @@ function normalizeResponseDoc(raw){
       if (k === null || k < 0) k = 0;
       var free = r.free === true;
       if (g === 0 && !free) continue;
-      /* מאקרו פר שורה — נוסף 18.8; מסמכים ישנים בלי השדות מוצגים עם קק"ל בלבד */
+      /* מאקרו פר שורה — נוסף 18.8; מסמכים ישנים בלי השדות מוצגים עם קק"ל בלבד.
+         ערכים שליליים (מסמך זדוני/פגום) נחסמים לאפס כמו grams/kcal (ביקורת 20.8) */
       var rp = numOrNull(r.protein), rc = numOrNull(r.carbs), rf = numOrNull(r.fat);
+      if (rp !== null && rp < 0) rp = 0;
+      if (rc !== null && rc < 0) rc = 0;
+      if (rf !== null && rf < 0) rf = 0;
       if (rp !== null || rc !== null || rf !== null) hasMacros = true;
       rows.push({name:r.name, grams:Math.round(g), kcal:Math.round(k), free:free,
                  protein:rp === null ? 0 : rp, carbs:rc === null ? 0 : rc, fat:rf === null ? 0 : rf});
@@ -1941,16 +1972,22 @@ function normalizeResponseDoc(raw){
       carbs += rc === null ? 0 : rc;
       fat += rf === null ? 0 : rf;
     }
+    /* גם כאן הסה"כ נגזר מהערכים המעוגלים של הארוחות — עקביות תצוגה (ידע/05 §4.1) */
+    var mProt = Math.round(protein * 10) / 10;
+    var mCarb = Math.round(carbs * 10) / 10;
+    var mFat = Math.round(fat * 10) / 10;
     meals.push({
       name: (typeof m.name === "string" && m.name !== "") ? m.name : mealName(meals.length),
+      /* שם התפריט שהארוחה שייכת לו — נוסף 20.8 (תמיכה בכמה תפריטים); מסמכים ישנים בלי השדה */
+      menu: (typeof m.menu === "string") ? m.menu : "",
       budget: normalizeMealBudget(m.budget),
       rows: rows,
       kcal: kcal,
-      protein: Math.round(protein * 10) / 10,
-      carbs: Math.round(carbs * 10) / 10,
-      fat: Math.round(fat * 10) / 10
+      protein: mProt,
+      carbs: mCarb,
+      fat: mFat
     });
-    totKcal += kcal; totProtein += protein; totCarbs += carbs; totFat += fat;
+    totKcal += kcal; totProtein += mProt; totCarbs += mCarb; totFat += mFat;
   }
   return {
     v: 1,
@@ -2001,7 +2038,9 @@ function targetsStatus(totals, targets){
   return out;
 }
 
-/* ===== שאלון ההיכרות של סיוון — 20 שאלות, ids יציבים q1-q20 =====
+/* ===== שאלון ההיכרות של סיוון — 23 שאלות, ids יציבים =====
+   q1-q20 המקוריות + q21-q23 שאלות סינון שנוספו 20.8.2026 לפי ידע/01 §6.5
+   (ה-ids יציבים לתמיד — תשובות שמורות לא נפגעות משינוי ניסוח או סדר).
    kind: number / text / longtext · mapsTo: מילוי-מראש של מחשבון העזר · redFlag: שאלת סינון */
 var INTAKE_QUESTIONS = [
   {id:"q1",  label:"מה המטרה שלך?", kind:"text", mapsTo:"goal"},
@@ -2015,6 +2054,9 @@ var INTAKE_QUESTIONS = [
   {id:"q9",  label:"מה את/ה ממש לא אוהב/ת לאכול?", kind:"longtext"},
   {id:"q10", label:"יש אלרגיות?", kind:"text", redFlag:"allergy"},
   {id:"q11", label:"יש מחלות רקע?", kind:"text", redFlag:"medical"},
+  {id:"q21", label:"הריון, הנקה או ניסיון להיכנס להריון?", kind:"text", redFlag:"pregnancy"},
+  {id:"q22", label:"האם את/ה לוקח/ת תרופות קבועות או תוספים?", kind:"text", redFlag:"meds"},
+  {id:"q23", label:"אבחון או טיפול בהפרעת אכילה — בהווה או בעבר?", kind:"text", redFlag:"eating"},
   {id:"q12", label:"כמה מים את/ה שותה?", kind:"text"},
   {id:"q13", label:"כמה קפה?", kind:"text"},
   {id:"q14", label:"אלכוהול?", kind:"text"},
@@ -2028,18 +2070,61 @@ var INTAKE_QUESTIONS = [
 
 /* ===== פרסרים סלחניים לתשובות בטקסט חופשי ===== */
 
-/* המספר הראשון שמופיע בטקסט: "64 ק"ג" → 64 · "1.70" → 1.7 · "בערך 3-4" → 3 · אין ספרות → null */
+/* המספר הראשון שמופיע בטקסט: "64 ק"ג" → 64 · "1.70" → 1.7 · "בערך 3-4" → 3 · אין ספרות → null.
+   מינוס מוצמד נשמר ("-50" → ‎-50) כדי שערך שלילי לא יתהפך בשקט לחיובי;
+   מקף שצמוד לאות עברית ("כ-70" = בערך 70) הוא קידומת, לא מינוס (ביקורת 20.8) */
 function parseNumberLoose(s){
   if (typeof s === "number") return isFinite(s) ? s : null;
   if (typeof s !== "string") return null;
-  var m = s.match(/[0-9]+(?:\.[0-9]+)?/);
+  var t = s.replace(/([א-ת])-([0-9])/g, "$1 $2");
+  var m = t.match(/-?[0-9]+(?:\.[0-9]+)?/);
   if (!m) return null;
   var v = parseFloat(m[0]);
   return isFinite(v) ? v : null;
 }
 
+/* ===== חיפוש סלחני — משמש את כל תיבות החיפוש (מאגר, מוצרים, בונה) =====
+   מנרמל רישיות ורווחים; כל מילה בשאילתה צריכה להופיע בשם:
+   "עוף עור" מוצא "חזה עוף (ללא עור)" · "חזהעוף" מוצא "חזה עוף" · "haribo" מוצא "Haribo" */
+function searchNorm(s){
+  if (typeof s !== "string") return "";
+  return s.toLowerCase().replace(/\s+/g, " ").replace(/^\s|\s$/g, "");
+}
+
+function searchMatches(name, query){
+  var n = searchNorm(name);
+  var q = searchNorm(query);
+  if (q === "") return true;
+  if (n === "") return false;
+  var packed = n.replace(/ /g, "");
+  var words = q.split(" ");
+  for (var i=0;i<words.length;i++){
+    var w = words[i];
+    if (w === "") continue;
+    if (n.indexOf(w) === -1 && packed.indexOf(w) === -1) return false;
+  }
+  return true;
+}
+
 /* תשובות ש"אין מה לעשות איתן" — ריק או שלילה מפורשת (עם או בלי סימן פיסוק בסוף) */
-var NEGATIVE_ANSWERS = ["אין", "לא", "אין לי", "שלילי", "ללא", "אין אלרגיות", "אין מחלות"];
+var NEGATIVE_ANSWERS = ["אין", "לא", "אין לי", "שלילי", "ללא", "כלום", "שום דבר", "בריא", "בריאה", "אין אלרגיות", "אין מחלות"];
+
+/* מילות פתיחה של שלילה — "אין לי מחלות ידועות", "לא, בריאה לגמרי" */
+var NEGATION_START_WORDS = ["אין", "לא", "ללא", "שלילי", "כלום", "בלי", "שום"];
+
+/* מילים "שקופות" אחרי מילת שלילה — הד של השאלה או חיזוק השלילה, לא מידע חדש.
+   מילה שאינה ברשימה (למשל "גלוטן" ב"לא אוכלת גלוטן") משאירה את התשובה כתשובה אמיתית.
+   בכוונה אין כאן מילות זמן ("כרגע","היום","בעבר") — "לא כרגע" על שאלת הפרעת אכילה
+   הוא בדיוק תשובה שמחייבת בירור, לא שלילה נקייה (ביקורת 20.8) */
+var NEGATION_TAIL_WORDS = ["לי","לא","אין","ללא","כלום","כלל","בכלל","דבר","שום","ידוע","ידועה","ידועות","ידועים","שידוע","מעולם","מיוחד","מיוחדת","מיוחדות","מיוחדים","בריא","בריאה","לגמרי","ממש","תודה","לאל","מחלות","מחלה","רקע","אלרגיות","אלרגיה","רגישות","רגישויות","תרופות","תרופה","קבועות","קבועה","בעיות","בעיה","הריון","בהריון"];
+
+/* פירוק תשובה למילים — פיסוק ומקפים הופכים לרווחים */
+function splitAnswerWords(s){
+  var t = (typeof s === "string") ? s : "";
+  t = t.replace(/[.,;:!?()\-–—"']/g, " ").replace(/\s+/g, " ").replace(/^\s|\s$/g, "");
+  if (t === "") return [];
+  return t.split(" ");
+}
 
 function isNegativeAnswer(s){
   if (s === null || s === undefined) return true;
@@ -2049,7 +2134,21 @@ function isNegativeAnswer(s){
   for (var i=0;i<NEGATIVE_ANSWERS.length;i++){
     if (t === NEGATIVE_ANSWERS[i]) return true;
   }
-  return false;
+  /* "אין לי מחלות ידועות" / "לא, בריאה לגמרי" — פתיחה בשלילה וכל שאר המילים שקופות */
+  var words = splitAnswerWords(t);
+  if (!words.length) return true;
+  if (NEGATION_START_WORDS.indexOf(words[0]) === -1) return false;
+  for (var j=1;j<words.length;j++){
+    if (NEGATION_TAIL_WORDS.indexOf(words[j]) === -1) return false;
+  }
+  return true;
+}
+
+/* התשובה נפתחת במילת שלילה אבל מכילה תוכן נוסף שאינו שקוף —
+   לא שלילה בטוחה ולא תשובה חיובית בטוחה; מוצגת כהערת בירור ולא כדגל */
+function startsWithNegation(s){
+  var words = splitAnswerWords(typeof s === "string" ? s : "");
+  return words.length > 0 && NEGATION_START_WORDS.indexOf(words[0]) !== -1;
 }
 
 /* BMI מעוגל לספרה עשרונית אחת; גובה בס"מ בלבד (מתחת ל-50 נחשב קלט לא תקין) */
@@ -2066,6 +2165,34 @@ function answerText(answers, id){
   if (typeof v === "number" && isFinite(v)) v = "" + v;
   if (typeof v !== "string") return "";
   return v.replace(/^\s+/, "").replace(/\s+$/, "");
+}
+
+/* ===== שאלות הסינון (redFlag) — הכללים לפי ידע/01 פרק 6 =====
+   ההודעה נבנית לפי התג על השאלה ולא לפי מזהה קשיח — שאלה חדשה עם תג
+   קיים "עובדת לבד". red:true פירושו ניסוח עם "דגל אדום" (מקבל הדגשה בסיכום) */
+var RED_FLAG_RULES = {
+  allergy:   {prefix:"אלרגיות", text:"לאמת מול תווית של כל מוצר", red:false},
+  medical:   {prefix:"מחלות רקע", text:"דגל אדום: לעצור ולהפנות לדיאטנית קלינית/רופא לפני בניית תפריט", red:true},
+  pregnancy: {prefix:"הריון/הנקה", text:"דגל אדום: הפניה לדיאטנית קלינית ורופא נשים — לא בונים גירעון קלורי", red:true},
+  meds:      {prefix:"תרופות קבועות", text:"דגל אדום: לוודא מול הרופא/דיאטנית לפני שינוי תזונתי (ידע/01 §6.4)", red:true},
+  eating:    {prefix:"הפרעת אכילה בהווה/בעבר", text:"דגל אדום: עצירה והפניה לדיאטנית קלינית ולגורם טיפולי", red:true}
+};
+
+/* עובר על כל שאלות ה-redFlag: שלילה מלאה → כלום; פתיחה בשלילה עם תוכן נוסף
+   ("לא כרגע", "אין, רק סוכרת") → אזהרת בירור (צהובה — בלי "דגל אדום" אך נספרת
+   ומוצגת כהתראה, ביקורת 20.8); כל תשובה אחרת → אזהרה מלאה */
+function redFlagNotes(answers){
+  var out = {points:[], warnings:[]};
+  for (var i=0;i<INTAKE_QUESTIONS.length;i++){
+    var q = INTAKE_QUESTIONS[i];
+    if (!q.redFlag || !Object.prototype.hasOwnProperty.call(RED_FLAG_RULES, q.redFlag)) continue;
+    var ans = answerText(answers, q.id);
+    if (isNegativeAnswer(ans)) continue;
+    var rule = RED_FLAG_RULES[q.redFlag];
+    if (startsWithNegation(ans)) out.warnings.push(rule.prefix + ": \"" + ans + "\" — תשובה לא חד-משמעית, לוודא בשיחה לפני שממשיכים");
+    else out.warnings.push(rule.prefix + ": " + ans + " — " + rule.text);
+  }
+  return out;
 }
 
 /* סיכום דטרמיניסטי של השאלון: נקודות לסיכום + אזהרות ודגלים אדומים.
@@ -2107,10 +2234,10 @@ function intakeSummary(answers, sex){
   var dislikes = answerText(a, "q9");
   if (dislikes !== "") points.push("לא אוהב/ת: " + dislikes);
 
-  var allergy = answerText(a, "q10");
-  if (!isNegativeAnswer(allergy)) warnings.push("אלרגיות: " + allergy + " — לאמת מול תווית של כל מוצר");
-  var medical = answerText(a, "q11");
-  if (!isNegativeAnswer(medical)) warnings.push("מחלות רקע: " + medical + " — דגל אדום: לעצור ולהפנות לדיאטנית קלינית/רופא לפני בניית תפריט");
+  var flags = redFlagNotes(a);
+  var fi;
+  for (fi=0;fi<flags.warnings.length;fi++) warnings.push(flags.warnings[fi]);
+  for (fi=0;fi<flags.points.length;fi++) points.push(flags.points[fi]);
 
   var habits = [];
   var hours = answerText(a, "q7");
@@ -2291,6 +2418,13 @@ function subscriptionStatus(subscription, todayISO){
   if (end === "") return null;
   var left = daysBetweenISO(todayISO, end);
   if (left === null) return null;
+  /* תאריך התחלה עתידי — המנוי עוד לא התחיל, לא "פעיל" */
+  var untilStart = daysBetweenISO(todayISO, subscription.startDate);
+  if (untilStart !== null && untilStart > 0){
+    var sp = parseISOParts(subscription.startDate);
+    return {end:end, daysLeft:left, level:"future",
+            text:"מתחיל ב-" + sp.d + "." + (sp.m < 10 ? "0" + sp.m : "" + sp.m) + "." + sp.y};
+  }
   var level = "ok", text = "פעיל — נותרו " + left + " ימים";
   if (left < 0){
     level = "bad";
@@ -2874,7 +3008,18 @@ function toast(msg){
   var t = $("toast");
   t.textContent = msg; t.classList.add("is-on");
   if (toastTimer) clearTimeout(toastTimer);
-  toastTimer = setTimeout(function(){ t.classList.remove("is-on"); }, 2200);
+  /* 4 שניות (QA 20.8.2026) — הודעות בעברית ארוכות לא הספיקו להיקרא ב-2.2 שניות */
+  toastTimer = setTimeout(function(){ t.classList.remove("is-on"); }, 4000);
+}
+
+/* חיווי "נשמר" מרוכך לעריכות תא-אחרי-תא (טבלת המעקב): רצף שינויים = הודעה אחת */
+var savedToastTimer = null;
+function toastSavedSoon(){
+  if (savedToastTimer) clearTimeout(savedToastTimer);
+  savedToastTimer = setTimeout(function(){
+    savedToastTimer = null;
+    toast("נשמר");
+  }, 600);
 }
 
 /* ================= שכבת ענן: Firebase Auth + Firestore =================
@@ -3023,7 +3168,8 @@ function renderClientChoices(){
     box.className = "choice-meal choice-fold";
     var head = document.createElement("summary");
     head.className = "choice-meal-head";
-    head.appendChild(el("b", null, m.name));
+    /* כשללקוחה כמה תפריטים — שם התפריט מוצג ליד הארוחה (מסמכים חדשים בלבד) */
+    head.appendChild(el("b", null, m.name + (m.menu ? " (" + m.menu + ")" : "")));
     var bs = mealBudgetStatus(m.kcal, m.budget);
     var totalTxt = m.kcal.toLocaleString("he-IL") + " קק\"ל" + (bs ? (" מתוך " + bs.budget.toLocaleString("he-IL")) : "");
     var totalEl = el("span","choice-meal-total", totalTxt);
@@ -3094,6 +3240,33 @@ function hydrateFromCloud(){
   });
 }
 
+/* מיזוג מזונות אישיים מהענן עם המקומיים (QA 20.8.2026): הענן הוא הבסיס,
+   ופריט מקומי שה-id שלו לא קיים בענן נשמר ומוחזר בדחיפה הבאה.
+   מחזיר את מספר הפריטים המקומיים ששרדו כדי שהקורא יסמן settingsDirty */
+function mergeCustomFoodsFromCloud(cloudCf){
+  var local = readCustomFoods();
+  var cloud = (cloudCf && typeof cloudCf === "object" && !Array.isArray(cloudCf)) ? cloudCf : {};
+  var cloudFoods = Array.isArray(cloud.foods) ? cloud.foods : [];
+  var byId = {}, i;
+  for (i=0;i<cloudFoods.length;i++){
+    var cf = cloudFoods[i];
+    if (cf && typeof cf.id === "string") byId[cf.id] = true;
+  }
+  var extra = [];
+  var localFoods = (local && Array.isArray(local.foods)) ? local.foods : [];
+  for (i=0;i<localFoods.length;i++){
+    var lf = localFoods[i];
+    if (lf && typeof lf.id === "string" && !Object.prototype.hasOwnProperty.call(byId, lf.id)) extra.push(lf);
+  }
+  var cn = Number(cloud.nextId), ln = Number(local ? local.nextId : 1);
+  writeCustomFoods({
+    version: 1,
+    foods: cloudFoods.concat(extra),
+    nextId: Math.max(isFinite(cn) ? cn : 1, isFinite(ln) ? ln : 1)
+  });
+  return extra.length;
+}
+
 /* מיזוג פר-לקוח: updatedAt חדש גובר (השוואת מחרוזות ISO); tombstone חדש מהעריכה המקומית מוחק */
 function mergeCloudIntoLocal(remote, settings, hasSettings){
   var store = readClientsStore();
@@ -3140,9 +3313,17 @@ function mergeCloudIntoLocal(remote, settings, hasSettings){
   if (hasSettings){
     applyingRemote = true;
     if (settings && settings.factors) writeFactors(settings.factors);
-    if (settings && settings.customFoods) writeCustomFoods(settings.customFoods);
+    /* QA 20.8.2026: מיזוג במקום דריסה — מזון אישי שנוסף לפני שההתחברות הושלמה
+       (או בזמן עבודה מקומית) לא נמחק יותר; פריטים מקומיים שאין בענן נדחפים חזרה */
+    var extraFoods = 0;
+    if (settings && settings.customFoods){
+      extraFoods = mergeCustomFoodsFromCloud(settings.customFoods);
+    }
     if (settings && settings.templates) writeTemplates(settings.templates);
     applyingRemote = false;
+    /* דחיפה מיידית (לא מושהית) — ה-payload נבנה עכשיו, לפני שה-snapshot הראשוני
+       של subscribeSnapshots יספיק לגעת באחסון (ביקורת 20.8, מרוץ ה-1500ms) */
+    if (extraFoods > 0 && cloudMode === "on" && fbDb) pushSettingsDoc();
   } else {
     settingsDirty = true;
   }
@@ -3225,9 +3406,13 @@ function applySettingsSnapshot(doc){
   cloudSettingsCache = cloudSettingsShape(data);
   applyingRemote = true;
   if (data.factors) writeFactors(data.factors);
-  if (data.customFoods){ writeCustomFoods(data.customFoods); }
+  /* ביקורת 20.8: גם כאן מיזוג ולא דריסה — אחרת ה-snapshot הראשוני אחרי התחברות
+     (שמגיע לפני הדחיפה המושהית) מוחק מזון אישי שנוסף לפני/בזמן ההתחברות */
+  var extraFoods = 0;
+  if (data.customFoods){ extraFoods = mergeCustomFoodsFromCloud(data.customFoods); }
   if (data.templates){ writeTemplates(data.templates); }
   applyingRemote = false;
+  if (extraFoods > 0){ settingsDirty = true; schedulePush(); }
   if (data.customFoods) renderFoods();
   if (data.templates) renderExamples();
   refreshCloudUI();
@@ -3377,6 +3562,21 @@ function pushCatalogDoc(){
   });
 }
 
+/* ניקוי תשובות של טוקן שבוטל (QA 20.8.2026): אחרי ביטול קישור או מחיקת לקוח/ה,
+   גם ההיסטוריה שנשמרה תחת הטוקן נמחקת — "ביטול" באמת חוסם גישה לנתונים */
+function purgeResponses(token){
+  if (!fbDb || !token) return;
+  var ref = fbDb.collection("responses").doc(token);
+  ref.collection("days").limit(300).get().then(function(snap){
+    var ops = [];
+    if (snap && typeof snap.forEach === "function"){
+      snap.forEach(function(doc){ ops.push(doc.ref.delete()); });
+    }
+    ops.push(ref.delete());
+    return Promise.all(ops);
+  }).catch(function(){});
+}
+
 /* מחיקת לקוח מוחקת גם את הקישור האישי שלו (deleteClientCloud כבר כותב tombstone ומרענן UI) */
 function deleteShareIfPublished(id){
   if (cloudMode !== "on" || !fbDb || !id) return "";
@@ -3385,6 +3585,7 @@ function deleteShareIfPublished(id){
   if (cloudSettingsCache) delete cloudSettingsCache.shareTokens[id];
   cloudForgetShareToken(id);
   sharesCollection().doc(token).delete().catch(function(){});
+  purgeResponses(token);
   return token;
 }
 
@@ -3402,6 +3603,10 @@ function cloudForgetShareToken(clientId){
 }
 
 function flushCloud(){
+  /* QA 20.8.2026: קודם מרוקנים שמירות מושהות (שאלון/סיכום, חלון 400ms) —
+     הקלדה של הרגע האחרון לפני סגירת הטאב לא הולכת יותר לאיבוד */
+  try { flushIntake(); } catch(e){}
+  try { flushSummaryEdit(); } catch(e){}
   if (pushTimer){ clearTimeout(pushTimer); pushTimer = null; }
   flushPush();
 }
@@ -3510,17 +3715,19 @@ function clientMetaText(c){
   return kcal + " · " + c.menus.length + " תפריטים · עודכן " + clientDateText(c.updatedAt || c.createdAt);
 }
 
-/* צ'יפ המנוי בשורת הלקוח/ה — גרסה קצרה: "מנוי עד DD.MM" (או סיום מפורש) */
+/* צ'יפ המנוי בשורת הלקוח/ה — גרסה קצרה: "מנוי עד DD.MM" (או סיום/התחלה מפורשים) */
 function subscriptionChipText(st){
   if (!st) return "";
   if (st.level === "bad") return "המנוי הסתיים";
+  if (st.level === "future") return "מנוי " + st.text;
   return "מנוי עד " + isoDateText(st.end).slice(0, 5);
 }
 
 /* ---------- חיפוש ומיון ברשימת הלקוחות ----------
-   המיון תמיד א-ב (localeCompare בעברית) — סדר ההוספה לא משפיע, וגם הלקוח/ה
-   הפעיל/ה יושב/ת במקומו האלפביתי (רק מסומן/ת). הסינון חי מעל אותה רשימה ממוינת. */
+   ברירת המחדל א-ב (localeCompare בעברית); מ-20.8.2026 אפשר גם "לפי עדכון אחרון"
+   (החדש למעלה). הסינון חי מעל אותה רשימה ממוינת. */
 var clientsFilter = "";
+var clientsSort = "name";
 
 function clientSearchKey(s){
   return (typeof s === "string" ? s : "").replace(/\s+/g, " ").replace(/^ | $/g, "").toLowerCase();
@@ -3530,6 +3737,15 @@ function sortClientsByName(list){
   var out = list.slice();
   out.sort(function(a, b){
     return String(a.name).localeCompare(String(b.name), "he");
+  });
+  return out;
+}
+
+function sortClientsForView(list){
+  if (clientsSort !== "updated") return sortClientsByName(list);
+  var out = list.slice();
+  out.sort(function(a, b){
+    return String(b.updatedAt || b.createdAt || "").localeCompare(String(a.updatedAt || a.createdAt || ""));
   });
   return out;
 }
@@ -3610,9 +3826,10 @@ function deleteClient(id){
   if (store.activeId === id) store.activeId = null;
   if (!writeClientsStore(store)) return;
   if (cloudMode === "on"){ deleteClientCloud(id); }
+  clearBuilderDraft(id);
   refreshActiveChip();
   renderClients();
-  toast("הכרטיס נמחק");
+  toast("הכרטיס נמחק — כולל הקישור האישי אם היה");
 }
 
 function renderClients(){
@@ -3635,7 +3852,7 @@ function renderClients(){
     return;
   }
 
-  var shown = filterClientsByName(sortClientsByName(store.clients), clientsFilter);
+  var shown = filterClientsByName(sortClientsForView(store.clients), clientsFilter);
   if (shown.length === 0){
     wrap.appendChild(el("p","note-line","לא נמצאו לקוחות לחיפוש הזה"));
     return;
@@ -3660,6 +3877,11 @@ function renderClients(){
       meta.appendChild(el("span", null, clientMetaText(c)));
       var subSt = subscriptionStatus(c.subscription, today);
       if (subSt) meta.appendChild(el("span", "chip " + chipLevelClass(subSt.level), subscriptionChipText(subSt)));
+      /* צ'יפ קישור אישי (QA 20.8.2026) — כשהענן מחובר רואים במבט אחד למי כבר יש קישור */
+      if (cloudMode === "on"){
+        var hasLink = shareTokenOf(c.id) !== "";
+        meta.appendChild(el("span", "chip " + (hasLink ? "chip-ok" : "chip-neutral"), hasLink ? "קישור פעיל" : "אין קישור"));
+      }
       main.appendChild(meta);
       row.appendChild(main);
 
@@ -3722,6 +3944,10 @@ $("clientSearchIn").addEventListener("input", function(){
   clientsFilter = $("clientSearchIn").value || "";
   renderClients();
 });
+$("clientSortSel").addEventListener("change", function(){
+  clientsSort = $("clientSortSel").value === "updated" ? "updated" : "name";
+  renderClients();
+});
 
 /* ---------- טאב הגדרת לקוח ---------- */
 /* כל כרטיסי הטאב מוצגים רק כשיש לקוח/ה פעיל/ה; אחרת מוצג כרטיס "אין לקוח פעיל" בלבד */
@@ -3731,6 +3957,7 @@ var GOAL_ORDER = ["loss","cut","gain","maint"];
 
 var clientTabId = null;      /* הלקוח/ה שהטאב מציג כרגע — מקור האמת לשמירות המושהות */
 var clientTabSex = "";
+var clientFoldsAppliedFor = null;   /* ברירות הקיפול הוחלו כבר עבור הלקוח/ה הזה (פעם בסשן) */
 var intakeBuilt = false;     /* שדות השאלון נבנים פעם אחת מ-INTAKE_QUESTIONS */
 var goalChipsBuilt = false;
 var helperGoal = "loss";
@@ -3813,6 +4040,11 @@ function buildIntakeFields(){
       } else {
         input = document.createElement("input");
         input.type = (q.kind === "number") ? "number" : "text";
+        /* QA 20.8.2026: בלימת טעויות הקלדה בשדות המספר (720 במקום 72 וכד') */
+        if (q.mapsTo === "weight"){ input.min = "25"; input.max = "300"; }
+        else if (q.mapsTo === "height"){ input.min = "1"; input.max = "230"; }
+        else if (q.mapsTo === "age"){ input.min = "5"; input.max = "110"; }
+        else if (q.mapsTo === "trainings"){ input.min = "0"; input.max = "21"; }
       }
       input.id = intakeInputId(q.id);
       input.addEventListener("input", function(){ queueIntake(q.id, input.value); });
@@ -3892,12 +4124,49 @@ function generateSummary(){
 }
 
 /* --- יעדים --- */
+var TARGET_FIELD_META = {
+  targetKcalIn:    {label:"קלוריות", max:8000},
+  targetProteinIn: {label:"חלבון",   max:600},
+  targetCarbsIn:   {label:"פחמימה",  max:900},
+  targetFatIn:     {label:"שומן",    max:400}
+};
+
 function targetFieldValue(id){
   var raw = ($(id).value || "").trim();
   if (raw === "") return null;
   var v = Number(raw);
   if (!isFinite(v) || v < 0) return null;
   return v;
+}
+
+/* QA 20.8.2026: ערך שגוי בשדה יעד כבר לא נבלע בשקט — השדה חוזר לערך השמור
+   ומוצגת הודעה; שמירה תקינה מקבלת חיווי "נשמר" (קודם הכול היה שקט לגמרי) */
+function saveTargetsFromFields(){
+  var c0 = getActiveClient(null);
+  if (!c0) return;
+  for (var i=0;i<TARGET_FIELD_IDS.length;i++){
+    var id = TARGET_FIELD_IDS[i];
+    var box = $(id);
+    var raw = (box.value || "").trim();
+    var meta = TARGET_FIELD_META[id];
+    /* קלט שהדפדפן לא הצליח לפרסר ("1,800") מגיע כ-value ריק עם badInput —
+       בלי הבדיקה הזו הוא היה נמחק בשקט עם הודעת "נשמר" (ביקורת 20.8) */
+    if (raw === ""){
+      if (box.validity && box.validity.badInput){
+        fillTargetInputs(c0);
+        toast("ערך לא תקין ביעד ה" + meta.label + " — כתבי מספר בלי פסיקים, לא נשמר");
+        return;
+      }
+      continue;
+    }
+    var v = Number(raw);
+    if (!isFinite(v) || v < 0 || v > meta.max){
+      fillTargetInputs(c0);
+      toast("ערך לא תקין ביעד ה" + meta.label + " (0 עד " + n(meta.max) + ") — לא נשמר");
+      return;
+    }
+  }
+  if (saveTargets()) toast("היעדים נשמרו");
 }
 function fillTargetInputs(c){
   var t = c.targets;
@@ -4061,8 +4330,8 @@ function saveRubrics(){
     var r = rubricDraft[i];
     var label = (typeof r.label === "string" ? r.label : "").trim();
     var factor = Number(r.factor);
-    if (label === ""){ toast("שורה " + (i+1) + ": חסר תיאור — לא נשמר"); return; }
-    if (!isFinite(factor) || factor < 1 || factor > 2.5){ toast("שורה " + (i+1) + ": המקדם חייב להיות בין 1.0 ל-2.5 — לא נשמר"); return; }
+    if (label === ""){ toast("בשורה " + (i+1) + " חסר תיאור — השלימי ונסי לשמור שוב"); return; }
+    if (!isFinite(factor) || factor < 1 || factor > 2.5){ toast("בשורה " + (i+1) + " המקדם צריך להיות מספר בין 1.0 ל-2.5 — תקני ונסי שוב"); return; }
     out.push({id:r.id, label:label, factor:factor});
   }
   var keep = $("factorRubricSel").value;
@@ -4162,6 +4431,7 @@ function saveSubscription(){
   if (!writeClientsStore(store)) return;
   fillSubscriptionFields(c);
   renderClients();
+  toast("המנוי נשמר");
 }
 
 /* הרינדור המלא של הטאב — נקרא מ-showTab("client") ומה-init */
@@ -4188,6 +4458,22 @@ function renderClientTab(){
   fillIntakeFields(c);
   renderSummary(c);
   fillTargetInputs(c);
+
+  /* QA 20.8.2026 (+ביקורת): לקוח/ה טרי/ה לגמרי — השאלון (הצעד הראשון) נפתח
+     והכרטיסים הריקים נסגרים. רץ פעם אחת בלבד פר-לקוח/ה בסשן — רינדורים חוזרים
+     (מעבר טאבים, snapshot מהענן) לא דורסים קיפולים שסיוון שינתה ידנית */
+  if (clientFoldsAppliedFor !== c.id){
+    clientFoldsAppliedFor = c.id;
+    var intakeEmpty = true;
+    for (var qi in c.intake){
+      if (Object.prototype.hasOwnProperty.call(c.intake, qi) && String(c.intake[qi] || "") !== ""){ intakeEmpty = false; break; }
+    }
+    if (intakeEmpty && !c.summary && !hasAnyTarget(c.targets) && c.menus.length === 0){
+      $("clientIntakeCard").open = true;
+      $("clientSummaryCard").open = false;
+      $("clientTargetsCard").open = false;
+    }
+  }
 
   if (!goalChipsBuilt){ buildGoalChips(); goalChipsBuilt = true; }
   syncGoalChips();
@@ -4235,6 +4521,7 @@ $("clientNameInput").addEventListener("change", function(){
         clientTabSex = c.sex;
         syncSexSeg(c.sex);
         runHelperCalc();
+        toast("נשמר");
       });
     })(btns[sxi]);
   }
@@ -4248,7 +4535,7 @@ $("btnGenSummary").addEventListener("click", generateSummary);
 
 (function initTargetFields(){
   for (var tgi=0; tgi<TARGET_FIELD_IDS.length; tgi++){
-    $(TARGET_FIELD_IDS[tgi]).addEventListener("change", function(){ saveTargets(); });
+    $(TARGET_FIELD_IDS[tgi]).addEventListener("change", saveTargetsFromFields);
   }
 })();
 
@@ -4294,6 +4581,7 @@ $("btnCopyToTargets").addEventListener("click", function(){
 /* ---------- כרטיס שיתוף וייצוא ---------- */
 /* שורת השיתוף מוצגת רק כשהענן מחובר; כפתורי הייצוא עובדים תמיד — כל עוד הספריות נטענו */
 var SHARE_LINK_BASE = "https://sapi60089-ai.github.io/sivan-dashboard/client.html#t=";
+var WHATS_SHARE_BASE = "https://wa.me/?text=";   /* קישור ניווט לוואטסאפ — לא משאב נטען */
 var EXPORT_MISSING_MSG = "הייצוא לא זמין בגרסה הזו";
 
 /* הסיכום כפי שהלקוח/ה רואה אותו: טקסט ערוך ידנית גובר על המערכים,
@@ -4487,10 +4775,11 @@ function revokeShare(client){
     pendingWrites--;
     if (cloudSettingsCache) delete cloudSettingsCache.shareTokens[id];
     cloudForgetShareToken(id);
+    purgeResponses(token);   /* גם ההיסטוריה שנשמרה תחת הטוקן נמחקת (QA 20.8.2026) */
     settingsDirty = true;
     schedulePush();
     refreshShareCard();
-    toast("הקישור בוטל");
+    toast("הקישור בוטל — וההיסטוריה שנשמרה בו נמחקה");
   }).catch(function(err){
     pendingWrites--;
     if (isPermissionDenied(err)){ handleUnauthorized(); return; }
@@ -4520,10 +4809,28 @@ function refreshShareCard(){
   $("btnPublishShare").classList.toggle("hidden", token !== "");
   $("btnCopyShareLink").classList.toggle("hidden", token === "");
   $("btnRevokeShare").classList.toggle("hidden", token === "");
-  var noMenus = !c || c.menus.length === 0;
+  var noMenus = !c || !hasExportableMenu(c);
   $("btnExportPdf").disabled = noMenus;
-  if (noMenus) $("btnExportPdf").setAttribute("title", "אין תפריט שמור");
+  if (noMenus) $("btnExportPdf").setAttribute("title", "אין תפריט לייצוא — בני תפריט בבונה או טעני תפריט שמור");
   else $("btnExportPdf").removeAttribute("title");
+  /* וואטסאפ (QA 20.8.2026): שליחת הקישור האישי בהודעה מוכנה — הצעד האחרון של הזרימה.
+     קישור ניווט בלבד (נפתח בלשונית חדשה) — לא משאב חיצוני שנטען לדף */
+  var wa = $("btnWhatsShare");
+  if (wa){
+    wa.classList.toggle("hidden", token === "");
+    if (token !== ""){
+      wa.setAttribute("href", WHATS_SHARE_BASE + encodeURIComponent("היי! הנה הקישור האישי שלך לתוכנית התזונה 🌸\n" + SHARE_LINK_BASE + token));
+    } else {
+      wa.removeAttribute("href");
+    }
+  }
+  /* הודעת "אין ענן" נכונה למצב (QA 20.8.2026): מנותקת ≠ פותחת מקובץ מקומי */
+  var localNote = $("shareLocalNote");
+  if (localNote){
+    localNote.textContent = (cloudMode === "signedout")
+      ? "כדי לפרסם קישור ללקוחה צריך להתחבר — לחצי \"התחבר עם Google\" למעלה"
+      : "שיתוף קישור זמין רק באתר החי (דרוש חיבור לענן)";
+  }
 }
 
 /* העתקת הקישור: clipboard API, ובדפדפן שחוסם אותו — textarea + execCommand.
@@ -4614,6 +4921,24 @@ function menuTargetDeltas(totals, targets){
 
 var PRINT_DISCLAIMER = "התפריט הוכן אישית עבורך על ידי סיוון — ייעוץ תזונה. הוא אינו מהווה ייעוץ רפואי; בכל שאלה רפואית יש לפנות לרופא/ה או לדיאטן/ית קליני/ת.";
 
+/* QA 20.8.2026: הייצוא משקף את מה שרואים — אם הבונה של הלקוח/ה הפעיל/ה מכיל תפריט
+   (כולל שינויים שלא נשמרו), מייצאים אותו בלבד; בונה ריק — כל התפריטים השמורים כמו קודם */
+function exportMenus(client){
+  if (client && builderClientId === client.id && builderRowCount() > 0){
+    var name = (builderState.menuName || "").trim();
+    return [{
+      id: builderState.loadedMenuId || "draft",
+      name: name !== "" ? name : "התפריט הנוכחי",
+      meals: cleanMealsForSave(),
+      savedAt: ""
+    }];
+  }
+  return (client && client.menus) ? client.menus : [];
+}
+function hasExportableMenu(client){
+  return exportMenus(client).length > 0;
+}
+
 /* כמות לתדפיס: יחידה ביתית קודם והגרמים בסוגריים — לפי תבנית המסירה (ידע/05) */
 function printQtyText(byId, row){
   var hint = unitHintFor(byId, row.foodId, row.grams);
@@ -4674,11 +4999,12 @@ function buildPrintDoc(client){
     root.appendChild(tWrap);
   }
 
-  for (var i=0;i<client.menus.length;i++){
-    var menu = client.menus[i];
+  var menusList = exportMenus(client);
+  for (var i=0;i<menusList.length;i++){
+    var menu = menusList[i];
     var sums = sumMenuMeals(byId, menu.meals);
     var sec = el("section", "pd-menu");
-    sec.appendChild(el("h2", "pd-menu-name", client.menus.length > 1 ? menu.name : "התפריט שלך"));
+    sec.appendChild(el("h2", "pd-menu-name", menusList.length > 1 ? menu.name : "התפריט שלך"));
     for (var mIdx=0;mIdx<menu.meals.length;mIdx++){
       var meal = menu.meals[mIdx];
       if (meal.rows.length === 0) continue;
@@ -4716,6 +5042,11 @@ function buildPrintDoc(client){
 
 /* כותרת העמוד קובעת את שם קובץ ה-PDF בדיאלוג ההדפסה — מוחזרת מיד אחרי */
 function exportClientPdf(client){
+  /* שקיפות (ביקורת 20.8): כשמייצאים את תוכן הבונה ויש ללקוח/ה עוד תפריטים
+     שמורים — אומרים מה בדיוק מיוצא, כדי שלא ייראה כאילו תפריטים "נעלמו" */
+  if (client && builderClientId === client.id && builderRowCount() > 0 && client.menus.length > 1){
+    toast("מיוצא התפריט שפתוח בבונה — לייצוא תפריט אחר, טעני אותו קודם");
+  }
   buildPrintDoc(client);
   var prevTitle = document.title;
   var restored = false;
@@ -4994,7 +5325,8 @@ function exportClientPptx(client){
     pptxProcess(pptx);
     pptxSummary(pptx, client);
     pptxTargets(pptx, client);
-    for (var i=0;i<client.menus.length;i++) pptxMenu(pptx, byId, client, client.menus[i]);
+    var menusList = exportMenus(client);
+    for (var i=0;i<menusList.length;i++) pptxMenu(pptx, byId, client, menusList[i]);
     pptxTracking(pptx, client);
     pptxTraining(pptx);
     pptxClosing(pptx);
@@ -5023,7 +5355,14 @@ $("btnCopyShareLink").addEventListener("click", copyShareLink);
 $("btnExportPdf").addEventListener("click", function(){
   var c = getActiveClient(null);
   if (!c){ toast("אין לקוח/ה פעיל/ה"); return; }
-  if (c.menus.length === 0){ toast("אין תפריט שמור לייצוא"); return; }
+  if (!hasExportableMenu(c)){ toast("אין תפריט לייצוא — בני תפריט בבונה או טעני תפריט שמור"); return; }
+  exportClientPdf(c);
+});
+/* קיצור דרך מהבונה (QA 20.8.2026) — לא צריך לעבור טאב כדי להוריד PDF */
+$("btnBuilderPdf").addEventListener("click", function(){
+  var c = getActiveClient(null);
+  if (!c){ toast("אין לקוח/ה פעיל/ה"); return; }
+  if (!hasExportableMenu(c)){ toast("אין תפריט לייצוא — הוסיפי מזונות לארוחות"); return; }
   exportClientPdf(c);
 });
 $("btnExportPptx").addEventListener("click", function(){
@@ -5033,10 +5372,60 @@ $("btnExportPptx").addEventListener("click", function(){
 });
 
 /* ---------- טאב בונה תפריט ---------- */
-/* המצב חי בזיכרון בלבד; לאחסון הוא מגיע רק בלחיצת "שמור תפריט" (menus של הלקוח/ה הפעיל/ה).
+/* המצב חי בזיכרון, ומ-20.8.2026 (QA) מגובה בטיוטה פר-לקוח/ה ב-localStorage:
+   מעבר בין לקוחות או רענון דף לא מוחקים יותר עבודה שלא נשמרה — הטיוטה משוחזרת בחזרה.
    rebuild() = רינדור מלא של הארוחות והסיכום · recalc() = רענון מספרים בלבד דרך data-attrs */
 var builderState = {meals: defaultMeals(4), menuName: "", loadedMenuId: null};
-var builderClientId = null;          /* הלקוח/ה שהמצב הנוכחי שייך לו/ה — החלפה מאפסת את הבונה */
+var builderClientId = null;          /* הלקוח/ה שהמצב הנוכחי שייך לו/ה — החלפה טוענת את הטיוטה שלו/ה */
+
+var BUILDER_DRAFTS_KEY = "sivan-builder-drafts-v1";
+
+function readBuilderDrafts(){
+  try {
+    var raw = localStorage.getItem(BUILDER_DRAFTS_KEY);
+    if (!raw) return {};
+    var obj = JSON.parse(raw);
+    return (obj && typeof obj === "object" && !Array.isArray(obj)) ? obj : {};
+  } catch(e){ return {}; }
+}
+function writeBuilderDrafts(drafts){
+  try { localStorage.setItem(BUILDER_DRAFTS_KEY, JSON.stringify(drafts)); } catch(e){}
+}
+/* נקרא אחרי כל שינוי בבונה (דרך recalc); בונה ריק לגמרי = אין טיוטה לשמור */
+function saveBuilderDraft(){
+  if (!builderClientId) return;
+  var drafts = readBuilderDrafts();
+  if (builderRowCount() === 0 && (builderState.menuName || "").trim() === ""){
+    if (!Object.prototype.hasOwnProperty.call(drafts, builderClientId)) return;
+    delete drafts[builderClientId];
+  } else {
+    drafts[builderClientId] = {
+      meals: cleanMealsForSave(),
+      menuName: builderState.menuName || "",
+      loadedMenuId: builderState.loadedMenuId || null
+    };
+  }
+  writeBuilderDrafts(drafts);
+}
+function clearBuilderDraft(clientId){
+  if (!clientId) return;
+  var drafts = readBuilderDrafts();
+  if (!Object.prototype.hasOwnProperty.call(drafts, clientId)) return;
+  delete drafts[clientId];
+  writeBuilderDrafts(drafts);
+}
+function loadBuilderDraft(clientId){
+  var drafts = readBuilderDrafts();
+  var d = Object.prototype.hasOwnProperty.call(drafts, clientId) ? drafts[clientId] : null;
+  if (!d || typeof d !== "object") return null;
+  var meals = copyMeals(d.meals);
+  if (!meals.length) return null;
+  return {
+    meals: meals,
+    menuName: (typeof d.menuName === "string") ? d.menuName : "",
+    loadedMenuId: (typeof d.loadedMenuId === "string") ? d.loadedMenuId : null
+  };
+}
 var BUILDER_CARDS = ["builderTopCard","daySummary","mealsWrap"];
 var BUILDER_CAT_ORDER = ["carb","protein","veg","fat","snack","ready"];
 /* אבות המזון: שורות "כמות חופשית" בבונה — הלקוח/ה בוחר/ת את המזון בפועל, החישוב לפי 4/4/9 */
@@ -5145,10 +5534,6 @@ var FOOD_ADD_LABEL = "+ הוסף מזון חדש למאגר";
 var foodPickSeq = 0;
 var openFoodPick = null;   /* {pick: element, close: function} — פאנל אחד פתוח בכל רגע */
 
-/* השוואה סלחנית: בלי רגישות לרישיות ובלי רווחים ("חזה עוף" נמצא גם ב-"חזהעוף") */
-function foodSearchKey(s){
-  return String((s === undefined || s === null) ? "" : s).toLowerCase().replace(/\s+/g, "");
-}
 function foodDisplayName(byId, foodId){
   if (typeof foodId !== "string" || foodId === "") return "";
   if (!byId || !Object.prototype.hasOwnProperty.call(byId, foodId)) return "";
@@ -5287,14 +5672,15 @@ function buildFoodPick(foods, row, onGrams){
     list.setAttribute("role","listbox");
     list.setAttribute("aria-label","תוצאות חיפוש מזון");
 
-    var q = foodSearchKey(input.value), shown = [], i;
+    var q = (input.value || "").trim(), shown = [], i;
     if (q === ""){
       /* מסך פתיחה: אבות המזון בלבד — שאר המאגר גדול מדי מכדי להציג בלי חיפוש */
       for (i=0;i<foods.list.length;i++){ if (foods.list[i].generic) shown.push(foods.list[i]); }
       if (shown.length) list.appendChild(groupRow(GENERIC_GROUP_LABEL));
     } else {
+      /* QA 20.8.2026: searchMatches — גם צירוף מילים ("עוף עור") מוצא את המזון */
       for (i=0;i<foods.list.length && shown.length < FOOD_RESULT_LIMIT;i++){
-        if (foodSearchKey(foods.list[i].name).indexOf(q) > -1) shown.push(foods.list[i]);
+        if (searchMatches(foods.list[i].name, q)) shown.push(foods.list[i]);
       }
     }
     for (i=0;i<shown.length;i++){
@@ -5666,7 +6052,9 @@ function recalc(){
   $("sumBarOver").style.width = overPct + "%";
   setChip($("sumChip"), $("sumChipText"), byKey.kcal);
   var overAlert = $("dayOverAlert");
-  var dayOver = tKcal !== null && totals.kcal > tKcal;
+  /* QA 20.8.2026: האלרט האדום מיושר לצ'יפ — נדלק רק כשהחריגה מעבר לסובלנות
+     (±30 קק"ל, statusOf), כדי שלא יופיע אדום מלא לצד צ'יפ ירוק "בטווח היעד" */
+  var dayOver = tKcal !== null && totals.kcal > tKcal && byKey.kcal && byKey.kcal.level !== "ok";
   if (overAlert){
     overAlert.classList.toggle("hidden", !dayOver);
     overAlert.textContent = dayOver ? ("חריגה של " + n(totals.kcal - Math.round(tKcal)) + " קק\"ל מהיעד היומי — כדאי להוריד כמויות או להחליף מזון") : "";
@@ -5681,22 +6069,23 @@ function recalc(){
     setChip(box.querySelector("[data-stat-chip]"), box.querySelector("[data-stat-text]"), byKey[key]);
   }
 
-  /* בדיקת שפיות: 4/4/9 מול סכום הקלוריות של השורות */
+  /* בדיקת שפיות: 4/4/9 מול סכום הקלוריות של השורות.
+     QA 20.8.2026: הסף הוצמד לתקן המקצועי (ידע/05 §4.1 — עד ~2% צפוי) והבדיקה
+     מוצגת רק כשיש פער — "תקין" קבוע היה רעש ויזואלי */
   var check = $("sumMacroCheck");
-  if (builderRowCount() === 0){
+  var mk = macroKcal(totals.protein, totals.carbs, totals.fat);
+  var abs = Math.abs(mk - totals.kcal);
+  var tol = Math.max(10, Math.round(totals.kcal * 0.02));
+  if (builderRowCount() === 0 || abs <= tol){
     check.classList.add("hidden");
     check.textContent = "—";
   } else {
     check.classList.remove("hidden");
-    var mk = macroKcal(totals.protein, totals.carbs, totals.fat);
-    var diff = mk - totals.kcal;
-    var abs = Math.abs(diff);
-    var tol = Math.max(20, Math.round(totals.kcal * 0.05));
-    if (abs <= tol){
-      check.textContent = "בדיקת חשבון: תקין — לפי המאקרו " + n(mk) + " קק\"ל";
+    var pct = totals.kcal ? Math.round(abs / totals.kcal * 100) : 0;
+    if (abs <= Math.round(totals.kcal * 0.05)){
+      check.textContent = "בדיקת חשבון: לפי המאקרו " + n(mk) + " קק\"ל — פער קטן של " + n(abs) + " קק\"ל (" + pct + "%), בדרך כלל עיגול וסיבים תזונתיים";
     } else {
-      var pct = totals.kcal ? Math.round(abs / totals.kcal * 100) : 0;
-      check.textContent = "בדיקת חשבון: לפי המאקרו " + n(mk) + " קק\"ל — פער של " + n(abs) + " קק\"ל (" + pct + "%) מסכום השורות; פער עד 10% נובע בדרך כלל מסיבים תזונתיים";
+      check.textContent = "שימי לב — המספרים לא מסתדרים: לפי המאקרו " + n(mk) + " קק\"ל, פער של " + n(abs) + " קק\"ל (" + pct + "%) מסכום השורות. כדאי לבדוק את שורות התפריט";
     }
   }
 
@@ -5740,6 +6129,8 @@ function recalc(){
   $("mbFill").style.width = fillPct + "%";
   $("mbOver").style.width = overPct + "%";
   setChip($("mbChip"), $("mbChipText"), byKey.kcal);
+
+  saveBuilderDraft();   /* כל שינוי בבונה מגובה מיד כטיוטה פר-לקוח/ה (QA 20.8.2026) */
 }
 
 function fillMenuList(c){
@@ -5778,8 +6169,11 @@ function syncBuilderClient(){
     return;
   }
   if (builderClientId !== c.id){
+    /* QA 20.8.2026: החלפת לקוח/ה לא מוחקת יותר עבודה — הטיוטה של הלקוח/ה
+       הנכנס/ת משוחזרת (של הקודם/ת כבר נשמרה אוטומטית דרך recalc) */
     builderClientId = c.id;
-    builderState = {meals: defaultMeals(4), menuName:"", loadedMenuId:null};
+    /* השחזור שקט — זו התנהגות שמירה-אוטומטית רגילה, לא אירוע שדורש הודעה */
+    builderState = loadBuilderDraft(c.id) || {meals: defaultMeals(4), menuName:"", loadedMenuId:null};
   }
   $("builderTitle").textContent = "תפריט עבור: " + c.name;
   $("menuNameIn").value = builderState.menuName;
@@ -6012,7 +6406,10 @@ $("btnAddMeal").addEventListener("click", function(){
   builderState.meals.push({name: mealName(builderState.meals.length), rows:[], budget:null});
   rebuild();
 });
-$("menuNameIn").addEventListener("input", function(){ builderState.menuName = $("menuNameIn").value; });
+$("menuNameIn").addEventListener("input", function(){
+  builderState.menuName = $("menuNameIn").value;
+  saveBuilderDraft();
+});
 twoStep($("btnMenuDelete"), "מחק", "לאשר מחיקה?", deleteMenu);
 twoStep($("btnMenuReset"), "איפוס", "לאשר איפוס?", resetBuilder);
 
@@ -6216,7 +6613,7 @@ function buildTrackBody(t, dates){
           inp.addEventListener("change", function(){
             var val = (inp.value || "").trim();
             inp.value = val;
-            setTrackCell(dateISO, col.id, val);
+            if (setTrackCell(dateISO, col.id, val)) toastSavedSoon();
           });
           td.appendChild(inp);
           tr.appendChild(td);
@@ -6358,6 +6755,26 @@ $("btnMealsTrackRefresh").addEventListener("click", function(){ refreshMealsTrac
 var foodFilter = "all";
 /* מצב התצוגה זמני בלבד (לא נשמר) — כל טעינה מתחילה ב"ערכים ל-100 ג'" */
 var foodsView = "values";
+/* מיון עמודות בתצוגת הערכים (QA 20.8.2026) — אותו דפוס כמו בטאב המוצרים */
+var foodsSortKey = "";
+var foodsSortDir = "asc";
+(function initFoodsSort(){
+  var heads = document.querySelectorAll("#foodsHeadValues th.sortable");
+  for (var i=0;i<heads.length;i++){
+    (function(th){
+      function doSort(){
+        var key = th.getAttribute("data-food-sort");
+        foodsSortDir = nextSortDir(foodsSortKey, foodsSortDir, key);
+        foodsSortKey = key;
+        renderFoods();
+      }
+      th.addEventListener("click", doSort);
+      th.addEventListener("keydown", function(e){
+        if (e.key === "Enter" || e.key === " "){ e.preventDefault(); doSort(); }
+      });
+    })(heads[i]);
+  }
+})();
 (function initFoodChips(){
   var wrap = $("foodChips");
   var defs = [["all","הכול"],["carb","פחמימה"],["protein","חלבון"],["veg","ירק"],["fat","שומן"],["snack","ביניים"],["ready","מוכן ובחוץ"]];
@@ -6480,6 +6897,13 @@ function renderFoods(){
   body.innerHTML = "";
   var all = activeFoods().list, list = [];
   for (var k=0;k<all.length;k++){ if (!all[k].generic) list.push(all[k]); }
+  /* מיון לפי עמודה (רק בתצוגת הערכים; sortProducts עובד על כל אובייקט עם השדות האלה) */
+  if (foodsView === "values" && foodsSortKey) list = sortProducts(list, foodsSortKey, foodsSortDir);
+  var sortHeads = document.querySelectorAll("#foodsHeadValues th.sortable");
+  for (var sh=0;sh<sortHeads.length;sh++){
+    if (foodsView === "values" && sortHeads[sh].getAttribute("data-food-sort") === foodsSortKey) sortHeads[sh].setAttribute("aria-sort", foodsSortDir === "asc" ? "ascending" : "descending");
+    else sortHeads[sh].removeAttribute("aria-sort");
+  }
   var count = 0, customTotal = 0;
   for (var i=0;i<list.length;i++){
     (function(f){
@@ -6487,7 +6911,8 @@ function renderFoods(){
       if (isCustom) customTotal++;
       if (foodFilter !== "all" && f.cat !== foodFilter) return;
       var portion = (typeof f.portion === "string") ? f.portion : "";
-      if (q && f.name.indexOf(q) === -1 && portion.indexOf(q) === -1) return;
+      /* QA 20.8.2026: חיפוש סלחני — "עוף עור" מוצא "חזה עוף (ללא עור)" */
+      if (q && !searchMatches(f.name + " " + portion, q)) return;
       count++;
       var tr = document.createElement("tr");
       var td1 = el("td","t-name");
@@ -6518,6 +6943,15 @@ function renderFoods(){
       else fillValueCells(tr, f);
       body.appendChild(tr);
     })(list[i]);
+  }
+  /* מצב ריק (QA 20.8.2026): טבלה ריקה בלי הסבר נראית כמו תקלה */
+  if (count === 0){
+    var emptyTr = document.createElement("tr");
+    var emptyTd = document.createElement("td");
+    emptyTd.colSpan = (foodsView === "portions") ? 4 : 7;
+    emptyTd.appendChild(el("span","lede","לא נמצאו מזונות מתאימים לחיפוש — אפשר לנסות ניסוח אחר, או להוסיף מזון חדש בכרטיס \"הוסף מזון\" למטה."));
+    emptyTr.appendChild(emptyTd);
+    body.appendChild(emptyTr);
   }
   var totalText = (list.length - customTotal) + (customTotal > 0 ? (" + " + customTotal + " מותאמים") : "");
   $("foodsCount").textContent = (count === list.length)
@@ -6651,6 +7085,35 @@ $("prodSearch").addEventListener("input", function(){ renderProducts(); });
   }
 })();
 
+/* קטגוריית מוצר (מחרוזת חופשית) → קטגוריית מזון של הבונה — לפי מילות מפתח */
+function productFoodCat(category){
+  var c = String(category || "");
+  if (c.indexOf("חלבון מועשרים") > -1) return "protein";
+  if (c.indexOf("חלב") > -1 || c.indexOf("בשר") > -1) return "protein";
+  if (c.indexOf("לחמים") > -1 || c.indexOf("דגנים") > -1 || c.indexOf("קטניות") > -1) return "carb";
+  if (c.indexOf("חטיפים") > -1 || c.indexOf("פיצוחים") > -1 || c.indexOf("משקאות") > -1) return "snack";
+  return "ready";
+}
+
+/* "הוסף למאגר שלי" — מעביר מוצר סופר למזונות המותאמים דרך אותו מסלול שמירה קיים */
+function addProductToMyFoods(p){
+  var wantedName = p.name + " — " + p.brand;
+  var existing = activeFoods().list;
+  for (var i=0;i<existing.length;i++){
+    if (existing[i].name === wantedName){ toast("המוצר כבר במאגר שלך: " + wantedName); return; }
+  }
+  var food = saveCustomFood({
+    name: wantedName,
+    cat: productFoodCat(p.category),
+    kcal100: p.kcal100, protein100: p.protein100, carbs100: p.carbs100, fat100: p.fat100,
+    portion: p.portion_desc, grams: p.portion_grams
+  }, null);
+  if (!food) return;
+  renderFoods();
+  rebuild();
+  toast("נוסף למאגר שלך וזמין בבונה: " + wantedName);
+}
+
 function renderProducts(){
   var rows = filterProducts(PRODUCTS, $("prodSearch").value, prodFilter);
   rows = sortProducts(rows, prodSortKey, prodSortDir);
@@ -6708,6 +7171,15 @@ function renderProducts(){
       pair("חלבון למנה", p.protein_portion + " ג'");
       pair("פחמימה למנה", p.carbs_portion + " ג'");
       pair("שומן למנה", p.fat_portion + " ג'");
+      /* גשר לבונה (QA 20.8.2026): המוצר נוסף כמזון מותאם וזמין מיד בחיפוש של הבונה */
+      var addBtn = el("button","btn btn-sm","הוסף למאגר שלי");
+      addBtn.type = "button";
+      addBtn.title = "המוצר יתווסף כמזון מותאם ויופיע בבורר של בונה התפריט";
+      addBtn.addEventListener("click", function(ev){
+        ev.stopPropagation();
+        addProductToMyFoods(p);
+      });
+      grid.appendChild(addBtn);
       if (p.source){
         var a = document.createElement("a");
         a.className = "prod-src";
@@ -6734,6 +7206,15 @@ function renderProducts(){
       body.appendChild(tr);
       body.appendChild(detail);
     })(rows[i], i);
+  }
+  /* מצב ריק (QA 20.8.2026) */
+  if (rows.length === 0){
+    var emptyTr = document.createElement("tr");
+    var emptyTd = document.createElement("td");
+    emptyTd.setAttribute("colspan","8");
+    emptyTd.appendChild(el("span","lede","לא נמצאו מוצרים מתאימים לחיפוש — נסי שם אחר או קטגוריה אחרת."));
+    emptyTr.appendChild(emptyTd);
+    body.appendChild(emptyTr);
   }
   $("prodCount").textContent = rows.length + " מוצרים";
   renderSmart();
@@ -6793,6 +7274,7 @@ function buildExampleCard(foods, ex){
   headMain.appendChild(el("h3", null, ex.title));
   headMain.appendChild(el("p","ex-meta", ex.client + " · " + ex.meta));
   head.appendChild(headMain);
+  head.appendChild(el("span","chip chip-warn","דוגמה מובנית"));
   head.appendChild(el("span","chip chip-neutral", n(ex.target) + " קק\"ל"));
   card.appendChild(head);
 
@@ -6879,6 +7361,7 @@ function buildTemplateCard(foods, t){
   titleBox.appendChild(el("p","ex-meta","תפריט מוכן ששמרת מהבונה — זמין לכל לקוח/ה"));
   head.appendChild(titleBox);
   var totals = sumMenuMeals(foods.byId, t.meals);
+  head.appendChild(el("span","chip chip-ok","התפריט שלי"));
   head.appendChild(el("span","chip chip-neutral", n(totals.kcal) + " קק\"ל"));
   card.appendChild(head);
 
